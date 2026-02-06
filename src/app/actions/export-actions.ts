@@ -10,6 +10,13 @@ import {
   generateVehicleReportData,
   generateExecutiveReportData,
 } from './report-data-actions'
+import { generateExcelExport } from './excel-export-actions'
+
+interface ExportResult {
+  filename: string
+  content: string
+  mime_type: string
+}
 
 // Generate CSV Export
 export async function generateCSVExport(request: ReportRequest) {
@@ -123,23 +130,28 @@ function convertToCSV(data: any, type: string): string {
 // Download export file
 export async function downloadExport(request: ReportRequest) {
   try {
-    if (request.format !== 'csv') {
-      return { success: false, error: 'Apenas CSV está disponível no momento. Excel e PDF em breve!' }
+    let result: any
+
+    switch (request.format) {
+      case 'csv':
+        result = await generateCSVExport(request)
+        break
+      case 'excel':
+        result = await generateExcelExport(request)
+        break
+      case 'pdf':
+        return { success: false, error: 'PDF será gerado no navegador. Use o botão específico de PDF.' }
+      default:
+        return { success: false, error: 'Formato inválido' }
     }
 
-    const result = await generateCSVExport(request)
-
-    if (!result.success) {
+    if (!result.success || !result.data) {
       return result
     }
 
     return {
       success: true,
-      data: {
-        filename: result.data!.filename,
-        content: result.data!.content,
-        mime_type: result.data!.mime_type,
-      },
+      data: result.data,
     }
   } catch (error) {
     console.error('Error downloading export:', error)
