@@ -5,6 +5,62 @@
 -- ============================================
 
 -- ============================================
+-- 0. TABELA: companies (se não existir)
+-- Tabela de Empresas
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS companies (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  cnpj TEXT UNIQUE,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Índice para companies
+CREATE INDEX IF NOT EXISTS idx_companies_cnpj ON companies(cnpj);
+
+COMMENT ON TABLE companies IS 'Empresas cadastradas no sistema';
+
+-- ============================================
+-- 0.1. TABELA: profiles (se não existir)
+-- Perfis de Usuários
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  avatar_url TEXT,
+  role TEXT DEFAULT 'user',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Índices para profiles
+CREATE INDEX IF NOT EXISTS idx_profiles_company ON profiles(company_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+
+-- RLS para profiles
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+COMMENT ON TABLE profiles IS 'Perfis de usuários do sistema';
+
+-- ============================================
 -- 1. TABELA: notifications
 -- Sistema de Notificações
 -- ============================================
