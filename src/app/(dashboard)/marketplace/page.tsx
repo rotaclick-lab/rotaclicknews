@@ -1,89 +1,103 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ShoppingCart, Package, TrendingUp, Users } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ReturnFreightCard } from '@/components/marketplace/return-freight-card'
+import { listReturnFreights } from '@/app/actions/return-freight-actions'
+import { Plus } from 'lucide-react'
 
-export default async function MarketplacePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+interface MarketplacePageProps {
+  searchParams: {
+    page?: string
+    status?: string
+  }
+}
 
+export default async function MarketplacePage({ searchParams }: MarketplacePageProps) {
+  const page = Number(searchParams.page) || 1
+  const status = searchParams.status || 'available'
+  
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Marketplace</h1>
-        <p className="text-muted-foreground">
-          Conecte-se com outros transportadores e ofereça seus serviços
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fretes Disponíveis</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Em breve</div>
-            <p className="text-xs text-muted-foreground">Módulo em desenvolvimento</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ofertas</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Em breve</div>
-            <p className="text-xs text-muted-foreground">Módulo em desenvolvimento</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Oportunidades</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Em breve</div>
-            <p className="text-xs text-muted-foreground">Módulo em desenvolvimento</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Parceiros</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Em breve</div>
-            <p className="text-xs text-muted-foreground">Módulo em desenvolvimento</p>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Marketplace de Retorno</h1>
+          <p className="text-muted-foreground">
+            Encontre oportunidades de fretes de retorno
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/marketplace/minhas-rotas/nova">
+            <Plus className="mr-2 h-4 w-4" />
+            Publicar Rota
+          </Link>
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Módulo em Desenvolvimento</CardTitle>
-          <CardDescription>
-            Esta funcionalidade está sendo construída
-          </CardDescription>
+          <CardTitle>Oportunidades Disponíveis</CardTitle>
+          <CardDescription>Fretes de retorno publicados por outras transportadoras</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            O Marketplace incluirá:
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li>• Fretes disponíveis de outras empresas</li>
-            <li>• Sistema de ofertas e lances</li>
-            <li>• Avaliações e reputação</li>
-            <li>• Chat em tempo real</li>
-            <li>• Marketplace de cargas</li>
-            <li>• Rede de parceiros e agregados</li>
-          </ul>
+          <Suspense fallback={<ListLoadingSkeleton />}>
+            <ReturnFreightsList page={page} status={status} />
+          </Suspense>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+async function ReturnFreightsList({ page, status }: { page: number; status: string }) {
+  const result = await listReturnFreights({
+    page,
+    per_page: 12,
+    filters: { status: status !== 'all' ? status as any : undefined },
+  })
+
+  if (!result.success) {
+    return <div className="text-center py-12"><p className="text-muted-foreground">{result.error}</p></div>
+  }
+
+  const { return_freights = [], total = 0 } = result.data || {}
+
+  if (return_freights.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Nenhuma oportunidade encontrada.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {return_freights.map((returnFreight) => (
+          <ReturnFreightCard key={returnFreight.id} returnFreight={returnFreight} showActions={true} />
+        ))}
+      </div>
+
+      {total > 12 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" asChild disabled={page <= 1}>
+            <Link href={`/marketplace?page=${page - 1}&status=${status}`}>Anterior</Link>
+          </Button>
+          <span className="text-sm text-muted-foreground">Página {page} de {Math.ceil(total / 12)}</span>
+          <Button variant="outline" asChild disabled={page >= Math.ceil(total / 12)}>
+            <Link href={`/marketplace?page=${page + 1}&status=${status}`}>Próxima</Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ListLoadingSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-80" />)}
     </div>
   )
 }
