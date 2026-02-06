@@ -87,6 +87,23 @@ export function formatCEP(cep: string): string {
 }
 
 /**
+ * Format Brazilian document (CPF or CNPJ)
+ */
+export function formatDocument(document: string): string {
+  const cleaned = document.replace(/\D/g, '');
+  
+  if (cleaned.length === 11) {
+    // CPF: 000.000.000-00
+    return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  } else if (cleaned.length === 14) {
+    // CNPJ: 00.000.000/0000-00
+    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  }
+  
+  return document;
+}
+
+/**
  * Calculate distance between two coordinates using Haversine formula
  */
 export function calculateDistance(
