@@ -1,7 +1,15 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Settings, Bell, Shield, Users, Database, Palette } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ProfileSettings } from '@/components/configuracoes/profile-settings'
+import { CompanySettings } from '@/components/configuracoes/company-settings'
+import { NotificationSettings } from '@/components/configuracoes/notification-settings'
+import { SecuritySettings } from '@/components/configuracoes/security-settings'
+import { getUserProfile, getCompanySettings, getNotificationSettings } from '@/app/actions/settings-actions'
+import { User, Building2, Bell, Shield } from 'lucide-react'
 
 export default async function ConfiguracoesPage() {
   const supabase = await createClient()
@@ -13,93 +21,118 @@ export default async function ConfiguracoesPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
         <p className="text-muted-foreground">
-          Gerencie as configurações da sua conta e da empresa
+          Gerencie suas preferências e configurações da empresa
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Perfil</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Dados pessoais e da empresa</p>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            <span className="hidden sm:inline">Perfil</span>
+          </TabsTrigger>
+          <TabsTrigger value="company" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Empresa</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Notificações</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Segurança</span>
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Notificações</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Alertas e notificações</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="profile" className="space-y-4">
+          <Suspense fallback={<SettingsSkeleton />}>
+            <ProfileSettingsContent />
+          </Suspense>
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Segurança</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Senha e autenticação</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="company" className="space-y-4">
+          <Suspense fallback={<SettingsSkeleton />}>
+            <CompanySettingsContent />
+          </Suspense>
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Integrações</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">APIs e webhooks</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="notifications" className="space-y-4">
+          <Suspense fallback={<SettingsSkeleton />}>
+            <NotificationSettingsContent />
+          </Suspense>
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aparência</CardTitle>
-            <Palette className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Tema e personalização</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="security" className="space-y-4">
+          <Suspense fallback={<SettingsSkeleton />}>
+            <SecuritySettingsContent />
+          </Suspense>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sistema</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Configurações gerais</p>
-          </CardContent>
-        </Card>
-      </div>
+async function ProfileSettingsContent() {
+  const result = await getUserProfile()
 
+  if (!result.success || !result.data) {
+    return (
       <Card>
-        <CardHeader>
-          <CardTitle>Módulo em Desenvolvimento</CardTitle>
-          <CardDescription>
-            Esta funcionalidade está sendo construída
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            O módulo de Configurações incluirá:
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-            <li>• Gestão de perfil e dados da empresa</li>
-            <li>• Configurações de notificações</li>
-            <li>• Segurança e privacidade</li>
-            <li>• Gestão de usuários e permissões</li>
-            <li>• Integrações com sistemas externos</li>
-            <li>• Personalização da interface</li>
-          </ul>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">{result.error}</p>
         </CardContent>
       </Card>
-    </div>
+    )
+  }
+
+  return <ProfileSettings profile={result.data} />
+}
+
+async function CompanySettingsContent() {
+  const result = await getCompanySettings()
+
+  if (!result.success || !result.data) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">{result.error}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return <CompanySettings company={result.data} />
+}
+
+async function NotificationSettingsContent() {
+  const result = await getNotificationSettings()
+
+  if (!result.success || !result.data) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">{result.error}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return <NotificationSettings settings={result.data} />
+}
+
+async function SecuritySettingsContent() {
+  return <SecuritySettings />
+}
+
+function SettingsSkeleton() {
+  return (
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
   )
 }
