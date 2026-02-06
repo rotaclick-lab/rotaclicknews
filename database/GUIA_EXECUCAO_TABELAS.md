@@ -27,7 +27,16 @@ Significa que você pode estar:
 Execute este script no Supabase SQL Editor primeiro:
 
 ```sql
--- DELETAR TABELAS EXISTENTES (SE HOUVER)
+-- ============================================
+-- SCRIPT DE LIMPEZA COMPLETA
+-- Remove tudo relacionado às tabelas principais
+-- ============================================
+
+-- DELETAR FUNÇÕES PRIMEIRO (elas podem ter dependências)
+DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+DROP FUNCTION IF EXISTS create_default_categories() CASCADE;
+
+-- DELETAR TABELAS NA ORDEM INVERSA (das dependentes para as independentes)
 DROP TABLE IF EXISTS marketplace_proposals CASCADE;
 DROP TABLE IF EXISTS marketplace_routes CASCADE;
 DROP TABLE IF EXISTS transactions CASCADE;
@@ -37,25 +46,19 @@ DROP TABLE IF EXISTS vehicles CASCADE;
 DROP TABLE IF EXISTS drivers CASCADE;
 DROP TABLE IF EXISTS customers CASCADE;
 
--- DELETAR TRIGGERS E FUNÇÕES
-DROP TRIGGER IF EXISTS update_freights_updated_at ON freights;
-DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
-DROP TRIGGER IF EXISTS update_drivers_updated_at ON drivers;
-DROP TRIGGER IF EXISTS update_vehicles_updated_at ON vehicles;
-DROP TRIGGER IF EXISTS update_categories_updated_at ON categories;
-DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions;
-DROP TRIGGER IF EXISTS update_marketplace_routes_updated_at ON marketplace_routes;
-DROP TRIGGER IF EXISTS update_marketplace_proposals_updated_at ON marketplace_proposals;
-DROP TRIGGER IF EXISTS on_company_created ON companies;
-
-DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
-DROP FUNCTION IF EXISTS create_default_categories() CASCADE;
-
--- MENSAGEM
+-- MENSAGEM DE SUCESSO
 DO $$
 BEGIN
-  RAISE NOTICE '✅ TABELAS ANTIGAS REMOVIDAS COM SUCESSO!';
-  RAISE NOTICE 'Agora execute o script: create_main_tables.sql';
+  RAISE NOTICE '✅ LIMPEZA CONCLUÍDA COM SUCESSO!';
+  RAISE NOTICE '';
+  RAISE NOTICE 'O que foi removido:';
+  RAISE NOTICE '  • 8 tabelas principais';
+  RAISE NOTICE '  • Todos os índices';
+  RAISE NOTICE '  • Todos os triggers';
+  RAISE NOTICE '  • Todas as funções';
+  RAISE NOTICE '  • Todas as policies RLS';
+  RAISE NOTICE '';
+  RAISE NOTICE '🚀 Agora você pode executar: create_main_tables.sql';
 END $$;
 ```
 
