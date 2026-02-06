@@ -273,6 +273,9 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger para criar preferências ao criar usuário
+-- Drop trigger if exists (para evitar erro de duplicação)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
