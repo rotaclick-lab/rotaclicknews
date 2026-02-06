@@ -12,16 +12,55 @@
 CREATE TABLE IF NOT EXISTS companies (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
-  cnpj TEXT UNIQUE,
-  email TEXT,
-  phone TEXT,
-  address TEXT,
-  city TEXT,
-  state TEXT,
-  postal_code TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Adiciona colunas se não existirem (para tabelas antigas)
+DO $$ 
+BEGIN
+  -- cnpj
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'cnpj') THEN
+    ALTER TABLE companies ADD COLUMN cnpj TEXT UNIQUE;
+  END IF;
+  
+  -- email
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'email') THEN
+    ALTER TABLE companies ADD COLUMN email TEXT;
+  END IF;
+  
+  -- phone
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'phone') THEN
+    ALTER TABLE companies ADD COLUMN phone TEXT;
+  END IF;
+  
+  -- address
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'address') THEN
+    ALTER TABLE companies ADD COLUMN address TEXT;
+  END IF;
+  
+  -- city
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'city') THEN
+    ALTER TABLE companies ADD COLUMN city TEXT;
+  END IF;
+  
+  -- state
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'state') THEN
+    ALTER TABLE companies ADD COLUMN state TEXT;
+  END IF;
+  
+  -- postal_code
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_name = 'companies' AND column_name = 'postal_code') THEN
+    ALTER TABLE companies ADD COLUMN postal_code TEXT;
+  END IF;
+END $$;
 
 -- Índice para companies
 CREATE INDEX IF NOT EXISTS idx_companies_cnpj ON companies(cnpj);
