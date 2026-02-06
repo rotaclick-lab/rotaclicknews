@@ -11,10 +11,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // ESLint
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Turbopack (Next.js 16+)
+  turbopack: {},
   
   // Images
   images: {
@@ -87,19 +85,6 @@ const nextConfig = {
         permanent: true,
       },
     ];
-  },
-  
-  // Webpack
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
-    return config;
   },
 };
 
