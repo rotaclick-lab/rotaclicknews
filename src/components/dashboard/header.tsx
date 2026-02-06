@@ -1,10 +1,11 @@
 'use client'
 
-import { Bell, Menu, Search } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { UserNav } from './user-nav'
 import { MobileSidebar } from './mobile-sidebar'
+import { NotificationCenter } from '@/components/notifications/notification-center'
 import { usePathname } from 'next/navigation'
 import { NAV_ITEMS } from '@/lib/constants'
 import { useState } from 'react'
@@ -52,11 +53,7 @@ export function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-            <span className="sr-only">Notificações</span>
-          </Button>
+          <NotificationCenter />
           <UserNav />
         </div>
       </div>
