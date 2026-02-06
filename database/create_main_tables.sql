@@ -2,10 +2,235 @@
 -- ROTACLICK - TABELAS PRINCIPAIS DO SISTEMA
 -- Script completo para criar todas as tabelas necessárias
 -- Database: PostgreSQL (Supabase)
+-- ORDEM: Tabelas sem dependências primeiro!
 -- ============================================
 
 -- ============================================
--- 1. TABELA: freights (Fretes)
+-- 1. TABELA: customers (Clientes) - SEM DEPENDÊNCIAS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS customers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
+  
+  -- Informações básicas
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('individual', 'company')),
+  cpf_cnpj TEXT NOT NULL,
+  
+  -- Contato
+  email TEXT,
+  phone TEXT,
+  mobile TEXT,
+  
+  -- Endereço
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  
+  -- Status
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  
+  -- Observações
+  notes TEXT,
+  
+  -- Metadados
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  
+  -- Índice único composto (company_id + cpf_cnpj)
+  UNIQUE(company_id, cpf_cnpj)
+);
+
+-- Índices para customers
+CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
+CREATE INDEX IF NOT EXISTS idx_customers_cpf_cnpj ON customers(cpf_cnpj);
+CREATE INDEX IF NOT EXISTS idx_customers_type ON customers(type);
+CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
+CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
+
+-- RLS para customers
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view company customers" ON customers
+  FOR SELECT USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert company customers" ON customers
+  FOR INSERT WITH CHECK (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can update company customers" ON customers
+  FOR UPDATE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete company customers" ON customers
+  FOR DELETE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+COMMENT ON TABLE customers IS 'Tabela de clientes (Pessoa Física e Jurídica)';
+
+-- ============================================
+-- 2. TABELA: drivers (Motoristas) - SEM DEPENDÊNCIAS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS drivers (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
+  
+  -- Informações pessoais
+  name TEXT NOT NULL,
+  cpf TEXT NOT NULL,
+  birth_date DATE,
+  
+  -- Contato
+  email TEXT,
+  phone TEXT,
+  mobile TEXT,
+  
+  -- Endereço
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  postal_code TEXT,
+  
+  -- Documentos
+  cnh_number TEXT NOT NULL,
+  cnh_category TEXT,
+  cnh_expiry_date DATE NOT NULL,
+  
+  -- Status
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'on_leave')),
+  
+  -- Observações
+  notes TEXT,
+  
+  -- Metadados
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  
+  -- Índices únicos compostos
+  UNIQUE(company_id, cpf),
+  UNIQUE(company_id, cnh_number)
+);
+
+-- Índices para drivers
+CREATE INDEX IF NOT EXISTS idx_drivers_company ON drivers(company_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_cpf ON drivers(cpf);
+CREATE INDEX IF NOT EXISTS idx_drivers_cnh ON drivers(cnh_number);
+CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
+CREATE INDEX IF NOT EXISTS idx_drivers_cnh_expiry ON drivers(cnh_expiry_date);
+
+-- RLS para drivers
+ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view company drivers" ON drivers
+  FOR SELECT USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert company drivers" ON drivers
+  FOR INSERT WITH CHECK (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can update company drivers" ON drivers
+  FOR UPDATE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete company drivers" ON drivers
+  FOR DELETE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+COMMENT ON TABLE drivers IS 'Tabela de motoristas';
+
+-- ============================================
+-- 3. TABELA: vehicles (Veículos) - SEM DEPENDÊNCIAS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS vehicles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
+  
+  -- Informações do veículo
+  plate TEXT NOT NULL,
+  model TEXT NOT NULL,
+  brand TEXT,
+  year INTEGER,
+  color TEXT,
+  
+  -- Tipo de veículo
+  type TEXT NOT NULL CHECK (type IN ('truck', 'van', 'car', 'motorcycle', 'other')),
+  
+  -- Capacidade
+  capacity_kg DECIMAL(10,2),
+  capacity_m3 DECIMAL(10,2),
+  
+  -- Documentos
+  renavam TEXT,
+  chassis TEXT,
+  
+  -- Datas de documentos
+  crlv_expiry_date DATE,
+  inspection_expiry_date DATE,
+  
+  -- Status
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'maintenance')),
+  
+  -- Observações
+  notes TEXT,
+  
+  -- Metadados
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  
+  -- Índice único composto
+  UNIQUE(company_id, plate)
+);
+
+-- Índices para vehicles
+CREATE INDEX IF NOT EXISTS idx_vehicles_company ON vehicles(company_id);
+CREATE INDEX IF NOT EXISTS idx_vehicles_plate ON vehicles(plate);
+CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(type);
+CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles(status);
+
+-- RLS para vehicles
+ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view company vehicles" ON vehicles
+  FOR SELECT USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can insert company vehicles" ON vehicles
+  FOR INSERT WITH CHECK (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can update company vehicles" ON vehicles
+  FOR UPDATE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Users can delete company vehicles" ON vehicles
+  FOR DELETE USING (
+    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
+  );
+
+COMMENT ON TABLE vehicles IS 'Tabela de veículos';
+
+-- ============================================
+-- 4. TABELA: freights (Fretes) - COM DEPENDÊNCIAS
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS freights (
@@ -87,220 +312,6 @@ CREATE POLICY "Users can delete company freights" ON freights
   );
 
 COMMENT ON TABLE freights IS 'Tabela de fretes do sistema';
-
--- ============================================
--- 2. TABELA: customers (Clientes)
--- ============================================
-
-CREATE TABLE IF NOT EXISTS customers (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
-  
-  -- Informações básicas
-  name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('individual', 'company')),
-  cpf_cnpj TEXT UNIQUE NOT NULL,
-  
-  -- Contato
-  email TEXT,
-  phone TEXT,
-  mobile TEXT,
-  
-  -- Endereço
-  address TEXT,
-  city TEXT,
-  state TEXT,
-  postal_code TEXT,
-  
-  -- Status
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
-  
-  -- Observações
-  notes TEXT,
-  
-  -- Metadados
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Índices para customers
-CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company_id);
-CREATE INDEX IF NOT EXISTS idx_customers_cpf_cnpj ON customers(cpf_cnpj);
-CREATE INDEX IF NOT EXISTS idx_customers_type ON customers(type);
-CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
-CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);
-
--- RLS para customers
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view company customers" ON customers
-  FOR SELECT USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can insert company customers" ON customers
-  FOR INSERT WITH CHECK (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can update company customers" ON customers
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can delete company customers" ON customers
-  FOR DELETE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-COMMENT ON TABLE customers IS 'Tabela de clientes (Pessoa Física e Jurídica)';
-
--- ============================================
--- 3. TABELA: drivers (Motoristas)
--- ============================================
-
-CREATE TABLE IF NOT EXISTS drivers (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
-  
-  -- Informações pessoais
-  name TEXT NOT NULL,
-  cpf TEXT UNIQUE NOT NULL,
-  birth_date DATE,
-  
-  -- Contato
-  email TEXT,
-  phone TEXT,
-  mobile TEXT,
-  
-  -- Endereço
-  address TEXT,
-  city TEXT,
-  state TEXT,
-  postal_code TEXT,
-  
-  -- Documentos
-  cnh_number TEXT UNIQUE NOT NULL,
-  cnh_category TEXT,
-  cnh_expiry_date DATE NOT NULL,
-  
-  -- Status
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'on_leave')),
-  
-  -- Observações
-  notes TEXT,
-  
-  -- Metadados
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Índices para drivers
-CREATE INDEX IF NOT EXISTS idx_drivers_company ON drivers(company_id);
-CREATE INDEX IF NOT EXISTS idx_drivers_cpf ON drivers(cpf);
-CREATE INDEX IF NOT EXISTS idx_drivers_cnh ON drivers(cnh_number);
-CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
-CREATE INDEX IF NOT EXISTS idx_drivers_cnh_expiry ON drivers(cnh_expiry_date);
-
--- RLS para drivers
-ALTER TABLE drivers ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view company drivers" ON drivers
-  FOR SELECT USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can insert company drivers" ON drivers
-  FOR INSERT WITH CHECK (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can update company drivers" ON drivers
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can delete company drivers" ON drivers
-  FOR DELETE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-COMMENT ON TABLE drivers IS 'Tabela de motoristas';
-
--- ============================================
--- 4. TABELA: vehicles (Veículos)
--- ============================================
-
-CREATE TABLE IF NOT EXISTS vehicles (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE NOT NULL,
-  
-  -- Informações do veículo
-  plate TEXT UNIQUE NOT NULL,
-  model TEXT NOT NULL,
-  brand TEXT,
-  year INTEGER,
-  color TEXT,
-  
-  -- Tipo de veículo
-  type TEXT NOT NULL CHECK (type IN ('truck', 'van', 'car', 'motorcycle', 'other')),
-  
-  -- Capacidade
-  capacity_kg DECIMAL(10,2),
-  capacity_m3 DECIMAL(10,2),
-  
-  -- Documentos
-  renavam TEXT,
-  chassis TEXT,
-  
-  -- Datas de documentos
-  crlv_expiry_date DATE,
-  inspection_expiry_date DATE,
-  
-  -- Status
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'maintenance')),
-  
-  -- Observações
-  notes TEXT,
-  
-  -- Metadados
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Índices para vehicles
-CREATE INDEX IF NOT EXISTS idx_vehicles_company ON vehicles(company_id);
-CREATE INDEX IF NOT EXISTS idx_vehicles_plate ON vehicles(plate);
-CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(type);
-CREATE INDEX IF NOT EXISTS idx_vehicles_status ON vehicles(status);
-
--- RLS para vehicles
-ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view company vehicles" ON vehicles
-  FOR SELECT USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can insert company vehicles" ON vehicles
-  FOR INSERT WITH CHECK (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can update company vehicles" ON vehicles
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-CREATE POLICY "Users can delete company vehicles" ON vehicles
-  FOR DELETE USING (
-    company_id IN (SELECT company_id FROM profiles WHERE id = auth.uid())
-  );
-
-COMMENT ON TABLE vehicles IS 'Tabela de veículos';
 
 -- ============================================
 -- 5. TABELA: categories (Categorias Financeiras)
