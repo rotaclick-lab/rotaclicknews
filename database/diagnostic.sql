@@ -116,7 +116,6 @@ END $$;
 SELECT 
   p.id,
   u.email,
-  p.full_name,
   p.company_id,
   c.name as company_name,
   p.created_at
@@ -255,24 +254,24 @@ ON CONFLICT DO NOTHING
 RETURNING id, name;
 
 -- CRIAR OU ATUALIZAR PROFILE (se necessário)
-INSERT INTO profiles (id, full_name, company_id)
+INSERT INTO profiles (id, company_id)
 VALUES (
   auth.uid(),
-  'Nome do Usuário',
   (SELECT id FROM companies ORDER BY created_at DESC LIMIT 1)
 )
 ON CONFLICT (id) DO UPDATE
 SET company_id = (SELECT id FROM companies ORDER BY created_at DESC LIMIT 1)
 WHERE profiles.company_id IS NULL
-RETURNING id, full_name, company_id;
+RETURNING id, company_id;
 
 -- VERIFICAR
 SELECT 
   p.id,
-  p.full_name,
+  u.email,
   p.company_id,
   c.name as company_name
 FROM profiles p
+LEFT JOIN auth.users u ON u.id = p.id
 LEFT JOIN companies c ON c.id = p.company_id
 WHERE p.id = auth.uid();
 */
