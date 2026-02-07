@@ -42,7 +42,7 @@ export async function listFreights(
       .select(
         `
         *,
-        customer:customers (id, name, document),
+        customer:customers (id, name, cpf_cnpj),
         driver:drivers (id, name, phone),
         vehicle:vehicles (id, plate, model)
       `,
@@ -183,7 +183,7 @@ export async function createFreight(
     }
 
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -286,7 +286,7 @@ export async function updateFreight(
     // Insert new items
     if (items && items.length > 0) {
       const { data: userData } = await supabase
-        .from('users')
+        .from('profiles')
         .select('company_id')
         .eq('id', (await supabase.auth.getUser()).data.user?.id!)
         .single()

@@ -8,17 +8,18 @@ import { FreightList } from '@/components/fretes/freight-list'
 import { listFreights } from '@/app/actions/freight-actions'
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string
     status?: string
     search?: string
-  }
+  }>
 }
 
 export default async function FretesPage({ searchParams }: PageProps) {
-  const page = Number(searchParams.page) || 1
-  const status = searchParams.status as any
-  const search = searchParams.search
+  const params = await searchParams
+  const page = Number(params.page) || 1
+  const status = params.status as any
+  const search = params.search
 
   const result = await listFreights({
     page,

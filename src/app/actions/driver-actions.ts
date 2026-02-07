@@ -169,7 +169,7 @@ export async function createDriver(
     }
 
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -262,7 +262,7 @@ export async function updateDriver(
     }
 
     const { data: userData } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()

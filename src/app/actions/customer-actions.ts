@@ -158,7 +158,7 @@ export async function createCustomer(
     }
 
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -239,7 +239,7 @@ export async function updateCustomer(
     }
 
     const { data: userData } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()

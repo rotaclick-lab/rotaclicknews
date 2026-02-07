@@ -8,15 +8,15 @@ async function getDashboardStats() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: userData } = await supabase
-    .from('users')
+  const { data: profileData } = await supabase
+    .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()
 
-  if (!userData?.company_id) return null
+  if (!profileData?.company_id) return null
 
-  const companyId = userData.company_id
+  const companyId = profileData.company_id
 
   // Count freights
   const { count: freightsCount } = await supabase

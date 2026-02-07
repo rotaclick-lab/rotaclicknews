@@ -26,7 +26,7 @@ export default async function EditarFretePage({ params }: PageProps) {
 
   // Get user's company
   const { data: userData } = await supabase
-    .from('users')
+    .from('profiles')
     .select('company_id')
     .eq('id', user.id)
     .single()

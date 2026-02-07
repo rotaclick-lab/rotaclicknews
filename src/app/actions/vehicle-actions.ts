@@ -170,7 +170,7 @@ export async function createVehicle(
     }
 
     const { data: userData, error: userError } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
@@ -253,7 +253,7 @@ export async function updateVehicle(
     }
 
     const { data: userData } = await supabase
-      .from('users')
+      .from('profiles')
       .select('company_id')
       .eq('id', user.id)
       .single()
