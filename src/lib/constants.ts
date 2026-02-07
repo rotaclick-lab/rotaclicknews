@@ -7,6 +7,7 @@ import {
   DollarSign, 
   BarChart3,
   Settings,
+  Calculator,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -39,6 +40,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/dashboard',
     icon: LayoutDashboard,
     description: 'Visão geral do sistema'
+  },
+  {
+    title: 'Cotação',
+    href: '/cotacao',
+    icon: Calculator,
+    description: 'Calcular frete'
   },
   {
     title: 'Fretes',
