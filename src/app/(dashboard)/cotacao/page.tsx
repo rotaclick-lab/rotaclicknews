@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Package, MapPin, Flag, Calculator, Info } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Package, MapPin, Flag, Calculator, Info, ChevronRight, ChevronLeft, CheckCircle2, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { createCheckoutSession } from '@/app/actions/stripe-actions'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface CargoItem {
   quantity: number
@@ -15,7 +18,16 @@ interface CargoItem {
   depth: number
 }
 
+interface QuoteResult {
+  id: string
+  carrier: string
+  price: number
+  deadline: string
+  type: string
+}
+
 export default function CotacaoPage() {
+  const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
     email: '',
@@ -35,6 +47,10 @@ export default function CotacaoPage() {
     { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 },
   ])
 
+  const [results, setResults] = useState<QuoteResult[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedOffer, setSelectedOffer] = useState<QuoteResult | null>(null)
+
   const addItem = () => {
     setItems([...items, { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 }])
   }
@@ -45,282 +61,296 @@ export default function CotacaoPage() {
     setItems(newItems)
   }
 
-  const calculateFreight = () => {
-    // TODO: Implementar cálculo de frete
-    alert('Funcionalidade de cálculo em desenvolvimento!')
+  // Lógica de Cálculo Automática
+  const calculateTotals = () => {
+    let totalWeight = 0
+    let totalCubedWeight = 0
+    
+    items.forEach(item => {
+      const weight = item.weight * item.quantity
+      const cubedWeight = (item.height * item.width * item.depth) * 300 * item.quantity
+      totalWeight += weight
+      totalCubedWeight += cubedWeight
+    })
+
+    return {
+      realWeight: totalWeight,
+      cubedWeight: totalCubedWeight,
+      taxableWeight: Math.max(totalWeight, totalCubedWeight)
+    }
   }
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+  const handleCalculate = async () => {
+    setLoading(true)
+    // Simulação de chamada de API para obter fretes
+    setTimeout(() => {
+      const totals = calculateTotals()
+      const basePrice = totals.taxableWeight * 2.5 + (Number(cargo.invoiceValue) * 0.01)
+      
+      const mockResults: QuoteResult[] = [
+        { id: '1', carrier: 'RotaClick Express', price: basePrice, deadline: '2 dias úteis', type: 'Express' },
+        { id: '2', carrier: 'Logística Brasil', price: basePrice * 0.8, deadline: '5 dias úteis', type: 'Econômico' },
+        { id: '3', carrier: 'Flash Entregas', price: basePrice * 1.2, deadline: '1 dia útil', type: 'Premium' },
+      ]
+      
+      setResults(mockResults)
+      setLoading(false)
+      setStep(4)
+    }, 1500)
+  }
+
+  const totals = calculateTotals()
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main Content */}
-      <main className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-10">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-black tracking-tight mb-3">Cotação de frete</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl">
-            Informe os dados da carga abaixo para obter as melhores ofertas de transportadoras em tempo real.
-          </p>
+    <div className="min-h-screen bg-background pb-20">
+      <main className="w-full max-w-[1000px] mx-auto px-6 py-10">
+        {/* Progress Stepper */}
+        <div className="flex justify-between mb-12 relative">
+          <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
+          {[1, 2, 3, 4].map((s) => (
+            <div 
+              key={s} 
+              className={cn(
+                "relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold transition-all duration-300",
+                step >= s ? "bg-primary border-primary text-white" : "bg-background border-muted text-muted-foreground"
+              )}
+            >
+              {step > s ? <CheckCircle2 className="h-6 w-6" /> : s}
+              <span className="absolute -bottom-7 text-xs font-medium whitespace-nowrap text-muted-foreground">
+                {s === 1 ? 'Contato' : s === 2 ? 'Rota' : s === 3 ? 'Carga' : 'Ofertas'}
+              </span>
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Column - Forms */}
-          <div className="lg:col-span-8 space-y-8">
-            {/* Section 1: Contact */}
-            <Card>
+        <div className="grid grid-cols-1 gap-8">
+          {/* Step 1: Contact */}
+          {step === 1 && (
+            <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <CardHeader>
-                <CardTitle className="text-primary flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  1. Contato
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Dados de Contato
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nome Completo</Label>
-                    <Input
-                      placeholder="Digite seu nome"
-                      value={contact.name}
-                      onChange={(e) => setContact({ ...contact, name: e.target.value })}
-                    />
+                    <Input placeholder="Seu nome" value={contact.name} onChange={(e) => setContact({...contact, name: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="exemplo@email.com"
-                      value={contact.email}
-                      onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                    />
+                    <Input type="email" placeholder="email@exemplo.com" value={contact.email} onChange={(e) => setContact({...contact, email: e.target.value})} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Fone</Label>
-                    <Input
-                      type="tel"
-                      placeholder="(00) 00000-0000"
-                      value={contact.phone}
-                      onChange={(e) => setContact({ ...contact, phone: e.target.value })}
-                    />
+                    <Label>Telefone / WhatsApp</Label>
+                    <Input placeholder="(00) 00000-0000" value={contact.phone} onChange={(e) => setContact({...contact, phone: e.target.value})} />
                   </div>
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
+                    Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
+          )}
 
-            {/* Section 2: Origin and Destination */}
-            <Card>
+          {/* Step 2: Route */}
+          {step === 2 && (
+            <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
               <CardHeader>
-                <CardTitle className="text-orange-500 flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  2. Origem e Destino
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-orange-500" />
+                  Origem e Destino
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label>CEP de Origem</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        className="pl-10"
-                        placeholder="00000-000"
-                        value={origin}
-                        onChange={(e) => setOrigin(e.target.value)}
-                      />
-                    </div>
+                    <Input placeholder="00000-000" value={origin} onChange={(e) => setOrigin(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>CEP de Destino</Label>
-                    <div className="relative">
-                      <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        className="pl-10"
-                        placeholder="00000-000"
-                        value={destination}
-                        onChange={(e) => setDestination(e.target.value)}
-                      />
-                    </div>
+                    <Input placeholder="00000-000" value={destination} onChange={(e) => setDestination(e.target.value)} />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Section 3: Cargo Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-primary flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  3. Detalhes da Carga
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Categoria do Produto</Label>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      value={cargo.category}
-                      onChange={(e) => setCargo({ ...cargo, category: e.target.value })}
-                    >
-                      <option value="">Selecione...</option>
-                      <option value="eletronicos">Eletrônicos</option>
-                      <option value="alimentos">Alimentos</option>
-                      <option value="moveis">Móveis</option>
-                      <option value="vestuario">Vestuário</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tipo de Produto</Label>
-                    <Input
-                      placeholder="Ex: Notebooks, Mesas..."
-                      value={cargo.productType}
-                      onChange={(e) => setCargo({ ...cargo, productType: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Valor da Nota Fiscal</Label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
-                        R$
-                      </span>
-                      <Input
-                        type="number"
-                        className="pl-12 font-semibold"
-                        placeholder="0,00"
-                        value={cargo.invoiceValue}
-                        onChange={(e) => setCargo({ ...cargo, invoiceValue: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Section 4: Dimensions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-primary flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  4. Dimensões dos Produtos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <div className="space-y-2 col-span-2 md:col-span-1">
-                      <Label className="text-xs">Qtd</Label>
-                      <Input
-                        type="number"
-                        className="text-center"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Peso (kg)</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        className="text-center"
-                        placeholder="0.0"
-                        value={item.weight || ''}
-                        onChange={(e) => updateItem(index, 'weight', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Altura (m)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-center"
-                        placeholder="0.00"
-                        value={item.height || ''}
-                        onChange={(e) => updateItem(index, 'height', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Largura (m)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-center"
-                        placeholder="0.00"
-                        value={item.width || ''}
-                        onChange={(e) => updateItem(index, 'width', Number(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Prof. (m)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        className="text-center"
-                        placeholder="0.00"
-                        value={item.depth || ''}
-                        onChange={(e) => updateItem(index, 'depth', Number(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                ))}
-                <div className="flex justify-end">
-                  <Button variant="ghost" onClick={addItem} className="text-primary">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar outro item
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => setStep(1)}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                  </Button>
+                  <Button onClick={() => setStep(3)} disabled={!origin || !destination}>
+                    Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          </div>
+          )}
 
-          {/* Right Column - Summary */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-24 space-y-6">
-              {/* Summary Card */}
-              <Card className="bg-[#1a242f] text-white border-none">
-                <CardContent className="p-8">
-                  <h3 className="text-2xl font-black mb-6">Resumo da Cotação</h3>
-                  <div className="space-y-4 mb-8">
-                    <div className="flex justify-between border-b border-white/10 pb-2">
-                      <span className="text-gray-400">Origem</span>
-                      <span className="font-medium">{origin || '-'}</span>
+          {/* Step 3: Cargo Details */}
+          {step === 3 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="h-5 w-5 text-primary" />
+                    Detalhes da Carga
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Categoria</Label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={cargo.category}
+                        onChange={(e) => setCargo({...cargo, category: e.target.value})}
+                      >
+                        <option value="">Selecione...</option>
+                        <option value="eletronicos">Eletrônicos</option>
+                        <option value="alimentos">Alimentos</option>
+                        <option value="moveis">Móveis</option>
+                      </select>
                     </div>
-                    <div className="flex justify-between border-b border-white/10 pb-2">
-                      <span className="text-gray-400">Destino</span>
-                      <span className="font-medium">{destination || '-'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-white/10 pb-2">
-                      <span className="text-gray-400">Itens</span>
-                      <span className="font-medium">{totalItems}</span>
+                    <div className="space-y-2">
+                      <Label>Valor da NF (R$)</Label>
+                      <Input type="number" value={cargo.invoiceValue} onChange={(e) => setCargo({...cargo, invoiceValue: e.target.value})} />
                     </div>
                   </div>
-                  <Button
-                    onClick={calculateFreight}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 text-lg font-black"
-                  >
-                    <Calculator className="h-5 w-5 mr-3" />
-                    Calcular Frete
-                  </Button>
-                  <p className="text-xs text-center text-gray-400 mt-4">
-                    Ao clicar em calcular, você concorda com nossos Termos de Serviço.
-                  </p>
-                </CardContent>
-              </Card>
 
-              {/* Tip Card */}
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-6">
-                  <h4 className="font-bold text-primary mb-3 flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Dica RotaClick
-                  </h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Certifique-se de que as dimensões estão em metros (ex: 100cm = 1.00m) para obter o cálculo exato
-                    do peso cubado.
-                  </p>
+                  <div className="space-y-4">
+                    <Label>Itens e Dimensões</Label>
+                    {items.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-2 md:grid-cols-5 gap-2 p-4 border rounded-lg bg-muted/30">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase">Qtd</Label>
+                          <Input type="number" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase">Peso (kg)</Label>
+                          <Input type="number" value={item.weight} onChange={(e) => updateItem(idx, 'weight', Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase">Alt (m)</Label>
+                          <Input type="number" value={item.height} onChange={(e) => updateItem(idx, 'height', Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase">Larg (m)</Label>
+                          <Input type="number" value={item.width} onChange={(e) => updateItem(idx, 'width', Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] uppercase">Prof (m)</Label>
+                          <Input type="number" value={item.depth} onChange={(e) => updateItem(idx, 'depth', Number(e.target.value))} />
+                        </div>
+                      </div>
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={addItem} className="text-primary">
+                      <Plus className="h-4 w-4 mr-2" /> Adicionar Item
+                    </Button>
+                  </div>
+
+                  {/* Automatic Calculation Display */}
+                  <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Peso Real</p>
+                      <p className="font-bold">{totals.realWeight.toFixed(2)} kg</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Peso Cubado</p>
+                      <p className="font-bold">{totals.cubedWeight.toFixed(2)} kg</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-primary uppercase font-bold">Peso Taxável</p>
+                      <p className="font-black text-primary">{totals.taxableWeight.toFixed(2)} kg</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={() => setStep(2)}>
+                      <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                    </Button>
+                    <Button onClick={handleCalculate} disabled={loading || totals.taxableWeight === 0}>
+                      {loading ? 'Calculando...' : 'Ver Ofertas de Frete'} <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
+          )}
+
+          {/* Step 4: Offers & Results */}
+          {step === 4 && (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Melhores Ofertas Encontradas</h2>
+                <Button variant="ghost" onClick={() => setStep(3)}>Alterar Dados</Button>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                {results.map((offer) => (
+                  <Card 
+                    key={offer.id} 
+                    className={cn(
+                      "cursor-pointer transition-all hover:border-primary border-2",
+                      selectedOffer?.id === offer.id ? "border-primary bg-primary/5" : "border-transparent"
+                    )}
+                    onClick={() => setSelectedOffer(offer)}
+                  >
+                    <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">{offer.carrier}</h3>
+                          <p className="text-sm text-muted-foreground">{offer.type} • Entrega em {offer.deadline}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Valor Total</p>
+                        <p className="text-2xl font-black text-primary">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {selectedOffer && (
+                <div className="fixed bottom-0 left-0 w-full bg-background border-t p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
+                  <div className="max-w-[1000px] mx-auto flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Selecionado: <span className="font-bold text-foreground">{selectedOffer.carrier}</span></p>
+                      <p className="text-xl font-black text-primary">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
+                      </p>
+                    </div>
+                    <Button 
+                      size="lg" 
+                      className="bg-green-600 hover:bg-green-700 text-white px-10 font-bold"
+                      onClick={async () => {
+                        if (!selectedOffer) return
+                        setLoading(true)
+                        const result = await createCheckoutSession(selectedOffer)
+                        if (result.success && result.url) {
+                          window.location.href = result.url
+                        } else {
+                          toast.error(result.error || 'Erro ao processar pagamento')
+                          setLoading(false)
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      <CreditCard className="mr-2 h-5 w-5" /> {loading ? 'Processando...' : 'PAGAR E FINALIZAR AGORA'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>
