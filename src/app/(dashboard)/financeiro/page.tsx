@@ -1,20 +1,14 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { getFinancialDashboard } from '@/app/actions/financial-stats-actions'
-import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, TrendingUp, TrendingDown, Wallet, AlertCircle, DollarSign } from 'lucide-react'
 
 export default async function FinanceiroPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

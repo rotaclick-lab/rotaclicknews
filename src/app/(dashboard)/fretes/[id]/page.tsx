@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Trash2, MapPin, Calendar, DollarSign, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,6 @@ import { Separator } from '@/components/ui/separator'
 import { FreightStatusBadge } from '@/components/fretes/freight-status-badge'
 import { getFreight } from '@/app/actions/freight-actions'
 import { formatCurrency, formatDate, formatCEP, formatPhone } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: {
@@ -16,17 +15,6 @@ interface PageProps {
 }
 
 export default async function FreightDetailPage({ params }: PageProps) {
-  const supabase = await createClient()
-
-  // Check auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
   // Get freight
   const result = await getFreight(params.id)
 

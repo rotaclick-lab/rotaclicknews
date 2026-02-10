@@ -1,17 +1,8 @@
-import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/server'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info } from 'lucide-react'
 
 export default async function NovaRotaPage() {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    redirect('/login')
-  }
-
   return (
     <div className="space-y-6">
       <div>

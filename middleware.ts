@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({
@@ -29,48 +29,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANTE: NÃO usar getSession() aqui pois não garante revalidação do token
-  // getUser() faz uma chamada ao servidor Supabase Auth e renova o token automaticamente
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Rotas protegidas do dashboard
-  const protectedPaths = [
-    '/dashboard',
-    '/financeiro',
-    '/relatorios',
-    '/configuracoes',
-    '/notificacoes',
-    '/tabela-frete',
-    '/cotacao',
-    '/cotacoes-recebidas',
-    '/historico',
-    '/rotas-realizadas',
-    '/perfil',
-  ]
-
-  const isProtectedRoute = protectedPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
-
-  if (isProtectedRoute && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirect', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // Redirecionar usuários logados da página de login/registro
-  if (
-    (request.nextUrl.pathname === '/login' ||
-      request.nextUrl.pathname === '/registro') &&
-    user
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
-
-  // A página raiz (/) é a cotação pública - acessível para todos
+  // Apenas renovar o token — NÃO bloquear rotas aqui.
+  // A proteção de rotas é feita no client-side pelo AuthProvider/ProtectedRoute.
+  // Isso garante que os cookies sejam atualizados corretamente em cada request.
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }

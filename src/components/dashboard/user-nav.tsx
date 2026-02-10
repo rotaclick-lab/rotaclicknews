@@ -11,19 +11,33 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { signOut } from '@/app/actions/auth-actions'
+import { useAuth } from '@/components/auth/auth-provider'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export function UserNav() {
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const { user, signOut } = useAuth()
 
   const handleSignOut = async () => {
     setIsLoading(true)
     await signOut()
-    router.push('/login')
+  }
+
+  // Pegar iniciais do nome ou email
+  const getInitials = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name
+        .split(' ')
+        .map((n: string) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase()
+    }
+    return 'T'
   }
 
   return (
@@ -33,7 +47,7 @@ export function UserNav() {
           <Avatar className="h-9 w-9 border-2 border-brand-200">
             <AvatarImage src="" alt="Avatar" />
             <AvatarFallback className="bg-brand-500 text-white font-bold text-sm">
-              T
+              {getInitials()}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -41,8 +55,12 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Minha Conta</p>
-            <p className="text-xs leading-none text-muted-foreground">Transportadora</p>
+            <p className="text-sm font-medium leading-none">
+              {user?.user_metadata?.full_name || 'Minha Conta'}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user?.email || 'Transportadora'}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

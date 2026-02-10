@@ -1,6 +1,4 @@
 import { Suspense } from 'react'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,10 +10,6 @@ import { getUserProfile, getCompanySettings, getNotificationSettings } from '@/a
 import { User, Building2, Bell, Shield } from 'lucide-react'
 
 export default async function ConfiguracoesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   return (
     <div className="space-y-6">
       <div>

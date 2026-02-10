@@ -1,12 +1,10 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TransactionCard } from '@/components/financeiro/transaction-card'
 import { listTransactions } from '@/app/actions/transaction-actions'
-import { createClient } from '@/lib/supabase/server'
 import { Plus } from 'lucide-react'
 
 interface ReceitasPageProps {
@@ -17,10 +15,6 @@ interface ReceitasPageProps {
 }
 
 export default async function ReceitasPage({ searchParams }: ReceitasPageProps) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   const page = Number(searchParams.page) || 1
   const status = searchParams.status || 'all'
 

@@ -1,22 +1,9 @@
-import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { DriverForm } from '@/components/motoristas/driver-form'
-import { createClient } from '@/lib/supabase/server'
 
 export default async function NovoMotoristaPage() {
-  const supabase = await createClient()
-
-  // Check auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}

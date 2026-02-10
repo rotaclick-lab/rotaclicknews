@@ -1,8 +1,6 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/server'
 import { 
   FileText, 
   DollarSign, 
@@ -15,13 +13,6 @@ import {
 } from 'lucide-react'
 
 export default async function RelatoriosPage() {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    redirect('/login')
-  }
-
   const reportTypes = [
     {
       title: 'Relatório de Fretes',

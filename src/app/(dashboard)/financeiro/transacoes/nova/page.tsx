@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation'
 import { TransactionForm } from '@/components/financeiro/transaction-form'
 import { listTransactionCategories } from '@/app/actions/transaction-category-actions'
-import { createClient } from '@/lib/supabase/server'
 
 interface NovaTransacaoPageProps {
   searchParams: {
@@ -10,13 +8,6 @@ interface NovaTransacaoPageProps {
 }
 
 export default async function NovaTransacaoPage({ searchParams }: NovaTransacaoPageProps) {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    redirect('/login')
-  }
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('company_id')

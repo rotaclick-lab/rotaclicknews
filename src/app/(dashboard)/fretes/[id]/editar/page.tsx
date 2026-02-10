@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
-import { notFound, redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FreightForm } from '@/components/fretes/freight-form'
@@ -13,17 +12,6 @@ interface PageProps {
 }
 
 export default async function EditarFretePage({ params }: PageProps) {
-  const supabase = await createClient()
-
-  // Check if user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
   // Get user's company
   const { data: userData } = await supabase
     .from('profiles')

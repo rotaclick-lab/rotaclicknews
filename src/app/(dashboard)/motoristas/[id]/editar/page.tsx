@@ -1,10 +1,9 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { DriverForm } from '@/components/motoristas/driver-form'
 import { getDriver } from '@/app/actions/driver-actions'
-import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: Promise<{
@@ -14,17 +13,6 @@ interface PageProps {
 
 export default async function EditarMotoristaPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createClient()
-
-  // Check auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
   // Get driver
   const result = await getDriver(id)
 

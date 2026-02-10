@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Trash2, MapPin, Phone, Mail, FileText, Truck, AlertCircle, IdCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,6 @@ import { DriverStatusBadge } from '@/components/motoristas/driver-status-badge'
 import { DriverLicenseAlert } from '@/components/motoristas/driver-license-alert'
 import { getDriver } from '@/app/actions/driver-actions'
 import { formatDocument, formatPhone, formatCEP, formatDate, formatCurrency } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: Promise<{
@@ -18,17 +17,6 @@ interface PageProps {
 
 export default async function DriverDetailPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createClient()
-
-  // Check auth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
   // Get driver
   const result = await getDriver(id)
 

@@ -1,10 +1,9 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { VehicleForm } from '@/components/veiculos/vehicle-form'
 import { getVehicle } from '@/app/actions/vehicle-actions'
-import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -12,10 +11,6 @@ interface PageProps {
 
 export default async function EditarVeiculoPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   const result = await getVehicle(id)
   if (!result.success || !result.data) notFound()
   const vehicle = result.data

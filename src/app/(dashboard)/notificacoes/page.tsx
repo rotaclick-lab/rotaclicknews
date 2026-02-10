@@ -1,10 +1,8 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { createClient } from '@/lib/supabase/server'
 import { listNotifications, markAllAsRead } from '@/app/actions/notification-actions'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -12,13 +10,6 @@ import { Bell, Check, ExternalLink, Trash2 } from 'lucide-react'
 import { NOTIFICATION_TYPE_LABELS } from '@/types/notification.types'
 
 export default async function NotificacoesPage() {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) {
-    redirect('/login')
-  }
-
   const result = await listNotifications(50, false)
   const notifications = result.success && result.data ? result.data : []
 
