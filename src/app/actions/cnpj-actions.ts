@@ -22,44 +22,82 @@ export async function validateCarrierCNPJ(cnpj: string) {
   }
 
   try {
-    // Usando a BrasilAPI para consulta gratuita e rápida
-    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`)
+    // TENTATIVA 1: BrasilAPI
+    let response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCNPJ}`, { next: { revalidate: 3600 } })
     
-    if (!response.ok) {
-      return { success: false, error: 'Não foi possível consultar este CNPJ no momento.' }
+    if (response.ok) {
+      const data = await response.json()
+      return processBrasilAPI(data)
     }
 
-    const data = await response.json()
-
-    // Verifica CNAE Principal
-    const mainCnae = data.cnae_fiscal.toString()
-    const isMainCnaeValid = ALLOWED_CNAES.includes(mainCnae)
-
-    // Verifica CNAEs Secundários
-    const secondaryCnaes = data.cnaes_secundarios || []
-    const isSecondaryCnaeValid = secondaryCnaes.some((item: any) => 
-      ALLOWED_CNAES.includes(item.codigo.toString())
-    )
-
-    if (!isMainCnaeValid && !isSecondaryCnaeValid) {
-      return { 
-        success: false, 
-        error: 'Esta empresa não possui CNAE de transporte de cargas autorizado.',
-        details: `CNAE Principal: ${data.cnae_fiscal_descricao}`
-      }
+    // TENTATIVA 2: Fallback para ReceitaWS (API pública limitada a 3 req/min)
+    console.log('BrasilAPI falhou, tentando ReceitaWS...')
+    response = await fetch(`https://receitaws.com.br/v1/cnpj/${cleanCNPJ}`, { next: { revalidate: 3600 } })
+    
+    if (response.ok) {
+      const data = await response.json()
+      if (data.status === 'ERROR') throw new Error(data.message)
+      return processReceitaWS(data)
     }
 
-    return { 
-      success: true, 
-      data: {
-        razao_social: data.razao_social,
-        nome_fantasia: data.nome_fantasia,
-        cnae_principal: data.cnae_fiscal_descricao
-      }
-    }
+    return { success: false, error: 'Serviços de consulta indisponíveis no momento. Tente novamente em instantes.' }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao validar CNPJ:', error)
-    return { success: false, error: 'Erro interno ao validar CNPJ.' }
+    return { success: false, error: 'Erro ao consultar CNPJ: ' + (error.message || 'Serviço instável') }
+  }
+}
+
+function processBrasilAPI(data: any) {
+  const mainCnae = data.cnae_fiscal.toString().replace(/\D/g, '')
+  const isMainCnaeValid = ALLOWED_CNAES.includes(mainCnae)
+
+  const secondaryCnaes = data.cnaes_secundarios || []
+  const isSecondaryCnaeValid = secondaryCnaes.some((item: any) => 
+    ALLOWED_CNAES.includes(item.codigo.toString().replace(/\D/g, ''))
+  )
+
+  if (!isMainCnaeValid && !isSecondaryCnaeValid) {
+    return { 
+      success: false, 
+      error: 'Esta empresa não possui CNAE de transporte de cargas autorizado.',
+      details: `CNAE Principal: ${data.cnae_fiscal_descricao}`
+    }
+  }
+
+  return { 
+    success: true, 
+    data: {
+      razao_social: data.razao_social,
+      nome_fantasia: data.nome_fantasia || data.razao_social,
+      cnae_principal: data.cnae_fiscal_descricao
+    }
+  }
+}
+
+function processReceitaWS(data: any) {
+  const mainCnae = data.atividade_principal[0].code.replace(/\D/g, '')
+  const isMainCnaeValid = ALLOWED_CNAES.includes(mainCnae)
+
+  const secondaryCnaes = data.atividades_secundarias || []
+  const isSecondaryCnaeValid = secondaryCnaes.some((item: any) => 
+    ALLOWED_CNAES.includes(item.code.replace(/\D/g, ''))
+  )
+
+  if (!isMainCnaeValid && !isSecondaryCnaeValid) {
+    return { 
+      success: false, 
+      error: 'Esta empresa não possui CNAE de transporte de cargas autorizado.',
+      details: `Atividade: ${data.atividade_principal[0].text}`
+    }
+  }
+
+  return { 
+    success: true, 
+    data: {
+      razao_social: data.nome,
+      nome_fantasia: data.fantasia || data.nome,
+      cnae_principal: data.atividade_principal[0].text
+    }
   }
 }
