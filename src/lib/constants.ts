@@ -22,6 +22,7 @@ export const ROUTES = {
   FREIGHTS: '/fretes',
   MARKETPLACE: '/marketplace',
   FINANCIAL: '/financeiro',
+  FREIGHT_TABLE: '/tabela-frete',
 } as const
 
 export const MAX_FREIGHT_WEIGHT = 30000 // kg
@@ -88,6 +89,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/relatorios',
     icon: BarChart3,
     description: 'Relatórios e análises'
+  },
+  {
+    title: 'Tabela de Frete',
+    href: '/tabela-frete',
+    icon: BarChart3,
+    description: 'Gestão de rotas e preços'
   },
   {
     title: 'Configurações',
@@ -176,6 +183,7 @@ export const USER_ROLES = {
   MANAGER: 'manager',
   DRIVER: 'driver',
   CUSTOMER: 'customer',
+  CARRIER: 'transportadora',
 } as const;
 
 export const USER_ROLE_LABELS = {
@@ -183,6 +191,7 @@ export const USER_ROLE_LABELS = {
   [USER_ROLES.MANAGER]: 'Gerente',
   [USER_ROLES.DRIVER]: 'Motorista',
   [USER_ROLES.CUSTOMER]: 'Cliente',
+  [USER_ROLES.CARRIER]: 'Transportadora',
 } as const;
 
 // Pagination
