@@ -150,7 +150,7 @@ export default function HomePage() {
             <Link href="/login">
               <Button variant="ghost" className="text-brand-700 hover:text-brand-800 hover:bg-brand-50">Entrar</Button>
             </Link>
-            <Link href="/registro">
+            <Link href="/transportadora">
               <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold">Sou Transportadora</Button>
             </Link>
           </nav>
@@ -498,7 +498,7 @@ export default function HomePage() {
             <span className="font-semibold text-brand-700">Rota<span className="text-orange-500">Click</span></span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/login" className="hover:text-brand-600 transition-colors">Área da Transportadora</Link>
+            <Link href="/transportadora" className="hover:text-brand-600 transition-colors">Área da Transportadora</Link>
             <Link href="/registro" className="hover:text-brand-600 transition-colors">Cadastre-se</Link>
           </div>
           <p className="text-center text-sm text-muted-foreground">

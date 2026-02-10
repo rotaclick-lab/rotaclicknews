@@ -69,7 +69,11 @@ export async function middleware(request: NextRequest) {
      request.nextUrl.pathname.startsWith('/configuracoes') ||
      request.nextUrl.pathname.startsWith('/notificacoes') ||
      request.nextUrl.pathname.startsWith('/tabela-frete') ||
-     request.nextUrl.pathname.startsWith('/cotacao')) &&
+     request.nextUrl.pathname.startsWith('/cotacao') ||
+     request.nextUrl.pathname.startsWith('/cotacoes-recebidas') ||
+     request.nextUrl.pathname.startsWith('/historico') ||
+     request.nextUrl.pathname.startsWith('/rotas-realizadas') ||
+     request.nextUrl.pathname.startsWith('/perfil')) &&
     !user
   ) {
     const url = request.nextUrl.clone()

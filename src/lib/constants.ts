@@ -6,8 +6,10 @@ import {
   MapPin, 
   DollarSign, 
   BarChart3,
-  Settings,
   Calculator,
+  Eye,
+  History,
+  Route,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -18,11 +20,13 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/registro',
+  TRANSPORTADORA: '/transportadora',
   DASHBOARD: '/dashboard',
   FREIGHTS: '/fretes',
   MARKETPLACE: '/marketplace',
   FINANCIAL: '/financeiro',
   FREIGHT_TABLE: '/tabela-frete',
+  PROFILE: '/perfil',
 } as const
 
 export const MAX_FREIGHT_WEIGHT = 30000 // kg
@@ -43,10 +47,28 @@ export const NAV_ITEMS: NavItem[] = [
     description: 'Visão geral do sistema'
   },
   {
-    title: 'Cotação',
-    href: '/cotacao',
+    title: 'Tabela de Frete',
+    href: '/tabela-frete',
     icon: Calculator,
-    description: 'Calcular frete'
+    description: 'Gestão de rotas e preços'
+  },
+  {
+    title: 'Cotações Recebidas',
+    href: '/cotacoes-recebidas',
+    icon: Eye,
+    description: 'Vezes que apareceu em cotações'
+  },
+  {
+    title: 'Histórico',
+    href: '/historico',
+    icon: History,
+    description: 'Histórico de contratações'
+  },
+  {
+    title: 'Rotas Realizadas',
+    href: '/rotas-realizadas',
+    icon: Route,
+    description: 'Rotas que você realizou'
   },
   {
     title: 'Fretes',
@@ -90,18 +112,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: BarChart3,
     description: 'Relatórios e análises'
   },
-  {
-    title: 'Tabela de Frete',
-    href: '/tabela-frete',
-    icon: BarChart3,
-    description: 'Gestão de rotas e preços'
-  },
-  {
-    title: 'Configurações',
-    href: '/configuracoes',
-    icon: Settings,
-    description: 'Configurações do sistema'
-  }
 ]
 
 // Freight Status
