@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Plus, MapPin, Truck, DollarSign, Clock, Trash2, Save, Search, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,10 +20,32 @@ interface FreightRoute {
 }
 
 export default function TabelaFretePage() {
-  const [routes, setRoutes] = useState<FreightRoute[]>([
-    { id: '1', originZip: '01000-000', destZip: '80000-000', pricePerKg: 2.50, minPrice: 50.00, deadlineDays: 3 },
-    { id: '2', originZip: '01000-000', destZip: '20000-000', pricePerKg: 1.80, minPrice: 45.00, deadlineDays: 2 },
-  ])
+  const supabase = createClient()
+  const [loading, setLoading] = useState(true)
+  const [routes, setRoutes] = useState<FreightRoute[]>([])
+
+  useEffect(() => {
+    fetchRoutes()
+  }, [])
+
+  const fetchRoutes = async () => {
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('freight_routes')
+      .select('*')
+      .eq('carrier_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      toast.error('Erro ao carregar rotas')
+    } else {
+      setRoutes(data || [])
+    }
+    setLoading(false)
+  }
 
   const [newRoute, setNewRoute] = useState<Partial<FreightRoute>>({
     originZip: '',
@@ -46,20 +69,43 @@ export default function TabelaFretePage() {
     return numberValue.toFixed(2)
   }
 
-  const handleAddRoute = () => {
+  const handleAddRoute = async () => {
     if (!newRoute.originZip || !newRoute.destZip) {
       toast.error('Preencha a origem e o destino')
       return
     }
-    const id = Math.random().toString(36).substr(2, 9)
-    setRoutes([...routes, { ...newRoute, id } as FreightRoute])
-    setNewRoute({ originZip: '', destZip: '', pricePerKg: 0, minPrice: 0, deadlineDays: 0 })
-    toast.success('Rota adicionada com sucesso!')
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('freight_routes')
+      .insert([{
+        ...newRoute,
+        carrier_id: user.id
+      }])
+
+    if (error) {
+      toast.error('Erro ao salvar rota no banco de dados')
+    } else {
+      toast.success('Rota adicionada com sucesso!')
+      fetchRoutes()
+      setNewRoute({ originZip: '', destZip: '', pricePerKg: 0, minPrice: 0, deadlineDays: 0 })
+    }
   }
 
-  const removeRoute = (id: string) => {
-    setRoutes(routes.filter(r => r.id !== id))
-    toast.info('Rota removida')
+  const removeRoute = async (id: string) => {
+    const { error } = await supabase
+      .from('freight_routes')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      toast.error('Erro ao remover rota')
+    } else {
+      toast.info('Rota removida')
+      fetchRoutes()
+    }
   }
 
   return (
