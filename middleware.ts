@@ -57,7 +57,21 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Proteger rotas do dashboard
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  if (
+    (request.nextUrl.pathname.startsWith('/dashboard') ||
+     request.nextUrl.pathname.startsWith('/fretes') ||
+     request.nextUrl.pathname.startsWith('/clientes') ||
+     request.nextUrl.pathname.startsWith('/motoristas') ||
+     request.nextUrl.pathname.startsWith('/veiculos') ||
+     request.nextUrl.pathname.startsWith('/financeiro') ||
+     request.nextUrl.pathname.startsWith('/relatorios') ||
+     request.nextUrl.pathname.startsWith('/marketplace') ||
+     request.nextUrl.pathname.startsWith('/configuracoes') ||
+     request.nextUrl.pathname.startsWith('/notificacoes') ||
+     request.nextUrl.pathname.startsWith('/tabela-frete') ||
+     request.nextUrl.pathname.startsWith('/cotacao')) &&
+    !user
+  ) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)
@@ -75,12 +89,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Redirecionar root para dashboard se logado
-  if (request.nextUrl.pathname === '/' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
-  }
+  // A página raiz (/) agora é a cotação pública - acessível para todos
+  // Não redirecionar mais para /dashboard
 
   return response
 }
