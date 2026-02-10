@@ -1,9 +1,5 @@
 import { 
   LayoutDashboard, 
-  Truck, 
-  Users, 
-  Car, 
-  MapPin, 
   DollarSign, 
   BarChart3,
   Calculator,
@@ -70,36 +66,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Route,
     description: 'Rotas que você realizou'
   },
-  {
-    title: 'Fretes',
-    href: '/fretes',
-    icon: Truck,
-    description: 'Gestão de fretes e entregas'
-  },
-  {
-    title: 'Marketplace',
-    href: '/marketplace',
-    icon: MapPin,
-    description: 'Ofertas de frete de retorno'
-  },
-  {
-    title: 'Clientes',
-    href: '/clientes',
-    icon: Users,
-    description: 'Cadastro de clientes'
-  },
-  {
-    title: 'Motoristas',
-    href: '/motoristas',
-    icon: Users,
-    description: 'Gestão de motoristas'
-  },
-  {
-    title: 'Veículos',
-    href: '/veiculos',
-    icon: Car,
-    description: 'Frota de veículos'
-  },
+
   {
     title: 'Financeiro',
     href: '/financeiro',
