@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Package, MapPin, Flag, Calculator, Info, ChevronRight, ChevronLeft, CheckCircle2, CreditCard } from 'lucide-react'
+import { Plus, Package, MapPin, Flag, Calculator, Info, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Ship, Plane } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
 import { toast } from 'sonner'
@@ -88,9 +88,9 @@ export default function CotacaoPage() {
       const basePrice = totals.taxableWeight * 2.5 + (Number(cargo.invoiceValue) * 0.01)
       
       const mockResults: QuoteResult[] = [
-        { id: '1', carrier: 'RotaClick Express', price: basePrice, deadline: '2 dias úteis', type: 'Express' },
-        { id: '2', carrier: 'Logística Brasil', price: basePrice * 0.8, deadline: '5 dias úteis', type: 'Econômico' },
-        { id: '3', carrier: 'Flash Entregas', price: basePrice * 1.2, deadline: '1 dia útil', type: 'Premium' },
+        { id: '1', carrier: 'RotaClick Express', price: basePrice, deadline: '2 dias úteis', type: 'Caminhão Baú' },
+        { id: '2', carrier: 'Logística Brasil', price: basePrice * 0.8, deadline: '5 dias úteis', type: 'Carga Pesada' },
+        { id: '3', carrier: 'Flash Entregas', price: basePrice * 1.2, deadline: '1 dia útil', type: 'VUC / Utilitário' },
       ]
       
       setResults(mockResults)
@@ -293,24 +293,48 @@ export default function CotacaoPage() {
                   <Card 
                     key={offer.id} 
                     className={cn(
-                      "cursor-pointer transition-all hover:border-primary border-2",
-                      selectedOffer?.id === offer.id ? "border-primary bg-primary/5" : "border-transparent"
+                      "cursor-pointer transition-all hover:shadow-lg border-2 relative overflow-hidden group",
+                      selectedOffer?.id === offer.id ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
                     )}
                     onClick={() => setSelectedOffer(offer)}
                   >
-                    <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
+                    {/* Truck Animation Background */}
+                    <div className="absolute -right-4 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                      <Truck className="h-24 w-24 rotate-12" />
+                    </div>
+
+                    <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                      <div className="flex items-center gap-6">
+                        <div className={cn(
+                          "w-16 h-16 rounded-2xl flex items-center justify-center transition-colors",
+                          selectedOffer?.id === offer.id ? "bg-primary text-white" : "bg-muted text-primary"
+                        )}>
+                          <Truck className={cn(
+                            "h-8 w-8",
+                            offer.type.includes('Pesada') ? "h-10 w-10" : "h-8 w-8"
+                          )} />
                         </div>
                         <div>
-                          <h3 className="font-bold text-lg">{offer.carrier}</h3>
-                          <p className="text-sm text-muted-foreground">{offer.type} • Entrega em {offer.deadline}</p>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-xl">{offer.carrier}</h3>
+                            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                              {offer.type}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3.5 w-3.5" /> {offer.deadline}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Seguro Incluso
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Valor Total</p>
-                        <p className="text-2xl font-black text-primary">
+                      
+                      <div className="text-right bg-background/50 p-3 rounded-xl border border-muted">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Preço Final</p>
+                        <p className="text-3xl font-black text-primary">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
                         </p>
                       </div>
