@@ -1,5 +1,6 @@
 import { RegisterForm } from '@/components/auth/register-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Suspense } from 'react'
 
 export const metadata = {
   title: 'Cadastro - RotaClick',
@@ -16,7 +17,9 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <RegisterForm />
+        <Suspense fallback={<div className="flex items-center justify-center p-8">Carregando formulário...</div>}>
+          <RegisterForm />
+        </Suspense>
       </CardContent>
     </Card>
   )
