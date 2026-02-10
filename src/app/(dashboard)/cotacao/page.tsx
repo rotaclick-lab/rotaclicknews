@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Package, MapPin, Flag, Calculator, Info, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Ship, Plane } from 'lucide-react'
+import { Plus, Package, MapPin, Flag, Calculator, Info, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Ship, Plane, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
 import { toast } from 'sonner'
