@@ -27,15 +27,22 @@ export function RegisterForm() {
 
   const acceptTerms = watch('acceptTerms')
 
-  // Preenchimento automático via URL
+  // Preenchimento automático via SessionStorage (mais seguro contra URLs longas)
   useEffect(() => {
-    const cnpj = searchParams.get('cnpj')
-    const razao = searchParams.get('razao')
-    const fantasia = searchParams.get('fantasia')
-    
-    if (cnpj) setValue('cnpj', cnpj)
-    if (razao || fantasia) setValue('companyName', fantasia || razao || '')
-  }, [searchParams, setValue])
+    const savedData = sessionStorage.getItem('carrier_data')
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData)
+        if (data.cnpj) setValue('cnpj', data.cnpj)
+        if (data.fantasia || data.razao) setValue('companyName', data.fantasia || data.razao)
+        
+        // Limpa após usar para não interferir em outros cadastros
+        // sessionStorage.removeItem('carrier_data') 
+      } catch (e) {
+        console.error('Erro ao ler dados da transportadora', e)
+      }
+    }
+  }, [setValue])
 
   const onSubmit = async (data: RegisterInput) => {
     setIsLoading(true)

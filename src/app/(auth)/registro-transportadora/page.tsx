@@ -40,6 +40,13 @@ export default function RegistroTransportadoraPage() {
       const result = await validateCarrierCNPJ(cnpj)
       if (result.success) {
         setCompanyData(result.data)
+        // Salva no sessionStorage para evitar URLs longas e erro 500
+        sessionStorage.setItem('carrier_data', JSON.stringify({
+          cnpj: cnpj.replace(/\D/g, ''),
+          razao: result.data.razao_social,
+          fantasia: result.data.nome_fantasia,
+          role: 'transportadora'
+        }))
         toast.success('Empresa validada com sucesso!')
       } else {
         setError(result.error)
@@ -108,7 +115,7 @@ export default function RegistroTransportadoraPage() {
                     <p><strong>CNAE:</strong> {companyData.cnae_principal}</p>
                   </div>
                   <Button asChild className="mt-4 bg-green-600 hover:bg-green-700 font-bold">
-                    <Link href={`/registro?cnpj=${cnpj.replace(/\D/g, '')}&role=transportadora&razao=${encodeURIComponent(companyData.razao_social)}&fantasia=${encodeURIComponent(companyData.nome_fantasia)}&cidade=${encodeURIComponent(companyData.municipio)}&uf=${companyData.uf}`}>
+                    <Link href="/registro">
                       CONTINUAR PARA O CADASTRO <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
