@@ -1,7 +1,6 @@
 import { 
   LayoutDashboard, 
   DollarSign, 
-  BarChart3,
   Calculator,
   Eye,
   History,
@@ -72,12 +71,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: '/financeiro',
     icon: DollarSign,
     description: 'Controle financeiro'
-  },
-  {
-    title: 'Relatórios',
-    href: '/relatorios',
-    icon: BarChart3,
-    description: 'Relatórios e análises'
   },
 ]
 
