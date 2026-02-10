@@ -114,10 +114,11 @@ export default function RegistroTransportadoraPage() {
                     <p><strong>Razão Social:</strong> {companyData.razao_social}</p>
                     <p><strong>CNAE:</strong> {companyData.cnae_principal}</p>
                   </div>
-                  <Button asChild className="mt-4 bg-green-600 hover:bg-green-700 font-bold">
-                    <Link href="/registro">
-                      CONTINUAR PARA O CADASTRO <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
+                  <Button 
+                    onClick={() => window.location.href = '/registro'}
+                    className="mt-4 bg-green-600 hover:bg-green-700 font-bold"
+                  >
+                    CONTINUAR PARA O CADASTRO <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
