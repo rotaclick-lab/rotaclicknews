@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CustomerList } from '@/components/clientes/customer-list'
 import { listCustomers } from '@/app/actions/customer-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   searchParams: {
     page?: string

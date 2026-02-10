@@ -8,6 +8,8 @@ import { FreightStatusBadge } from '@/components/fretes/freight-status-badge'
 import { getFreight } from '@/app/actions/freight-actions'
 import { formatCurrency, formatDate, formatCEP, formatPhone } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: {
     id: string

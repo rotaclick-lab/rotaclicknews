@@ -1,6 +1,8 @@
 import { TransactionForm } from '@/components/financeiro/transaction-form'
 import { listTransactionCategories } from '@/app/actions/transaction-category-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface NovaTransacaoPageProps {
   searchParams: {
     type?: 'income' | 'expense'
@@ -8,16 +10,6 @@ interface NovaTransacaoPageProps {
 }
 
 export default async function NovaTransacaoPage({ searchParams }: NovaTransacaoPageProps) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.company_id) {
-    redirect('/dashboard')
-  }
-
   // Get categories
   const categoriesResult = await listTransactionCategories('all')
   const categories = categoriesResult.success ? categoriesResult.data : []

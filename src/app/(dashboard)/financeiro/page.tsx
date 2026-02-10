@@ -8,6 +8,8 @@ import { getFinancialDashboard } from '@/app/actions/financial-stats-actions'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, TrendingUp, TrendingDown, Wallet, AlertCircle, DollarSign } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function FinanceiroPage() {
   return (
     <div className="space-y-6">

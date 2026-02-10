@@ -5,6 +5,8 @@ import { CustomerForm } from '@/components/clientes/customer-form'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getCustomer } from '@/app/actions/customer-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

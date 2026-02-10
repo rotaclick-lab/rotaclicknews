@@ -2,6 +2,8 @@ import { Card } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NovaRotaPage() {
   return (
     <div className="space-y-6">

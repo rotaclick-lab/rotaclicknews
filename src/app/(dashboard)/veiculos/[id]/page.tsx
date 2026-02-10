@@ -10,6 +10,8 @@ import { VehicleDocumentAlert } from '@/components/veiculos/vehicle-document-ale
 import { getVehicle } from '@/app/actions/vehicle-actions'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

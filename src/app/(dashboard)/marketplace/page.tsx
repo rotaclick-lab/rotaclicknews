@@ -7,6 +7,8 @@ import { ReturnFreightCard } from '@/components/marketplace/return-freight-card'
 import { listReturnFreights } from '@/app/actions/return-freight-actions'
 import { Plus } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 interface MarketplacePageProps {
   searchParams: {
     page?: string

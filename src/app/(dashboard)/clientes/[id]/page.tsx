@@ -9,6 +9,8 @@ import { CustomerStatusBadge } from '@/components/clientes/customer-status-badge
 import { CustomerTypeBadge } from '@/components/clientes/customer-type-badge'
 import { formatCurrency } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

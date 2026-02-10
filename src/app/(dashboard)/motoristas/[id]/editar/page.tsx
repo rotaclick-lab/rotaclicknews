@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { DriverForm } from '@/components/motoristas/driver-form'
 import { getDriver } from '@/app/actions/driver-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{
     id: string

@@ -5,6 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FreightForm } from '@/components/fretes/freight-form'
 import { getFreight } from '@/app/actions/freight-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: {
     id: string
@@ -12,17 +14,6 @@ interface PageProps {
 }
 
 export default async function EditarFretePage({ params }: PageProps) {
-  // Get user's company
-  const { data: userData } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!userData?.company_id) {
-    redirect('/dashboard')
-  }
-
   // Fetch freight
   const freightResult = await getFreight(params.id)
 
@@ -31,35 +22,6 @@ export default async function EditarFretePage({ params }: PageProps) {
   }
 
   const freight = freightResult.data
-
-  // Check if freight belongs to user's company
-  if (freight.company_id !== userData.company_id) {
-    notFound()
-  }
-
-  // Fetch customers
-  const { data: customers } = await supabase
-    .from('customers')
-    .select('id, name')
-    .eq('company_id', userData.company_id)
-    .eq('is_active', true)
-    .order('name')
-
-  // Fetch drivers
-  const { data: drivers } = await supabase
-    .from('drivers')
-    .select('id, name')
-    .eq('company_id', userData.company_id)
-    .eq('is_active', true)
-    .order('name')
-
-  // Fetch vehicles
-  const { data: vehicles } = await supabase
-    .from('vehicles')
-    .select('id, license_plate, model')
-    .eq('company_id', userData.company_id)
-    .eq('status', 'active')
-    .order('license_plate')
 
   return (
     <div className="space-y-6">
@@ -75,15 +37,9 @@ export default async function EditarFretePage({ params }: PageProps) {
       <Suspense fallback={<FormSkeleton />}>
         <FreightForm
           freight={freight}
-          customers={customers || []}
-          drivers={drivers || []}
-          vehicles={
-            vehicles?.map((v) => ({
-              id: v.id,
-              plate: v.license_plate,
-              model: v.model,
-            })) || []
-          }
+          customers={[]}
+          drivers={[]}
+          vehicles={[]}
         />
       </Suspense>
     </div>

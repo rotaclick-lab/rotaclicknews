@@ -9,6 +9,8 @@ import { DriverLicenseAlert } from '@/components/motoristas/driver-license-alert
 import { getDriver } from '@/app/actions/driver-actions'
 import { formatDocument, formatPhone, formatCEP, formatDate, formatCurrency } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{
     id: string

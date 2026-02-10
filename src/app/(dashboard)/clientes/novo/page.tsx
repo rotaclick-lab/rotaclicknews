@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { CustomerForm } from '@/components/clientes/customer-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NovoClientePage() {
   return (
     <div className="space-y-6">

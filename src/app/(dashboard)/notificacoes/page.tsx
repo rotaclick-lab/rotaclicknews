@@ -9,6 +9,8 @@ import { ptBR } from 'date-fns/locale'
 import { Bell, Check, ExternalLink, Trash2 } from 'lucide-react'
 import { NOTIFICATION_TYPE_LABELS } from '@/types/notification.types'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NotificacoesPage() {
   const result = await listNotifications(50, false)
   const notifications = result.success && result.data ? result.data : []

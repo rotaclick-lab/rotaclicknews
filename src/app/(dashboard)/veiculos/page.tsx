@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { VehicleList } from '@/components/veiculos/vehicle-list'
 import { listVehicles } from '@/app/actions/vehicle-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   searchParams: Promise<{
     page?: string

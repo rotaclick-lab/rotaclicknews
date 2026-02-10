@@ -7,6 +7,8 @@ import { TransactionCard } from '@/components/financeiro/transaction-card'
 import { listTransactions } from '@/app/actions/transaction-actions'
 import { Plus } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 interface DespesasPageProps {
   searchParams: {
     page?: string

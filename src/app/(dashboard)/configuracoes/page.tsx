@@ -9,6 +9,8 @@ import { SecuritySettings } from '@/components/configuracoes/security-settings'
 import { getUserProfile, getCompanySettings, getNotificationSettings } from '@/app/actions/settings-actions'
 import { User, Building2, Bell, Shield } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ConfiguracoesPage() {
   return (
     <div className="space-y-6">

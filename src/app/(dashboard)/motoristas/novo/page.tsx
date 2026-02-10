@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { DriverForm } from '@/components/motoristas/driver-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NovoMotoristaPage() {
   return (
     <div className="space-y-6">

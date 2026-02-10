@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { VehicleForm } from '@/components/veiculos/vehicle-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NovoVeiculoPage() {
   return (
     <div className="space-y-6">

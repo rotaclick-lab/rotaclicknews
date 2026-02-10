@@ -3,43 +3,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { FreightForm } from '@/components/fretes/freight-form'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NovoFretePage() {
-  // Get user's company
-  const { data: userData } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!userData) {
-    redirect('/dashboard')
-  }
-
-  // Fetch customers, drivers, and vehicles
-  const [customersResult, driversResult, vehiclesResult] = await Promise.all([
-    supabase
-      .from('customers')
-      .select('id, name')
-      .eq('company_id', userData.company_id)
-      .order('name'),
-    supabase
-      .from('drivers')
-      .select('id, name')
-      .eq('company_id', userData.company_id)
-      .eq('status', 'active')
-      .order('name'),
-    supabase
-      .from('vehicles')
-      .select('id, plate, model')
-      .eq('company_id', userData.company_id)
-      .eq('status', 'active')
-      .order('plate'),
-  ])
-
-  const customers = customersResult.data || []
-  const drivers = driversResult.data || []
-  const vehicles = vehiclesResult.data || []
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -58,19 +24,7 @@ export default async function NovoFretePage() {
       </div>
 
       {/* Form */}
-      {customers.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-8 text-center">
-          <h3 className="text-lg font-semibold mb-2">Nenhum cliente cadastrado</h3>
-          <p className="text-muted-foreground mb-4">
-            Você precisa cadastrar pelo menos um cliente antes de criar um frete.
-          </p>
-          <Link href="/clientes/novo">
-            <Button>Cadastrar Cliente</Button>
-          </Link>
-        </div>
-      ) : (
-        <FreightForm customers={customers} drivers={drivers} vehicles={vehicles} />
-      )}
+      <FreightForm customers={[]} drivers={[]} vehicles={[]} />
     </div>
   )
 }

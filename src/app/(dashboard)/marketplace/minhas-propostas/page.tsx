@@ -6,6 +6,8 @@ import { ProposalCard } from '@/components/marketplace/proposal-card'
 import { listMyProposals } from '@/app/actions/proposal-actions'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 interface MinhasPropostasPageProps {
   searchParams: { status?: string }
 }

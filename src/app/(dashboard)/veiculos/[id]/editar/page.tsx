@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { VehicleForm } from '@/components/veiculos/vehicle-form'
 import { getVehicle } from '@/app/actions/vehicle-actions'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }
