@@ -43,6 +43,36 @@ export default function CotacaoPage() {
     invoiceValue: '',
   })
 
+  // Funções de Máscara
+  const maskPhone = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{4})\d+?$/, '$1')
+  }
+
+  const maskCEP = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .replace(/(-\d{3})\d+?$/, '$1')
+  }
+
+  const maskCurrency = (value: string) => {
+    const cleanValue = value.replace(/\D/g, '')
+    const numberValue = Number(cleanValue) / 100
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+    }).format(numberValue)
+  }
+
+  const maskDecimal = (value: string) => {
+    const cleanValue = value.replace(/\D/g, '')
+    const numberValue = Number(cleanValue) / 100
+    return numberValue.toFixed(2)
+  }
+
   const [items, setItems] = useState<CargoItem[]>([
     { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 },
   ])
@@ -145,7 +175,11 @@ export default function CotacaoPage() {
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Telefone / WhatsApp</Label>
-                    <Input placeholder="(00) 00000-0000" value={contact.phone} onChange={(e) => setContact({...contact, phone: e.target.value})} />
+                    <Input 
+                      placeholder="(00) 00000-0000" 
+                      value={contact.phone} 
+                      onChange={(e) => setContact({...contact, phone: maskPhone(e.target.value)})} 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end pt-4">
@@ -170,11 +204,19 @@ export default function CotacaoPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label>CEP de Origem</Label>
-                    <Input placeholder="00000-000" value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                    <Input 
+                      placeholder="00000-000" 
+                      value={origin} 
+                      onChange={(e) => setOrigin(maskCEP(e.target.value))} 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>CEP de Destino</Label>
-                    <Input placeholder="00000-000" value={destination} onChange={(e) => setDestination(e.target.value)} />
+                    <Input 
+                      placeholder="00000-000" 
+                      value={destination} 
+                      onChange={(e) => setDestination(maskCEP(e.target.value))} 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-between pt-4">
@@ -216,7 +258,14 @@ export default function CotacaoPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Valor da NF (R$)</Label>
-                      <Input type="number" value={cargo.invoiceValue} onChange={(e) => setCargo({...cargo, invoiceValue: e.target.value})} />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                        <Input 
+                          className="pl-9"
+                          value={cargo.invoiceValue} 
+                          onChange={(e) => setCargo({...cargo, invoiceValue: maskCurrency(e.target.value)})} 
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -230,19 +279,35 @@ export default function CotacaoPage() {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Peso (kg)</Label>
-                          <Input type="number" value={item.weight} onChange={(e) => updateItem(idx, 'weight', Number(e.target.value))} />
+                          <Input 
+                            className="text-right"
+                            value={item.weight.toFixed(2)} 
+                            onChange={(e) => updateItem(idx, 'weight', Number(maskDecimal(e.target.value)))} 
+                          />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Alt (m)</Label>
-                          <Input type="number" value={item.height} onChange={(e) => updateItem(idx, 'height', Number(e.target.value))} />
+                          <Input 
+                            className="text-right"
+                            value={item.height.toFixed(2)} 
+                            onChange={(e) => updateItem(idx, 'height', Number(maskDecimal(e.target.value)))} 
+                          />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Larg (m)</Label>
-                          <Input type="number" value={item.width} onChange={(e) => updateItem(idx, 'width', Number(e.target.value))} />
+                          <Input 
+                            className="text-right"
+                            value={item.width.toFixed(2)} 
+                            onChange={(e) => updateItem(idx, 'width', Number(maskDecimal(e.target.value)))} 
+                          />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Prof (m)</Label>
-                          <Input type="number" value={item.depth} onChange={(e) => updateItem(idx, 'depth', Number(e.target.value))} />
+                          <Input 
+                            className="text-right"
+                            value={item.depth.toFixed(2)} 
+                            onChange={(e) => updateItem(idx, 'depth', Number(maskDecimal(e.target.value)))} 
+                          />
                         </div>
                       </div>
                     ))}
