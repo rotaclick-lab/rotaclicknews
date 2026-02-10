@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { useSearchParams } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema, type RegisterInput } from '@/lib/validations/auth.schema'
 import { signup } from '@/app/actions/auth-actions'
@@ -15,6 +16,7 @@ import Link from 'next/link'
 export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const searchParams = useSearchParams()
   
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -24,6 +26,16 @@ export function RegisterForm() {
   })
 
   const acceptTerms = watch('acceptTerms')
+
+  // Preenchimento automático via URL
+  useEffect(() => {
+    const cnpj = searchParams.get('cnpj')
+    const razao = searchParams.get('razao')
+    const fantasia = searchParams.get('fantasia')
+    
+    if (cnpj) setValue('cnpj', cnpj)
+    if (razao || fantasia) setValue('companyName', fantasia || razao || '')
+  }, [searchParams, setValue])
 
   const onSubmit = async (data: RegisterInput) => {
     setIsLoading(true)

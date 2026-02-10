@@ -65,14 +65,19 @@ function processBrasilAPI(data: any) {
     }
   }
 
-  return { 
-    success: true, 
-    data: {
-      razao_social: data.razao_social,
-      nome_fantasia: data.nome_fantasia || data.razao_social,
-      cnae_principal: data.cnae_fiscal_descricao
+    return { 
+      success: true, 
+      data: {
+        razao_social: data.razao_social,
+        nome_fantasia: data.nome_fantasia || data.razao_social,
+        cnae_principal: data.cnae_fiscal_descricao,
+        logradouro: data.logradouro,
+        numero: data.numero,
+        municipio: data.municipio,
+        uf: data.uf,
+        cep: data.cep
+      }
     }
-  }
 }
 
 function processReceitaWS(data: any) {
@@ -97,7 +102,12 @@ function processReceitaWS(data: any) {
     data: {
       razao_social: data.nome,
       nome_fantasia: data.fantasia || data.nome,
-      cnae_principal: data.atividade_principal[0].text
+      cnae_principal: data.atividade_principal[0].text,
+      logradouro: data.logradouro,
+      numero: data.numero,
+      municipio: data.municipio,
+      uf: data.uf,
+      cep: data.cep
     }
   }
 }
