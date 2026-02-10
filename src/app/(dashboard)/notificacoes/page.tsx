@@ -102,7 +102,7 @@ function NotificationList({ notifications }: { notifications: any[] }) {
       {notifications.map((notification) => (
         <Card 
           key={notification.id} 
-          className={!notification.read ? 'border-blue-200 bg-blue-50/50' : ''}
+          className={!notification.read ? 'border-brand-200 bg-brand-50/50' : ''}
         >
           <CardHeader>
             <div className="flex items-start justify-between">

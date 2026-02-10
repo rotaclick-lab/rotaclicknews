@@ -327,7 +327,7 @@ export default async function FreightDetailPage({ params }: PageProps) {
                   className="flex gap-4 items-start pb-4 last:pb-0 border-b last:border-0"
                 >
                   <div className="flex flex-col items-center">
-                    <div className="rounded-full bg-primary h-2 w-2" />
+                    <div className="rounded-full bg-brand-500 h-2 w-2" />
                     {index < freight.tracking!.length - 1 && (
                       <div className="w-px h-full bg-border mt-2" />
                     )}

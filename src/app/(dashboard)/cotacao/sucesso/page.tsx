@@ -42,15 +42,15 @@ function SuccessContent() {
 
         {/* Receipt Card */}
         <Card id="receipt" className="border-2 shadow-xl overflow-hidden animate-in slide-in-from-bottom-8 duration-700">
-          <CardHeader className="bg-primary text-white p-8">
+          <CardHeader className="bg-brand-500 text-white p-8">
             <div className="flex justify-between items-start">
               <div>
                 <CardTitle className="text-2xl font-black uppercase tracking-wider">Comprovante de Frete</CardTitle>
-                <p className="text-primary-foreground/80 text-sm mt-1">RotaClick - Gestão Inteligente de Logística</p>
+                <p className="text-white/80 text-sm mt-1">RotaClick - Gestão Inteligente de Logística</p>
               </div>
               <div className="text-right">
                 <p className="font-bold">#{sessionId?.slice(-8).toUpperCase() || 'RC-88291'}</p>
-                <p className="text-xs text-primary-foreground/60">{date}</p>
+                <p className="text-xs text-white/60">{date}</p>
               </div>
             </div>
           </CardHeader>
@@ -119,7 +119,7 @@ function SuccessContent() {
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-dashed">
                 <span className="text-lg font-bold">Total Pago</span>
-                <span className="text-2xl font-black text-primary">R$ 157,50</span>
+                <span className="text-2xl font-black text-brand-600">R$ 157,50</span>
               </div>
             </div>
 
@@ -136,13 +136,13 @@ function SuccessContent() {
           <Button onClick={handlePrint} variant="outline" className="flex-1 py-6 font-bold">
             <Printer className="mr-2 h-5 w-5" /> Imprimir Comprovante
           </Button>
-          <Button className="flex-1 py-6 font-bold bg-primary hover:bg-primary/90">
+          <Button className="flex-1 py-6 font-bold bg-brand-500 hover:bg-brand-600 text-white">
             <Download className="mr-2 h-5 w-5" /> Baixar PDF
           </Button>
         </div>
 
         <div className="mt-10 text-center print:hidden">
-          <Link href="/dashboard" className="text-primary hover:underline flex items-center justify-center gap-2 font-medium">
+          <Link href="/dashboard" className="text-brand-600 hover:underline flex items-center justify-center gap-2 font-medium">
             <ArrowLeft className="h-4 w-4" /> Voltar para o Painel de Controle
           </Link>
         </div>

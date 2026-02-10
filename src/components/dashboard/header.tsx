@@ -21,7 +21,7 @@ export function Header() {
   const pageTitle = currentPage?.title || 'Dashboard'
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-white">
+    <header className="sticky top-0 z-40 border-b border-brand-100 bg-white">
       <div className="flex h-16 items-center gap-4 px-4 md:px-6">
         {/* Mobile Menu Button */}
         <Button
@@ -36,7 +36,7 @@ export function Header() {
 
         {/* Page Title / Breadcrumb */}
         <div className="flex-1">
-          <h1 className="text-lg font-semibold">{pageTitle}</h1>
+          <h1 className="text-lg font-semibold text-brand-800">{pageTitle}</h1>
         </div>
 
         {/* Search */}
@@ -46,7 +46,7 @@ export function Header() {
             <Input
               type="search"
               placeholder="Buscar fretes, clientes..."
-              className="pl-8 w-full"
+              className="pl-8 w-full focus-visible:ring-brand-500"
             />
           </div>
         </div>

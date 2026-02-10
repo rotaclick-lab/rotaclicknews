@@ -111,7 +111,7 @@ export default function TabelaFretePage() {
   return (
     <div className="container max-w-6xl py-10 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tabela de Fretes</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-brand-800">Tabela de Fretes</h1>
         <p className="text-muted-foreground">
           Configure suas rotas, preços e prazos para automatizar suas cotações.
         </p>
@@ -119,10 +119,10 @@ export default function TabelaFretePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form Card */}
-        <Card className="lg:col-span-1 border-2">
+        <Card className="lg:col-span-1 border-2 border-brand-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-primary" /> Nova Rota
+              <Plus className="h-5 w-5 text-brand-500" /> Nova Rota
             </CardTitle>
             <CardDescription>Adicione uma nova regra de preço</CardDescription>
           </CardHeader>
@@ -171,14 +171,14 @@ export default function TabelaFretePage() {
                 />
               </div>
             </div>
-            <Button className="w-full font-bold" onClick={handleAddRoute}>
+            <Button className="w-full font-bold bg-brand-500 hover:bg-brand-600 text-white" onClick={handleAddRoute}>
               SALVAR ROTA NA TABELA
             </Button>
           </CardContent>
         </Card>
 
         {/* Table Card */}
-        <Card className="lg:col-span-2 border-2">
+        <Card className="lg:col-span-2 border-2 border-brand-100">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Suas Rotas Ativas</CardTitle>
@@ -213,7 +213,7 @@ export default function TabelaFretePage() {
                     routes.map((route) => (
                       <TableRow key={route.id} className="hover:bg-muted/30 transition-colors">
                         <TableCell className="font-medium flex items-center gap-2">
-                          <MapPin className="h-3 w-3 text-primary" /> {route.originZip}
+                          <MapPin className="h-3 w-3 text-brand-500" /> {route.originZip}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -223,11 +223,11 @@ export default function TabelaFretePage() {
                         <TableCell className="text-right font-semibold">
                           R$ {route.pricePerKg.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-right font-semibold text-green-600">
+                        <TableCell className="text-right font-semibold text-brand-600">
                           R$ {route.minPrice.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">
+                          <span className="bg-brand-50 text-brand-700 px-2 py-1 rounded text-xs font-bold">
                             {route.deadlineDays}d
                           </span>
                         </TableCell>
@@ -252,12 +252,12 @@ export default function TabelaFretePage() {
       </div>
 
       {/* Info Banner */}
-      <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 flex items-start gap-4">
-        <div className="bg-primary/10 p-3 rounded-full">
-          <DollarSign className="h-6 w-6 text-primary" />
+      <div className="bg-brand-50 border border-brand-200 rounded-xl p-6 flex items-start gap-4">
+        <div className="bg-brand-100 p-3 rounded-full">
+          <DollarSign className="h-6 w-6 text-brand-600" />
         </div>
         <div>
-          <h4 className="font-bold text-primary">Como os valores são calculados?</h4>
+          <h4 className="font-bold text-brand-700">Como os valores são calculados?</h4>
           <p className="text-sm text-muted-foreground mt-1">
             O sistema utiliza o <strong>Peso Taxável</strong> (maior valor entre peso real e cubado) multiplicado pelo seu <strong>Preço/KG</strong>. 
             Se o resultado for menor que o seu <strong>Valor Mínimo</strong>, o sistema aplicará automaticamente o mínimo configurado para aquela rota.

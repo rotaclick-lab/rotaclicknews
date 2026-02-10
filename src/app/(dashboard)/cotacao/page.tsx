@@ -142,7 +142,7 @@ export default function CotacaoPage() {
               key={s} 
               className={cn(
                 "relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 font-bold transition-all duration-300",
-                step >= s ? "bg-primary border-primary text-white" : "bg-background border-muted text-muted-foreground"
+                step >= s ? "bg-brand-500 border-brand-500 text-white" : "bg-background border-muted text-muted-foreground"
               )}
             >
               {step > s ? <CheckCircle2 className="h-6 w-6" /> : s}
@@ -156,10 +156,10 @@ export default function CotacaoPage() {
         <div className="grid grid-cols-1 gap-8">
           {/* Step 1: Contact */}
           {step === 1 && (
-            <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-brand-100">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
+                  <Package className="h-5 w-5 text-brand-500" />
                   Dados de Contato
                 </CardTitle>
               </CardHeader>
@@ -167,23 +167,24 @@ export default function CotacaoPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nome Completo</Label>
-                    <Input placeholder="Seu nome" value={contact.name} onChange={(e) => setContact({...contact, name: e.target.value})} />
+                    <Input placeholder="Seu nome" className="focus-visible:ring-brand-500" value={contact.name} onChange={(e) => setContact({...contact, name: e.target.value})} />
                   </div>
                   <div className="space-y-2">
                     <Label>Email</Label>
-                    <Input type="email" placeholder="email@exemplo.com" value={contact.email} onChange={(e) => setContact({...contact, email: e.target.value})} />
+                    <Input type="email" placeholder="email@exemplo.com" className="focus-visible:ring-brand-500" value={contact.email} onChange={(e) => setContact({...contact, email: e.target.value})} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Telefone / WhatsApp</Label>
                     <Input 
                       placeholder="(00) 00000-0000" 
+                      className="focus-visible:ring-brand-500"
                       value={contact.phone} 
                       onChange={(e) => setContact({...contact, phone: maskPhone(e.target.value)})} 
                     />
                   </div>
                 </div>
                 <div className="flex justify-end pt-4">
-                  <Button onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
+                  <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
                     Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -193,7 +194,7 @@ export default function CotacaoPage() {
 
           {/* Step 2: Route */}
           {step === 2 && (
-            <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
+            <Card className="animate-in fade-in slide-in-from-right-4 duration-500 border-brand-100">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-orange-500" />
@@ -206,6 +207,7 @@ export default function CotacaoPage() {
                     <Label>CEP de Origem</Label>
                     <Input 
                       placeholder="00000-000" 
+                      className="focus-visible:ring-brand-500"
                       value={origin} 
                       onChange={(e) => setOrigin(maskCEP(e.target.value))} 
                     />
@@ -214,16 +216,17 @@ export default function CotacaoPage() {
                     <Label>CEP de Destino</Label>
                     <Input 
                       placeholder="00000-000" 
+                      className="focus-visible:ring-brand-500"
                       value={destination} 
                       onChange={(e) => setDestination(maskCEP(e.target.value))} 
                     />
                   </div>
                 </div>
                 <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={() => setStep(1)}>
+                  <Button variant="outline" onClick={() => setStep(1)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
                     <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                   </Button>
-                  <Button onClick={() => setStep(3)} disabled={!origin || !destination}>
+                  <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(3)} disabled={!origin || !destination}>
                     Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
@@ -234,10 +237,10 @@ export default function CotacaoPage() {
           {/* Step 3: Cargo Details */}
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-              <Card>
+              <Card className="border-brand-100">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5 text-primary" />
+                    <Calculator className="h-5 w-5 text-brand-500" />
                     Detalhes da Carga
                   </CardTitle>
                 </CardHeader>
@@ -246,7 +249,7 @@ export default function CotacaoPage() {
                     <div className="space-y-2">
                       <Label>Categoria</Label>
                       <select 
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
                         value={cargo.category}
                         onChange={(e) => setCargo({...cargo, category: e.target.value})}
                       >
@@ -261,7 +264,7 @@ export default function CotacaoPage() {
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
                         <Input 
-                          className="pl-9"
+                          className="pl-9 focus-visible:ring-brand-500"
                           value={cargo.invoiceValue} 
                           onChange={(e) => setCargo({...cargo, invoiceValue: maskCurrency(e.target.value)})} 
                         />
@@ -272,15 +275,15 @@ export default function CotacaoPage() {
                   <div className="space-y-4">
                     <Label>Itens e Dimensões</Label>
                     {items.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-2 md:grid-cols-5 gap-2 p-4 border rounded-lg bg-muted/30">
+                      <div key={idx} className="grid grid-cols-2 md:grid-cols-5 gap-2 p-4 border border-brand-100 rounded-lg bg-brand-50/30">
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Qtd</Label>
-                          <Input type="number" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} />
+                          <Input type="number" className="focus-visible:ring-brand-500" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Peso (kg)</Label>
                           <Input 
-                            className="text-right"
+                            className="text-right focus-visible:ring-brand-500"
                             value={item.weight.toFixed(2)} 
                             onChange={(e) => updateItem(idx, 'weight', Number(maskDecimal(e.target.value)))} 
                           />
@@ -288,7 +291,7 @@ export default function CotacaoPage() {
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Alt (m)</Label>
                           <Input 
-                            className="text-right"
+                            className="text-right focus-visible:ring-brand-500"
                             value={item.height.toFixed(2)} 
                             onChange={(e) => updateItem(idx, 'height', Number(maskDecimal(e.target.value)))} 
                           />
@@ -296,7 +299,7 @@ export default function CotacaoPage() {
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Larg (m)</Label>
                           <Input 
-                            className="text-right"
+                            className="text-right focus-visible:ring-brand-500"
                             value={item.width.toFixed(2)} 
                             onChange={(e) => updateItem(idx, 'width', Number(maskDecimal(e.target.value)))} 
                           />
@@ -304,20 +307,20 @@ export default function CotacaoPage() {
                         <div className="space-y-1">
                           <Label className="text-[10px] uppercase">Prof (m)</Label>
                           <Input 
-                            className="text-right"
+                            className="text-right focus-visible:ring-brand-500"
                             value={item.depth.toFixed(2)} 
                             onChange={(e) => updateItem(idx, 'depth', Number(maskDecimal(e.target.value)))} 
                           />
                         </div>
                       </div>
                     ))}
-                    <Button variant="ghost" size="sm" onClick={addItem} className="text-primary">
+                    <Button variant="ghost" size="sm" onClick={addItem} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">
                       <Plus className="h-4 w-4 mr-2" /> Adicionar Item
                     </Button>
                   </div>
 
                   {/* Automatic Calculation Display */}
-                  <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 grid grid-cols-3 gap-4 text-center">
+                  <div className="bg-brand-50 p-4 rounded-lg border border-brand-200 grid grid-cols-3 gap-4 text-center">
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase">Peso Real</p>
                       <p className="font-bold">{totals.realWeight.toFixed(2)} kg</p>
@@ -327,16 +330,16 @@ export default function CotacaoPage() {
                       <p className="font-bold">{totals.cubedWeight.toFixed(2)} kg</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-primary uppercase font-bold">Peso Taxável</p>
-                      <p className="font-black text-primary">{totals.taxableWeight.toFixed(2)} kg</p>
+                      <p className="text-[10px] text-brand-600 uppercase font-bold">Peso Taxável</p>
+                      <p className="font-black text-brand-600">{totals.taxableWeight.toFixed(2)} kg</p>
                     </div>
                   </div>
 
                   <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setStep(2)}>
+                    <Button variant="outline" onClick={() => setStep(2)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
                       <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                     </Button>
-                    <Button onClick={handleCalculate} disabled={loading || totals.taxableWeight === 0}>
+                    <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold" onClick={handleCalculate} disabled={loading || totals.taxableWeight === 0}>
                       {loading ? 'Calculando...' : 'Ver Ofertas de Frete'} <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
@@ -349,8 +352,8 @@ export default function CotacaoPage() {
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Melhores Ofertas Encontradas</h2>
-                <Button variant="ghost" onClick={() => setStep(3)}>Alterar Dados</Button>
+                <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
+                <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
               </div>
               
               <div className="grid grid-cols-1 gap-4">
@@ -359,7 +362,7 @@ export default function CotacaoPage() {
                     key={offer.id} 
                     className={cn(
                       "cursor-pointer transition-all hover:shadow-lg border-2 relative overflow-hidden group",
-                      selectedOffer?.id === offer.id ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50"
+                      selectedOffer?.id === offer.id ? "border-brand-500 bg-brand-50/50" : "border-muted hover:border-brand-300"
                     )}
                     onClick={() => setSelectedOffer(offer)}
                   >
@@ -372,7 +375,7 @@ export default function CotacaoPage() {
                       <div className="flex items-center gap-6">
                         <div className={cn(
                           "w-16 h-16 rounded-2xl flex items-center justify-center transition-colors",
-                          selectedOffer?.id === offer.id ? "bg-primary text-white" : "bg-muted text-primary"
+                          selectedOffer?.id === offer.id ? "bg-brand-500 text-white" : "bg-brand-50 text-brand-600"
                         )}>
                           <Truck className={cn(
                             "h-8 w-8",
@@ -382,7 +385,7 @@ export default function CotacaoPage() {
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="font-bold text-xl">{offer.carrier}</h3>
-                            <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                            <span className="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                               {offer.type}
                             </span>
                           </div>
@@ -391,15 +394,15 @@ export default function CotacaoPage() {
                               <Calendar className="h-3.5 w-3.5" /> {offer.deadline}
                             </span>
                             <span className="flex items-center gap-1">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> Seguro Incluso
+                              <CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Seguro Incluso
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="text-right bg-background/50 p-3 rounded-xl border border-muted">
+                      <div className="text-right bg-background/50 p-3 rounded-xl border border-brand-100">
                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Preço Final</p>
-                        <p className="text-3xl font-black text-primary">
+                        <p className="text-3xl font-black text-orange-500">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
                         </p>
                       </div>
@@ -409,17 +412,17 @@ export default function CotacaoPage() {
               </div>
 
               {selectedOffer && (
-                <div className="fixed bottom-0 left-0 w-full bg-background border-t p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
+                <div className="fixed bottom-0 left-0 w-full bg-background border-t border-brand-200 p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
                   <div className="max-w-[1000px] mx-auto flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Selecionado: <span className="font-bold text-foreground">{selectedOffer.carrier}</span></p>
-                      <p className="text-xl font-black text-primary">
+                      <p className="text-xl font-black text-orange-500">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
                       </p>
                     </div>
                     <Button 
                       size="lg" 
-                      className="bg-green-600 hover:bg-green-700 text-white px-10 font-bold"
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-10 font-bold"
                       onClick={async () => {
                         if (!selectedOffer) return
                         setLoading(true)

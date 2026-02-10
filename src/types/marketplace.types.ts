@@ -69,7 +69,7 @@ export const RETURN_FREIGHT_STATUS_LABELS: Record<ReturnFreightStatus, string> =
 export const RETURN_FREIGHT_STATUS_COLORS: Record<ReturnFreightStatus, string> = {
   available: 'text-green-700 bg-green-50 border-green-200',
   in_negotiation: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-  accepted: 'text-blue-700 bg-blue-50 border-blue-200',
+  accepted: 'text-brand-700 bg-brand-50 border-brand-200',
   expired: 'text-gray-700 bg-gray-50 border-gray-200',
   cancelled: 'text-red-700 bg-red-50 border-red-200',
 }
@@ -96,7 +96,7 @@ export const PROPOSAL_STATUS_COLORS: Record<ProposalStatus, string> = {
   pending: 'text-yellow-700 bg-yellow-50 border-yellow-200',
   accepted: 'text-green-700 bg-green-50 border-green-200',
   rejected: 'text-red-700 bg-red-50 border-red-200',
-  counter: 'text-blue-700 bg-blue-50 border-blue-200',
+  counter: 'text-brand-700 bg-brand-50 border-brand-200',
   withdrawn: 'text-gray-700 bg-gray-50 border-gray-200',
 }
 

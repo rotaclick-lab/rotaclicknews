@@ -50,7 +50,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
 
 export const AUDIT_ACTION_COLORS: Record<AuditAction, string> = {
   create: 'text-green-700 bg-green-50 border-green-200',
-  update: 'text-blue-700 bg-blue-50 border-blue-200',
+  update: 'text-brand-700 bg-brand-50 border-brand-200',
   delete: 'text-red-700 bg-red-50 border-red-200',
   read: 'text-gray-700 bg-gray-50 border-gray-200',
   login: 'text-green-700 bg-green-50 border-green-200',
@@ -58,8 +58,8 @@ export const AUDIT_ACTION_COLORS: Record<AuditAction, string> = {
   login_failed: 'text-red-700 bg-red-50 border-red-200',
   password_reset: 'text-yellow-700 bg-yellow-50 border-yellow-200',
   permission_denied: 'text-red-700 bg-red-50 border-red-200',
-  export: 'text-purple-700 bg-purple-50 border-purple-200',
-  import: 'text-purple-700 bg-purple-50 border-purple-200',
+  export: 'text-orange-700 bg-orange-50 border-orange-200',
+  import: 'text-orange-700 bg-orange-50 border-orange-200',
 }
 
 // Resource types

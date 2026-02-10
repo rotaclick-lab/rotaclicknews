@@ -29,17 +29,17 @@ export default function PagamentoSettingsPage() {
   return (
     <div className="container max-w-4xl py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Configurações de Pagamento</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-brand-800">Configurações de Pagamento</h1>
         <p className="text-muted-foreground">
           Gerencie como sua transportadora recebe os pagamentos dos fretes.
         </p>
       </div>
 
       <div className="grid gap-6">
-        <Card className="border-2">
+        <Card className="border-2 border-brand-200">
           <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Building2 className="h-6 w-6 text-primary" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100">
+              <Building2 className="h-6 w-6 text-brand-600" />
             </div>
             <div>
               <CardTitle>Stripe Connect</CardTitle>
@@ -76,7 +76,7 @@ export default function PagamentoSettingsPage() {
 
             <Button 
               size="lg" 
-              className="w-full md:w-auto font-bold" 
+              className="w-full md:w-auto font-bold bg-brand-500 hover:bg-brand-600 text-white" 
               onClick={handleConnectStripe}
               disabled={loading}
             >

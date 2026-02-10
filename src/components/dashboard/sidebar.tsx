@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, APP_NAME } from '@/lib/constants'
@@ -15,22 +16,19 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        'relative flex h-screen flex-col border-r bg-white transition-all duration-300',
+        'relative flex h-screen flex-col border-r border-brand-100 bg-white transition-all duration-300',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center border-b px-4">
+      <div className="flex h-16 items-center border-b border-brand-100 px-4">
         {!collapsed ? (
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-lg font-bold">R</span>
-            </div>
-            <span className="text-xl font-bold">{APP_NAME}</span>
+            <Image src="/logo.png" alt="RotaClick" width={140} height={70} priority />
           </Link>
         ) : (
           <Link href="/dashboard" className="flex items-center justify-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white">
               <span className="text-lg font-bold">R</span>
             </div>
           </Link>
@@ -51,8 +49,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    ? 'bg-brand-500 text-white'
+                    : 'text-muted-foreground hover:bg-brand-50 hover:text-brand-700',
                   collapsed && 'justify-center'
                 )}
                 title={collapsed ? item.title : undefined}
@@ -66,11 +64,11 @@ export function Sidebar() {
       </div>
 
       {/* Collapse Button */}
-      <div className="border-t p-4">
+      <div className="border-t border-brand-100 p-4">
         <Button
           variant="ghost"
           size="sm"
-          className={cn('w-full', collapsed && 'px-2')}
+          className={cn('w-full hover:bg-brand-50 hover:text-brand-700', collapsed && 'px-2')}
           onClick={() => setCollapsed(!collapsed)}
         >
           {collapsed ? (

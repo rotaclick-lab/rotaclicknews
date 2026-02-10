@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { RegisterForm } from '@/components/auth/register-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Suspense } from 'react'
@@ -9,11 +10,14 @@ export const metadata = {
 
 export default function RegisterPage() {
   return (
-    <Card>
+    <Card className="border-brand-200 shadow-lg">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">🚛 RotaClick</CardTitle>
+        <div className="flex justify-center mb-2">
+          <Image src="/logo.png" alt="RotaClick" width={180} height={90} priority />
+        </div>
+        <CardTitle className="text-2xl font-bold text-brand-700">Crie sua conta</CardTitle>
         <CardDescription>
-          Crie sua conta e comece a gerenciar seus fretes
+          Comece a gerenciar seus fretes de forma inteligente
         </CardDescription>
       </CardHeader>
       <CardContent>

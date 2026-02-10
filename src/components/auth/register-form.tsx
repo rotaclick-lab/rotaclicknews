@@ -75,6 +75,7 @@ export function RegisterForm() {
           id="fullName"
           type="text"
           placeholder="João Silva"
+          className="focus-visible:ring-brand-500"
           {...register('fullName')}
           disabled={isLoading}
         />
@@ -89,6 +90,7 @@ export function RegisterForm() {
           id="email"
           type="email"
           placeholder="seu@email.com"
+          className="focus-visible:ring-brand-500"
           {...register('email')}
           disabled={isLoading}
         />
@@ -103,6 +105,7 @@ export function RegisterForm() {
           id="companyName"
           type="text"
           placeholder="Transportadora XYZ"
+          className="focus-visible:ring-brand-500"
           {...register('companyName')}
           disabled={isLoading}
         />
@@ -117,6 +120,7 @@ export function RegisterForm() {
           id="cnpj"
           type="text"
           placeholder="00.000.000/0000-00"
+          className="focus-visible:ring-brand-500"
           {...register('cnpj')}
           onChange={handleCNPJChange}
           disabled={isLoading}
@@ -133,6 +137,7 @@ export function RegisterForm() {
           id="password"
           type="password"
           placeholder="••••••••"
+          className="focus-visible:ring-brand-500"
           {...register('password')}
           disabled={isLoading}
         />
@@ -147,6 +152,7 @@ export function RegisterForm() {
           id="confirmPassword"
           type="password"
           placeholder="••••••••"
+          className="focus-visible:ring-brand-500"
           {...register('confirmPassword')}
           disabled={isLoading}
         />
@@ -161,17 +167,18 @@ export function RegisterForm() {
           checked={acceptTerms}
           onCheckedChange={(checked) => setValue('acceptTerms', checked as boolean, { shouldValidate: true })}
           disabled={isLoading}
+          className="data-[state=checked]:bg-brand-500 data-[state=checked]:border-brand-500"
         />
         <label
           htmlFor="acceptTerms"
           className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           Aceito os{' '}
-          <Link href="/termos" className="text-primary hover:underline">
+          <Link href="/termos" className="text-brand-600 hover:underline">
             termos de uso
           </Link>{' '}
           e{' '}
-          <Link href="/privacidade" className="text-primary hover:underline">
+          <Link href="/privacidade" className="text-brand-600 hover:underline">
             política de privacidade
           </Link>
         </label>
@@ -180,13 +187,13 @@ export function RegisterForm() {
         <p className="text-sm text-red-500">{errors.acceptTerms.message}</p>
       )}
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold" disabled={isLoading}>
         {isLoading ? 'Criando conta...' : 'Criar conta'}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
         Já tem uma conta?{' '}
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login" className="text-orange-500 hover:text-orange-600 hover:underline font-semibold">
           Faça login
         </Link>
       </p>

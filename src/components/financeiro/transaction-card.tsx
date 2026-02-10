@@ -146,7 +146,7 @@ export function TransactionCard({
               <span className="text-muted-foreground">Frete:</span>
               <Link 
                 href={`/fretes/${transaction.freights.id}`}
-                className="font-medium text-blue-600 hover:underline"
+                className="font-medium text-brand-600 hover:underline"
               >
                 {transaction.freights.freight_number}
               </Link>

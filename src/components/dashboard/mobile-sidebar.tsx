@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, APP_NAME } from '@/lib/constants'
@@ -18,12 +19,9 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="left" className="w-64 p-0">
         {/* Logo */}
-        <div className="flex h-16 items-center border-b px-4">
+        <div className="flex h-16 items-center border-b border-brand-100 px-4">
           <Link href="/dashboard" onClick={onClose} className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-lg font-bold">R</span>
-            </div>
-            <span className="text-xl font-bold">{APP_NAME}</span>
+            <Image src="/logo.png" alt="RotaClick" width={140} height={70} />
           </Link>
         </div>
 
@@ -41,8 +39,8 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    ? 'bg-brand-500 text-white'
+                    : 'text-muted-foreground hover:bg-brand-50 hover:text-brand-700'
                 )}
               >
                 <Icon className="h-5 w-5" />

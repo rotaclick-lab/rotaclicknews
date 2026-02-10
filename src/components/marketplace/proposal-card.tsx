@@ -65,12 +65,12 @@ export function ProposalCard({ proposal, showActions = true, isOwner = false }: 
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="p-4 bg-blue-50 rounded-lg">
+        <div className="p-4 bg-brand-50 rounded-lg">
           <div className="flex items-center gap-2 mb-1">
-            <DollarSign className="h-5 w-5 text-blue-600" />
+            <DollarSign className="h-5 w-5 text-brand-600" />
             <p className="text-xs text-muted-foreground">Valor Proposto</p>
           </div>
-          <p className="text-2xl font-bold text-blue-600">
+          <p className="text-2xl font-bold text-brand-600">
             {formatCurrency(proposal.proposed_price)}
           </p>
         </div>

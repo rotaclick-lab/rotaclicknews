@@ -45,14 +45,14 @@ export function ForgotPasswordForm() {
   if (success) {
     return (
       <div className="space-y-4">
-        <Alert>
-          <CheckCircle2 className="h-4 w-4" />
-          <AlertTitle>Email enviado com sucesso!</AlertTitle>
-          <AlertDescription>
+        <Alert className="border-brand-200 bg-brand-50">
+          <CheckCircle2 className="h-4 w-4 text-brand-600" />
+          <AlertTitle className="text-brand-800">Email enviado com sucesso!</AlertTitle>
+          <AlertDescription className="text-brand-700">
             Verifique sua caixa de entrada e siga as instruções para redefinir sua senha.
           </AlertDescription>
         </Alert>
-        <Link href="/login" className="flex items-center justify-center gap-2 text-sm text-primary hover:underline">
+        <Link href="/login" className="flex items-center justify-center gap-2 text-sm text-brand-600 hover:text-brand-700 hover:underline">
           <ArrowLeft className="h-4 w-4" />
           Voltar para o login
         </Link>
@@ -68,6 +68,7 @@ export function ForgotPasswordForm() {
           id="email"
           type="email"
           placeholder="seu@email.com"
+          className="focus-visible:ring-brand-500"
           {...register('email')}
           disabled={isLoading}
         />
@@ -76,11 +77,11 @@ export function ForgotPasswordForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold" disabled={isLoading}>
         {isLoading ? 'Enviando...' : 'Enviar email de recuperação'}
       </Button>
 
-      <Link href="/login" className="flex items-center justify-center gap-2 text-sm text-primary hover:underline">
+      <Link href="/login" className="flex items-center justify-center gap-2 text-sm text-brand-600 hover:text-brand-700 hover:underline">
         <ArrowLeft className="h-4 w-4" />
         Voltar para o login
       </Link>

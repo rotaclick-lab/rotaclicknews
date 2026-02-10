@@ -126,7 +126,7 @@ export function NotificationCenter() {
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-muted/50 transition-colors ${
-                    !notification.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''
+                    !notification.read ? 'bg-brand-50/50 dark:bg-brand-950/20' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -134,7 +134,7 @@ export function NotificationCenter() {
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-sm">{notification.title}</h4>
                         {!notification.read && (
-                          <div className="w-2 h-2 rounded-full bg-blue-600" />
+                          <div className="w-2 h-2 rounded-full bg-brand-500" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-2">
@@ -150,7 +150,7 @@ export function NotificationCenter() {
                         {notification.link && (
                           <Link
                             href={notification.link}
-                            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                            className="text-xs text-brand-600 hover:underline flex items-center gap-1"
                             onClick={() => handleMarkAsRead(notification.id)}
                           >
                             Ver detalhes

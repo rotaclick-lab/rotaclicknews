@@ -45,12 +45,12 @@ export function ReturnFreightCard({ returnFreight, showActions = true }: ReturnF
         {(returnFreight.suggested_price || returnFreight.best_proposal) && (
           <div className="grid grid-cols-2 gap-2">
             {returnFreight.suggested_price && (
-              <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="p-3 bg-brand-50 rounded-lg">
                 <div className="flex items-center gap-1 mb-1">
-                  <DollarSign className="h-3 w-3 text-blue-600" />
+                  <DollarSign className="h-3 w-3 text-brand-600" />
                   <p className="text-xs text-muted-foreground">Sugerido</p>
                 </div>
-                <p className="text-lg font-bold text-blue-600">
+                <p className="text-lg font-bold text-brand-600">
                   {formatCurrency(returnFreight.suggested_price)}
                 </p>
               </div>

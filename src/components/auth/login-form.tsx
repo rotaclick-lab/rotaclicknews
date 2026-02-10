@@ -45,6 +45,7 @@ export function LoginForm() {
           id="email"
           type="email"
           placeholder="seu@email.com"
+          className="focus-visible:ring-brand-500"
           {...register('email')}
           disabled={isLoading}
         />
@@ -59,6 +60,7 @@ export function LoginForm() {
           id="password"
           type="password"
           placeholder="••••••••"
+          className="focus-visible:ring-brand-500"
           {...register('password')}
           disabled={isLoading}
         />
@@ -67,17 +69,17 @@ export function LoginForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full" disabled={isLoading}>
+      <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold" disabled={isLoading}>
         {isLoading ? 'Entrando...' : 'Entrar'}
       </Button>
 
       <div className="text-center space-y-2 text-sm">
-        <Link href="/esqueci-senha" className="text-primary hover:underline block">
+        <Link href="/esqueci-senha" className="text-brand-600 hover:text-brand-700 hover:underline block">
           Esqueceu sua senha?
         </Link>
         <p className="text-muted-foreground">
           Não tem uma conta?{' '}
-          <Link href="/registro" className="text-primary hover:underline">
+          <Link href="/registro" className="text-orange-500 hover:text-orange-600 hover:underline font-semibold">
             Cadastre-se
           </Link>
         </p>
