@@ -1,11 +1,9 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -13,69 +11,48 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
           })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
+  // IMPORTANTE: NÃO usar getSession() aqui pois não garante revalidação do token
+  // getUser() faz uma chamada ao servidor Supabase Auth e renova o token automaticamente
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Proteger rotas do dashboard
-  if (
-    (request.nextUrl.pathname.startsWith('/dashboard') ||
-     request.nextUrl.pathname.startsWith('/fretes') ||
-     request.nextUrl.pathname.startsWith('/clientes') ||
-     request.nextUrl.pathname.startsWith('/motoristas') ||
-     request.nextUrl.pathname.startsWith('/veiculos') ||
-     request.nextUrl.pathname.startsWith('/financeiro') ||
-     request.nextUrl.pathname.startsWith('/relatorios') ||
-     request.nextUrl.pathname.startsWith('/marketplace') ||
-     request.nextUrl.pathname.startsWith('/configuracoes') ||
-     request.nextUrl.pathname.startsWith('/notificacoes') ||
-     request.nextUrl.pathname.startsWith('/tabela-frete') ||
-     request.nextUrl.pathname.startsWith('/cotacao') ||
-     request.nextUrl.pathname.startsWith('/cotacoes-recebidas') ||
-     request.nextUrl.pathname.startsWith('/historico') ||
-     request.nextUrl.pathname.startsWith('/rotas-realizadas') ||
-     request.nextUrl.pathname.startsWith('/perfil')) &&
-    !user
-  ) {
+  // Rotas protegidas do dashboard
+  const protectedPaths = [
+    '/dashboard',
+    '/financeiro',
+    '/relatorios',
+    '/configuracoes',
+    '/notificacoes',
+    '/tabela-frete',
+    '/cotacao',
+    '/cotacoes-recebidas',
+    '/historico',
+    '/rotas-realizadas',
+    '/perfil',
+  ]
+
+  const isProtectedRoute = protectedPaths.some(path =>
+    request.nextUrl.pathname.startsWith(path)
+  )
+
+  if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', request.nextUrl.pathname)
@@ -93,10 +70,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // A página raiz (/) agora é a cotação pública - acessível para todos
-  // Não redirecionar mais para /dashboard
+  // A página raiz (/) é a cotação pública - acessível para todos
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
