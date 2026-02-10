@@ -2,8 +2,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
-
-export const dynamic = 'force-dynamic'
   FileText, 
   DollarSign, 
   Users, 
@@ -13,6 +11,8 @@ export const dynamic = 'force-dynamic'
   Download,
   Calendar
 } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 
 export default async function RelatoriosPage() {
   const reportTypes = [
