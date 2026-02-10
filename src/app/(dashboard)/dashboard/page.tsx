@@ -240,8 +240,8 @@ export default function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', minHeight: 288 }}>
+              <ResponsiveContainer width="100%" height={288} minWidth={0}>
                 <AreaChart data={faturamentoMensal}>
                   <defs>
                     <linearGradient id="colorFaturamento" x1="0" y1="0" x2="0" y2="1">
@@ -283,8 +283,8 @@ export default function DashboardPage() {
             <CardDescription>Distribuição atual</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', minHeight: 208 }}>
+              <ResponsiveContainer width="100%" height={208} minWidth={0}>
                 <PieChart>
                   <Pie
                     data={statusFretes}
@@ -328,8 +328,8 @@ export default function DashboardPage() {
             <CardDescription>Comparativo dos últimos 6 meses</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', minHeight: 256 }}>
+              <ResponsiveContainer width="100%" height={256} minWidth={0}>
                 <BarChart data={cotacoesVsContratacoes} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="mes" tick={{ fontSize: 12 }} stroke="#9ca3af" />
@@ -358,8 +358,8 @@ export default function DashboardPage() {
             <CardDescription>Distribuição por categoria</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', minHeight: 208 }}>
+              <ResponsiveContainer width="100%" height={208} minWidth={0}>
                 <PieChart>
                   <Pie
                     data={tiposCarga}
@@ -454,8 +454,8 @@ export default function DashboardPage() {
             <CardDescription>Entregas e quilometragem por dia</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', minHeight: 256 }}>
+              <ResponsiveContainer width="100%" height={256} minWidth={0}>
                 <BarChart data={desempenhoSemanal}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="dia" tick={{ fontSize: 12 }} stroke="#9ca3af" />
