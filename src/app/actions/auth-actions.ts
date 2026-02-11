@@ -33,6 +33,7 @@ export async function signup(formData: FormData) {
         full_name: formData.get('fullName') as string,
         company_name: formData.get('companyName') as string,
         cnpj: formData.get('cnpj') as string,
+        role: 'transportadora',
       },
     },
   }
