@@ -31,6 +31,8 @@ import { searchAddressByCEP } from '@/app/actions/cep-actions'
 type FormData = CarrierStep1Input & CarrierStep2Input & CarrierStep3Input
 
 export function CarrierRegistrationForm() {
+  console.log('🚀 CarrierRegistrationForm montado!')
+  
   const [currentStep, setCurrentStep] = useState<'step1' | 'step2' | 'step3'>('step1')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCEP, setIsLoadingCEP] = useState(false)
