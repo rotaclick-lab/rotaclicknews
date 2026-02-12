@@ -36,13 +36,13 @@ export const carrierStep1Schema = z.object({
   // Dados Pessoais
   fullName: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   cpf: z.string()
-    .length(11, 'CPF deve ter 11 dígitos')
-    .regex(/^\d+$/, 'CPF deve conter apenas números')
+    .transform(val => val.replace(/\D/g, ''))
+    .refine(val => val.length === 11, 'CPF deve ter 11 dígitos')
     .refine(validateCPF, 'CPF inválido'),
   phone: z.string()
-    .length(11, 'Telefone deve ter 11 dígitos (DDD + número)')
-    .regex(/^\d+$/, 'Telefone deve conter apenas números')
-    .regex(/^[1-9]{2}9[0-9]{8}$/, 'Formato inválido. Use: 11999999999'),
+    .transform(val => val.replace(/\D/g, ''))
+    .refine(val => val.length === 10 || val.length === 11, 'Telefone deve ter 10 ou 11 dígitos')
+    .refine(val => /^[1-9]{2}[0-9]{8,9}$/.test(val), 'Formato de telefone inválido'),
   whatsappPermission: z.boolean().default(true),
   
   // Dados da Empresa (preenchidos automaticamente)
@@ -154,13 +154,13 @@ export const carrierRegistrationSchema = z.object({
   // Step 1
   fullName: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
   cpf: z.string()
-    .length(11, 'CPF deve ter 11 dígitos')
-    .regex(/^\d+$/, 'CPF deve conter apenas números')
+    .transform(val => val.replace(/\D/g, ''))
+    .refine(val => val.length === 11, 'CPF deve ter 11 dígitos')
     .refine(validateCPF, 'CPF inválido'),
   phone: z.string()
-    .length(11, 'Telefone deve ter 11 dígitos (DDD + número)')
-    .regex(/^\d+$/, 'Telefone deve conter apenas números')
-    .regex(/^[1-9]{2}9[0-9]{8}$/, 'Formato inválido. Use: 11999999999'),
+    .transform(val => val.replace(/\D/g, ''))
+    .refine(val => val.length === 10 || val.length === 11, 'Telefone deve ter 10 ou 11 dígitos')
+    .refine(val => /^[1-9]{2}[0-9]{8,9}$/.test(val), 'Formato de telefone inválido'),
   whatsappPermission: z.boolean().default(true),
   companyName: z.string().min(3, 'Nome da empresa é obrigatório'),
   cnpj: z.string()
