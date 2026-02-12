@@ -49,9 +49,12 @@ export function CarrierRegistrationForm() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedData = sessionStorage.getItem('carrier_data')
+      console.log('SessionStorage carrier_data:', savedData)
+      
       if (savedData) {
         try {
           const data = JSON.parse(savedData)
+          console.log('Dados parseados:', data)
           const filledFields: string[] = []
           
           // Dados da empresa
@@ -128,12 +131,17 @@ export function CarrierRegistrationForm() {
   // Função para buscar endereço por CEP
   const handleCEPSearch = async (cep: string) => {
     const cleanCEP = cep.replace(/\D/g, '')
+    console.log('Buscando CEP:', cleanCEP)
     
-    if (cleanCEP.length !== 8) return
+    if (cleanCEP.length !== 8) {
+      console.log('CEP inválido, precisa ter 8 dígitos')
+      return
+    }
 
     setIsLoadingCEP(true)
     try {
       const result = await searchAddressByCEP(cleanCEP)
+      console.log('Resultado da busca de CEP:', result)
       
       if (result.success && result.data) {
         form1.setValue('logradouro', result.data.logradouro)
@@ -145,9 +153,11 @@ export function CarrierRegistrationForm() {
         }
         toast.success('Endereço encontrado!')
       } else {
+        console.error('Erro ao buscar CEP:', result.error)
         toast.error(result.error || 'CEP não encontrado')
       }
     } catch (error) {
+      console.error('Exceção ao buscar CEP:', error)
       toast.error('Erro ao buscar CEP')
     } finally {
       setIsLoadingCEP(false)
