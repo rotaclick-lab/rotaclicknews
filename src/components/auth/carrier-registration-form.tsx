@@ -125,7 +125,8 @@ export function CarrierRegistrationForm() {
         console.error('Erro ao ler dados da transportadora', e)
       }
     }
-  }, [dataLoaded, form1, form3])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Função para buscar endereço por CEP
   const handleCEPSearch = async (cep: string) => {
