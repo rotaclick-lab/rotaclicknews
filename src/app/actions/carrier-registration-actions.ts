@@ -48,6 +48,14 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
           whatsapp_permission: data.whatsappPermission,
           accept_communications: data.acceptCommunications,
           accept_credit_analysis: data.acceptCreditAnalysis,
+          // Endereço
+          cep: data.cep,
+          logradouro: data.logradouro,
+          numero: data.numero,
+          complemento: data.complemento,
+          bairro: data.bairro,
+          cidade: data.cidade,
+          uf: data.uf,
         },
       },
     })
