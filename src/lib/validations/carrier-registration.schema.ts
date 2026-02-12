@@ -52,7 +52,7 @@ export const carrierStep1Schema = z.object({
     .regex(/^\d+$/, 'CNPJ deve conter apenas números'),
   inscricaoEstadual: z.string()
     .min(8, 'Inscrição Estadual deve ter no mínimo 8 caracteres')
-    .max(14, 'Inscrição Estadual deve ter no máximo 14 caracteres'),
+    .max(18, 'Inscrição Estadual deve ter no máximo 18 caracteres'),
   rntrc: z.string()
     .min(8, 'RNTRC deve ter no mínimo 8 dígitos')
     .max(12, 'RNTRC deve ter no máximo 12 dígitos')
@@ -168,7 +168,7 @@ export const carrierRegistrationSchema = z.object({
     .regex(/^\d+$/, 'CNPJ deve conter apenas números'),
   inscricaoEstadual: z.string()
     .min(8, 'Inscrição Estadual deve ter no mínimo 8 caracteres')
-    .max(14, 'Inscrição Estadual deve ter no máximo 14 caracteres'),
+    .max(18, 'Inscrição Estadual deve ter no máximo 18 caracteres'),
   rntrc: z.string()
     .min(8, 'RNTRC deve ter no mínimo 8 dígitos')
     .max(12, 'RNTRC deve ter no máximo 12 dígitos')
