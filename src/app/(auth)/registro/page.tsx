@@ -10,16 +10,18 @@ export const metadata = {
 export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-6">
-      <div className="flex justify-center mb-4">
-        <Image src="/logo.png" alt="RotaClick" width={200} height={100} priority />
-      </div>
-      <Suspense fallback={
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+      <div className="w-full max-w-4xl">
+        <div className="flex justify-center mb-6">
+          <Image src="/logo.png" alt="RotaClick" width={200} height={100} priority />
         </div>
-      }>
-        <CarrierRegistrationForm />
-      </Suspense>
+        <Suspense fallback={
+          <div className="flex items-center justify-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+          </div>
+        }>
+          <CarrierRegistrationForm />
+        </Suspense>
+      </div>
     </div>
   )
 }
