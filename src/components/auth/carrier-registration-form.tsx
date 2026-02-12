@@ -17,13 +17,10 @@ import {
   RAIOS_ATUACAO
 } from '@/lib/validations/carrier-registration.schema'
 import { maskCPF, maskPhone, maskRNTRC, removeMask } from '@/lib/utils/masks'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-// Card removido para design mais livre
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { User, Building2, Truck, Shield, ArrowRight, ArrowLeft, CheckCircle2, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerCarrier } from '@/app/actions/carrier-registration-actions'
@@ -319,17 +316,17 @@ export function CarrierRegistrationForm() {
         </div>
       </nav>
 
-      {/* Form Container */}
-      <main className="bg-white/80 backdrop-blur-sm p-8 rounded-xl shadow-xl border border-white/40">
-        <Tabs value={currentStep} className="w-full">
-          <TabsList className="hidden">
-            <TabsTrigger value="step1">Step 1</TabsTrigger>
-            <TabsTrigger value="step2">Step 2</TabsTrigger>
-            <TabsTrigger value="step3">Step 3</TabsTrigger>
-          </TabsList>
+      {/* Form Steps */}
+      <Tabs value={currentStep} className="w-full">
+        <TabsList className="hidden">
+          <TabsTrigger value="step1">Step 1</TabsTrigger>
+          <TabsTrigger value="step2">Step 2</TabsTrigger>
+          <TabsTrigger value="step3">Step 3</TabsTrigger>
+        </TabsList>
 
-          {/* STEP 1: Dados Pessoais e Empresa */}
-          <TabsContent value="step1">
+        {/* STEP 1: Dados Pessoais e Empresa */}
+        <TabsContent value="step1">
+          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-xl shadow-xl border border-white/40">
             <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-12">
               {/* Section 1: Dados do Responsável */}
               <section>
@@ -596,333 +593,378 @@ export function CarrierRegistrationForm() {
                 </button>
               </div>
             </form>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          {/* STEP 2: Dados Operacionais */}
-          <TabsContent value="step2">
-            <form onSubmit={form2.handleSubmit(onSubmitStep2)} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700">Frota e Capacidade</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoVeiculoPrincipal">Tipo de Veículo Principal *</Label>
-                    <Select
-                      value={form2.watch('tipoVeiculoPrincipal')}
-                      onValueChange={(value) => form2.setValue('tipoVeiculoPrincipal', value as any)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TIPOS_VEICULO.map(tipo => (
-                          <SelectItem key={tipo.value} value={tipo.value}>
-                            {tipo.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form2.formState.errors.tipoVeiculoPrincipal && (
-                      <p className="text-sm text-red-500">{form2.formState.errors.tipoVeiculoPrincipal.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tipoCarroceriaPrincipal">Tipo de Carroceria Principal *</Label>
-                    <Select
-                      value={form2.watch('tipoCarroceriaPrincipal')}
-                      onValueChange={(value) => form2.setValue('tipoCarroceriaPrincipal', value as any)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TIPOS_CARROCERIA.map(tipo => (
-                          <SelectItem key={tipo.value} value={tipo.value}>
-                            {tipo.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form2.formState.errors.tipoCarroceriaPrincipal && (
-                      <p className="text-sm text-red-500">{form2.formState.errors.tipoCarroceriaPrincipal.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="capacidadeCargaToneladas">Capacidade de Carga (toneladas) *</Label>
-                    <Input
-                      id="capacidadeCargaToneladas"
+        {/* STEP 2: Dados Operacionais */}
+        <TabsContent value="step2">
+          <form onSubmit={form2.handleSubmit(onSubmitStep2)} className="space-y-8">
+            {/* Section 1: Frota e Capacidade */}
+            <section className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                <Truck className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-bold">Frota e Capacidade</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Tipo de Veículo *</label>
+                  <select
+                    className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4"
+                    value={form2.watch('tipoVeiculoPrincipal') || ''}
+                    onChange={(e) => form2.setValue('tipoVeiculoPrincipal', e.target.value as any)}
+                  >
+                    <option value="">Selecione o veículo</option>
+                    {TIPOS_VEICULO.map(tipo => (
+                      <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+                    ))}
+                  </select>
+                  {form2.formState.errors.tipoVeiculoPrincipal && (
+                    <p className="text-sm text-red-500">{form2.formState.errors.tipoVeiculoPrincipal.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Tipo de Carroceria *</label>
+                  <select
+                    className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4"
+                    value={form2.watch('tipoCarroceriaPrincipal') || ''}
+                    onChange={(e) => form2.setValue('tipoCarroceriaPrincipal', e.target.value as any)}
+                  >
+                    <option value="">Selecione a carroceria</option>
+                    {TIPOS_CARROCERIA.map(tipo => (
+                      <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+                    ))}
+                  </select>
+                  {form2.formState.errors.tipoCarroceriaPrincipal && (
+                    <p className="text-sm text-red-500">{form2.formState.errors.tipoCarroceriaPrincipal.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Capacidade de Carga *</label>
+                  <div className="relative">
+                    <input
                       type="number"
-                      placeholder="30"
+                      placeholder="0"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 pr-12"
                       {...form2.register('capacidadeCargaToneladas', { valueAsNumber: true })}
                     />
-                    {form2.formState.errors.capacidadeCargaToneladas && (
-                      <p className="text-sm text-red-500">{form2.formState.errors.capacidadeCargaToneladas.message}</p>
-                    )}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 font-medium">ton</div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="raioAtuacao">Raio de Atuação *</Label>
-                    <Select
-                      value={form2.watch('raioAtuacao')}
-                      onValueChange={(value) => form2.setValue('raioAtuacao', value as any)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RAIOS_ATUACAO.map(raio => (
-                          <SelectItem key={raio.value} value={raio.value}>
-                            {raio.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form2.formState.errors.raioAtuacao && (
-                      <p className="text-sm text-red-500">{form2.formState.errors.raioAtuacao.message}</p>
-                    )}
-                  </div>
+                  {form2.formState.errors.capacidadeCargaToneladas && (
+                    <p className="text-sm text-red-500">{form2.formState.errors.capacidadeCargaToneladas.message}</p>
+                  )}
                 </div>
-
                 <div className="space-y-2">
-                  <Label>Regiões que Atende *</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {REGIOES_BRASIL.map(regiao => (
-                      <div key={regiao.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`regiao-${regiao.value}`}
-                          checked={form2.watch('regioesAtendimento')?.includes(regiao.value as any)}
-                          onCheckedChange={(checked) => {
-                            const current = form2.watch('regioesAtendimento') || []
-                            if (checked) {
-                              form2.setValue('regioesAtendimento', [...current, regiao.value as any])
-                            } else {
-                              form2.setValue('regioesAtendimento', current.filter(r => r !== regiao.value))
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`regiao-${regiao.value}`} className="text-sm font-normal">
-                          {regiao.label}
-                        </Label>
-                      </div>
+                  <label className="text-sm font-semibold text-slate-600">Raio de Operação *</label>
+                  <select
+                    className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4"
+                    value={form2.watch('raioAtuacao') || ''}
+                    onChange={(e) => form2.setValue('raioAtuacao', e.target.value as any)}
+                  >
+                    <option value="">Selecione o raio</option>
+                    {RAIOS_ATUACAO.map(raio => (
+                      <option key={raio.value} value={raio.value}>{raio.label}</option>
                     ))}
-                  </div>
-                  {form2.formState.errors.regioesAtendimento && (
-                    <p className="text-sm text-red-500">{form2.formState.errors.regioesAtendimento.message}</p>
+                  </select>
+                  {form2.formState.errors.raioAtuacao && (
+                    <p className="text-sm text-red-500">{form2.formState.errors.raioAtuacao.message}</p>
                   )}
                 </div>
               </div>
+            </section>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700">Informações Adicionais (Opcional)</h3>
+            {/* Section 2: Regiões de Atendimento */}
+            <section className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                <Building2 className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-bold">Regiões de Atendimento</h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {REGIOES_BRASIL.map(regiao => {
+                  const isChecked = form2.watch('regioesAtendimento')?.includes(regiao.value as any)
+                  return (
+                    <div
+                      key={regiao.value}
+                      onClick={() => {
+                        const current = form2.watch('regioesAtendimento') || []
+                        if (isChecked) {
+                          form2.setValue('regioesAtendimento', current.filter(r => r !== regiao.value))
+                        } else {
+                          form2.setValue('regioesAtendimento', [...current, regiao.value as any])
+                        }
+                      }}
+                      className={`h-32 flex flex-col items-center justify-center p-4 border-2 rounded-xl transition-all cursor-pointer ${
+                        isChecked
+                          ? 'border-primary bg-primary/5'
+                          : 'border-slate-100 hover:border-primary/50'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 mb-3 rounded-full flex items-center justify-center transition-colors ${
+                        isChecked
+                          ? 'bg-primary text-white'
+                          : 'bg-slate-50 text-slate-400'
+                      }`}>
+                        <Building2 className="h-5 w-5" />
+                      </div>
+                      <span className={`font-bold text-sm text-center ${isChecked ? 'text-primary' : 'text-slate-600'}`}>
+                        {regiao.label}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+              {form2.formState.errors.regioesAtendimento && (
+                <p className="text-sm text-red-500 mt-2">{form2.formState.errors.regioesAtendimento.message}</p>
+              )}
+            </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="consumoMedioDiesel">Consumo Médio (km/l)</Label>
-                    <Input
-                      id="consumoMedioDiesel"
+            {/* Section 3: Informações Adicionais */}
+            <section className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                <Shield className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-bold">Informações Adicionais <span className="text-sm font-normal text-slate-400">(Opcional)</span></h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Consumo Médio</label>
+                  <div className="relative">
+                    <input
                       type="number"
                       step="0.1"
-                      placeholder="2.5"
+                      placeholder="0.00"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 pr-14"
                       {...form2.register('consumoMedioDiesel', { valueAsNumber: true })}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="numeroEixos">Número de Eixos</Label>
-                    <Input
-                      id="numeroEixos"
-                      type="number"
-                      placeholder="5"
-                      {...form2.register('numeroEixos', { valueAsNumber: true })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="numeroApoliceSeguro">Nº Apólice de Seguro</Label>
-                    <Input
-                      id="numeroApoliceSeguro"
-                      placeholder="000000000"
-                      {...form2.register('numeroApoliceSeguro')}
-                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 font-medium">km/L</div>
                   </div>
                 </div>
-
-                <div className="flex gap-6">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="possuiRastreamento"
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Quantidade de Eixos</label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4"
+                    {...form2.register('numeroEixos', { valueAsNumber: true })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-600">Número da Apólice</label>
+                  <input
+                    placeholder="Ex: 12345678"
+                    className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4"
+                    {...form2.register('numeroApoliceSeguro')}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-8 bg-slate-50 p-5 rounded-lg border border-slate-100">
+                <label className="inline-flex items-center cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
                       checked={form2.watch('possuiRastreamento')}
-                      onCheckedChange={(checked) => form2.setValue('possuiRastreamento', checked as boolean)}
+                      onChange={(e) => form2.setValue('possuiRastreamento', e.target.checked)}
                     />
-                    <Label htmlFor="possuiRastreamento" className="text-sm font-normal">
-                      Possui rastreamento
-                    </Label>
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="possuiSeguroCarga"
+                  <span className="ml-3 text-sm font-medium text-slate-700">Possui Rastreamento</span>
+                </label>
+                <label className="inline-flex items-center cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
                       checked={form2.watch('possuiSeguroCarga')}
-                      onCheckedChange={(checked) => form2.setValue('possuiSeguroCarga', checked as boolean)}
+                      onChange={(e) => form2.setValue('possuiSeguroCarga', e.target.checked)}
                     />
-                    <Label htmlFor="possuiSeguroCarga" className="text-sm font-normal">
-                      Possui seguro de carga
-                    </Label>
+                    <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </div>
-                </div>
+                  <span className="ml-3 text-sm font-medium text-slate-700">Possui Seguro de Carga</span>
+                </label>
               </div>
+            </section>
 
-              <div className="flex justify-between">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => setCurrentStep('step1')}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button type="submit" className="bg-brand-500 hover:bg-brand-600">
-                  Próxima Etapa <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-          </TabsContent>
+            {/* Navigation Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-slate-200">
+              <button
+                type="button"
+                className="w-full sm:w-auto px-8 py-3 rounded-lg border-2 border-slate-300 text-slate-600 font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-2"
+                onClick={() => setCurrentStep('step1')}
+              >
+                <ArrowLeft className="h-5 w-5" />
+                Voltar
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-12 py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+              >
+                Próxima Etapa
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </div>
+          </form>
+        </TabsContent>
 
-          {/* STEP 3: Credenciais e Aceites */}
-          <TabsContent value="step3">
-            <form onSubmit={form3.handleSubmit(onSubmitStep3)} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700">Credenciais de Acesso</h3>
+        {/* STEP 3: Credenciais e Aceites */}
+        <TabsContent value="step3">
+          <form onSubmit={form3.handleSubmit(onSubmitStep3)}>
+            <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+              <div className="p-8">
+                {/* Section 1: Credenciais */}
+                <section className="mb-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1 h-6 bg-primary rounded-full"></div>
+                    <h2 className="text-xl font-bold text-slate-800">Credenciais de Acesso</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">E-mail Corporativo ou Pessoal *</label>
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="exemplo@email.com"
+                        className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 outline-none"
+                        {...form3.register('email')}
+                      />
+                      {form3.formState.errors.email && (
+                        <p className="text-sm text-red-500 mt-1">{form3.formState.errors.email.message}</p>
+                      )}
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Definir Senha *</label>
+                        <input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 outline-none"
+                          {...form3.register('password')}
+                        />
+                        {form3.formState.errors.password && (
+                          <p className="text-sm text-red-500 mt-1">{form3.formState.errors.password.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Senha *</label>
+                        <input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="••••••••"
+                          className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-900 outline-none"
+                          {...form3.register('confirmPassword')}
+                        />
+                        {form3.formState.errors.confirmPassword && (
+                          <p className="text-sm text-red-500 mt-1">{form3.formState.errors.confirmPassword.message}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      {...form3.register('email')}
-                    />
-                    {form3.formState.errors.email && (
-                      <p className="text-sm text-red-500">{form3.formState.errors.email.message}</p>
+                {/* Section 2: Termos */}
+                <section>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1 h-6 bg-primary rounded-full"></div>
+                    <h2 className="text-xl font-bold text-slate-800">Termos e Condições</h2>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className="mt-1">
+                        <input
+                          type="checkbox"
+                          className="w-6 h-6 rounded border-slate-300 text-primary focus:ring-primary"
+                          checked={form3.watch('acceptTerms')}
+                          onChange={(e) => form3.setValue('acceptTerms', e.target.checked)}
+                        />
+                      </div>
+                      <div className="text-sm text-slate-600 leading-relaxed">
+                        Li e aceito os <a className="text-primary font-bold underline hover:no-underline" href="/termos" target="_blank">Termos de Uso</a> da plataforma RotaClick, incluindo as responsabilidades de transporte. *
+                      </div>
+                    </label>
+                    {form3.formState.errors.acceptTerms && (
+                      <p className="text-sm text-red-500 ml-10">{form3.formState.errors.acceptTerms.message}</p>
                     )}
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha *</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      {...form3.register('password')}
-                    />
-                    {form3.formState.errors.password && (
-                      <p className="text-sm text-red-500">{form3.formState.errors.password.message}</p>
+                    <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className="mt-1">
+                        <input
+                          type="checkbox"
+                          className="w-6 h-6 rounded border-slate-300 text-primary focus:ring-primary"
+                          checked={form3.watch('acceptPrivacy')}
+                          onChange={(e) => form3.setValue('acceptPrivacy', e.target.checked)}
+                        />
+                      </div>
+                      <div className="text-sm text-slate-600 leading-relaxed">
+                        Estou ciente e concordo com a <a className="text-primary font-bold underline hover:no-underline" href="/privacidade" target="_blank">Política de Privacidade</a> referente ao tratamento de meus dados. *
+                      </div>
+                    </label>
+                    {form3.formState.errors.acceptPrivacy && (
+                      <p className="text-sm text-red-500 ml-10">{form3.formState.errors.acceptPrivacy.message}</p>
                     )}
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      {...form3.register('confirmPassword')}
-                    />
-                    {form3.formState.errors.confirmPassword && (
-                      <p className="text-sm text-red-500">{form3.formState.errors.confirmPassword.message}</p>
-                    )}
+                    <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className="mt-1">
+                        <input
+                          type="checkbox"
+                          className="w-6 h-6 rounded border-slate-300 text-primary focus:ring-primary"
+                          checked={form3.watch('acceptCommunications')}
+                          onChange={(e) => form3.setValue('acceptCommunications', e.target.checked)}
+                        />
+                      </div>
+                      <div className="text-sm text-slate-600 leading-relaxed">
+                        Aceito receber comunicações sobre novas cargas, atualizações de sistema e marketing via WhatsApp ou E-mail.
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className="mt-1">
+                        <input
+                          type="checkbox"
+                          className="w-6 h-6 rounded border-slate-300 text-primary focus:ring-primary"
+                          checked={form3.watch('acceptCreditAnalysis')}
+                          onChange={(e) => form3.setValue('acceptCreditAnalysis', e.target.checked)}
+                        />
+                      </div>
+                      <div className="text-sm text-slate-600 leading-relaxed">
+                        Autorizo a RotaClick e seus parceiros a realizarem consultas para análise de crédito e antecedentes profissionais.
+                      </div>
+                    </label>
                   </div>
-                </div>
+                </section>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700">Termos e Condições</h3>
-
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="acceptTerms"
-                      checked={form3.watch('acceptTerms')}
-                      onCheckedChange={(checked) => form3.setValue('acceptTerms', checked as boolean)}
-                    />
-                    <Label htmlFor="acceptTerms" className="text-sm font-normal leading-relaxed">
-                      Aceito os <a href="/termos" target="_blank" className="text-brand-600 hover:underline">termos de uso</a> *
-                    </Label>
-                  </div>
-                  {form3.formState.errors.acceptTerms && (
-                    <p className="text-sm text-red-500 ml-6">{form3.formState.errors.acceptTerms.message}</p>
-                  )}
-
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="acceptPrivacy"
-                      checked={form3.watch('acceptPrivacy')}
-                      onCheckedChange={(checked) => form3.setValue('acceptPrivacy', checked as boolean)}
-                    />
-                    <Label htmlFor="acceptPrivacy" className="text-sm font-normal leading-relaxed">
-                      Aceito a <a href="/privacidade" target="_blank" className="text-brand-600 hover:underline">política de privacidade</a> *
-                    </Label>
-                  </div>
-                  {form3.formState.errors.acceptPrivacy && (
-                    <p className="text-sm text-red-500 ml-6">{form3.formState.errors.acceptPrivacy.message}</p>
-                  )}
-
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="acceptCommunications"
-                      checked={form3.watch('acceptCommunications')}
-                      onCheckedChange={(checked) => form3.setValue('acceptCommunications', checked as boolean)}
-                    />
-                    <Label htmlFor="acceptCommunications" className="text-sm font-normal leading-relaxed">
-                      Aceito receber comunicações e ofertas da RotaClick
-                    </Label>
-                  </div>
-
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="acceptCreditAnalysis"
-                      checked={form3.watch('acceptCreditAnalysis')}
-                      onCheckedChange={(checked) => form3.setValue('acceptCreditAnalysis', checked as boolean)}
-                    />
-                    <Label htmlFor="acceptCreditAnalysis" className="text-sm font-normal leading-relaxed">
-                      Autorizo o compartilhamento de dados para análise de crédito
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-between">
-                <Button 
-                  type="button" 
-                  variant="outline"
+              {/* Action Footer inside card */}
+              <div className="bg-slate-50 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-slate-500 hover:bg-slate-200 transition-all w-full md:w-auto"
                   onClick={() => setCurrentStep('step2')}
                   disabled={isLoading}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-brand-500 hover:bg-brand-600"
+                  <ArrowLeft className="h-5 w-5" />
+                  Voltar
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center justify-center gap-2 px-10 py-4 rounded-lg bg-primary text-white font-bold text-lg hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all w-full md:w-auto active:scale-95"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       Finalizando...
                     </>
                   ) : (
                     <>
-                      Finalizar Cadastro <CheckCircle2 className="ml-2 h-4 w-4" />
+                      Finalizar Cadastro
+                      <CheckCircle2 className="h-5 w-5" />
                     </>
                   )}
-                </Button>
+                </button>
               </div>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </main>
+            </div>
+          </form>
+        </TabsContent>
+      </Tabs>
 
       {/* Page Footer */}
       <footer className="mt-8 text-center text-slate-500 text-sm">
