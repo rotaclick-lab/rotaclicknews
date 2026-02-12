@@ -41,6 +41,7 @@ export function CarrierRegistrationForm() {
   // Form para Step 1
   const form1 = useForm<CarrierStep1Input>({
     resolver: zodResolver(carrierStep1Schema),
+    mode: 'onBlur',
     defaultValues: {
       whatsappPermission: true,
     }
@@ -173,6 +174,7 @@ export function CarrierRegistrationForm() {
   // Form para Step 2
   const form2 = useForm<CarrierStep2Input>({
     resolver: zodResolver(carrierStep2Schema),
+    mode: 'onBlur',
     defaultValues: {
       possuiRastreamento: false,
       possuiSeguroCarga: false,
@@ -183,6 +185,7 @@ export function CarrierRegistrationForm() {
   // Form para Step 3
   const form3 = useForm<CarrierStep3Input>({
     resolver: zodResolver(carrierStep3Schema),
+    mode: 'onBlur',
     defaultValues: {
       acceptCommunications: false,
       acceptCreditAnalysis: false,
