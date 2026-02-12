@@ -51,23 +51,29 @@ export function CarrierRegistrationForm() {
     if (dataLoaded || typeof window === 'undefined') return
     
     const savedData = sessionStorage.getItem('carrier_data')
+    console.log('📦 SessionStorage carrier_data:', savedData)
     
     if (savedData) {
       try {
         const data = JSON.parse(savedData)
+        console.log('📋 Dados parseados do sessionStorage:', data)
         const filledFields: string[] = []
         
         // Dados da empresa
         if (data.cnpj) {
+          console.log('✅ Preenchendo CNPJ:', data.cnpj)
           form1.setValue('cnpj', data.cnpj)
           filledFields.push('CNPJ')
         }
         if (data.razao_social || data.nome_fantasia) {
-          form1.setValue('companyName', data.nome_fantasia || data.razao_social)
+          const companyName = data.nome_fantasia || data.razao_social
+          console.log('✅ Preenchendo Nome da Empresa:', companyName)
+          form1.setValue('companyName', companyName)
           filledFields.push('Nome da Empresa')
         }
         
         // Endereço (se disponível da Receita Federal)
+        console.log('🏠 Dados de endereço:', data.endereco)
         if (data.endereco) {
           if (data.endereco.cep) {
             const cleanCEP = data.endereco.cep.replace(/\D/g, '')
