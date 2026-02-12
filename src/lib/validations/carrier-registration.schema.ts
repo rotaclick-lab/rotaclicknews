@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+/**
+ * Schemas de validação para cadastro de transportadora
+ * Exportados para uso no formulário multi-step
+ */
+
 // Validação de CPF
 const validateCPF = (cpf: string): boolean => {
   cpf = cpf.replace(/\D/g, '')
