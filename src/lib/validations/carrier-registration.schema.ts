@@ -52,6 +52,17 @@ export const carrierStep1Schema = z.object({
     .min(8, 'RNTRC deve ter no mínimo 8 dígitos')
     .max(12, 'RNTRC deve ter no máximo 12 dígitos')
     .regex(/^\d+$/, 'RNTRC deve conter apenas números'),
+  
+  // Endereço
+  cep: z.string()
+    .length(8, 'CEP deve ter 8 dígitos')
+    .regex(/^\d+$/, 'CEP deve conter apenas números'),
+  logradouro: z.string().min(3, 'Logradouro é obrigatório'),
+  numero: z.string().min(1, 'Número é obrigatório'),
+  complemento: z.string().optional(),
+  bairro: z.string().min(2, 'Bairro é obrigatório'),
+  cidade: z.string().min(2, 'Cidade é obrigatória'),
+  uf: z.string().length(2, 'UF deve ter 2 caracteres'),
 })
 
 // Schema para Etapa 2: Dados Operacionais
@@ -157,6 +168,17 @@ export const carrierRegistrationSchema = z.object({
     .min(8, 'RNTRC deve ter no mínimo 8 dígitos')
     .max(12, 'RNTRC deve ter no máximo 12 dígitos')
     .regex(/^\d+$/, 'RNTRC deve conter apenas números'),
+  
+  // Endereço
+  cep: z.string()
+    .length(8, 'CEP deve ter 8 dígitos')
+    .regex(/^\d+$/, 'CEP deve conter apenas números'),
+  logradouro: z.string().min(3, 'Logradouro é obrigatório'),
+  numero: z.string().min(1, 'Número é obrigatório'),
+  complemento: z.string().optional(),
+  bairro: z.string().min(2, 'Bairro é obrigatório'),
+  cidade: z.string().min(2, 'Cidade é obrigatória'),
+  uf: z.string().length(2, 'UF deve ter 2 caracteres'),
   
   // Step 2
   tipoVeiculoPrincipal: z.enum([

@@ -23,15 +23,17 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User, Building2, Truck, Shield, ArrowRight, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
+import { User, Building2, Truck, Shield, ArrowRight, ArrowLeft, CheckCircle2, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerCarrier } from '@/app/actions/carrier-registration-actions'
+import { searchAddressByCEP } from '@/app/actions/cep-actions'
 
 type FormData = CarrierStep1Input & CarrierStep2Input & CarrierStep3Input
 
 export function CarrierRegistrationForm() {
   const [currentStep, setCurrentStep] = useState<'step1' | 'step2' | 'step3'>('step1')
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingCEP, setIsLoadingCEP] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set())
 
   // Form para Step 1
@@ -59,6 +61,35 @@ export function CarrierRegistrationForm() {
       }
     }
   }, [])
+
+  // Função para buscar endereço por CEP
+  const handleCEPSearch = async (cep: string) => {
+    const cleanCEP = cep.replace(/\D/g, '')
+    
+    if (cleanCEP.length !== 8) return
+
+    setIsLoadingCEP(true)
+    try {
+      const result = await searchAddressByCEP(cleanCEP)
+      
+      if (result.success && result.data) {
+        form1.setValue('logradouro', result.data.logradouro)
+        form1.setValue('bairro', result.data.bairro)
+        form1.setValue('cidade', result.data.cidade)
+        form1.setValue('uf', result.data.uf)
+        if (result.data.complemento) {
+          form1.setValue('complemento', result.data.complemento)
+        }
+        toast.success('Endereço encontrado!')
+      } else {
+        toast.error(result.error || 'CEP não encontrado')
+      }
+    } catch (error) {
+      toast.error('Erro ao buscar CEP')
+    } finally {
+      setIsLoadingCEP(false)
+    }
+  }
 
   // Form para Step 2
   const form2 = useForm<CarrierStep2Input>({
@@ -293,6 +324,110 @@ export function CarrierRegistrationForm() {
                     />
                     {form1.formState.errors.rntrc && (
                       <p className="text-sm text-red-500">{form1.formState.errors.rntrc.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cep">CEP *</Label>
+                    <div className="relative">
+                      <Input
+                        id="cep"
+                        placeholder="00000-000"
+                        maxLength={9}
+                        {...form1.register('cep')}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, '')
+                          const masked = value.replace(/^(\d{5})(\d)/, '$1-$2')
+                          e.target.value = masked
+                          form1.setValue('cep', value)
+                          
+                          if (value.length === 8) {
+                            handleCEPSearch(value)
+                          }
+                        }}
+                      />
+                      {isLoadingCEP && (
+                        <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-brand-500" />
+                      )}
+                    </div>
+                    {form1.formState.errors.cep && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.cep.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="logradouro">Logradouro *</Label>
+                    <Input
+                      id="logradouro"
+                      placeholder="Rua, Avenida, etc"
+                      {...form1.register('logradouro')}
+                    />
+                    {form1.formState.errors.logradouro && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.logradouro.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="numero">Número *</Label>
+                    <Input
+                      id="numero"
+                      placeholder="123"
+                      {...form1.register('numero')}
+                    />
+                    {form1.formState.errors.numero && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.numero.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="complemento">Complemento</Label>
+                    <Input
+                      id="complemento"
+                      placeholder="Sala, Andar, etc"
+                      {...form1.register('complemento')}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bairro">Bairro *</Label>
+                    <Input
+                      id="bairro"
+                      placeholder="Centro"
+                      {...form1.register('bairro')}
+                    />
+                    {form1.formState.errors.bairro && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.bairro.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cidade">Cidade *</Label>
+                    <Input
+                      id="cidade"
+                      placeholder="São Paulo"
+                      {...form1.register('cidade')}
+                    />
+                    {form1.formState.errors.cidade && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.cidade.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="uf">UF *</Label>
+                    <Input
+                      id="uf"
+                      placeholder="SP"
+                      maxLength={2}
+                      {...form1.register('uf')}
+                      onChange={(e) => {
+                        e.target.value = e.target.value.toUpperCase()
+                        form1.setValue('uf', e.target.value)
+                      }}
+                    />
+                    {form1.formState.errors.uf && (
+                      <p className="text-sm text-red-500">{form1.formState.errors.uf.message}</p>
                     )}
                   </div>
                 </div>
