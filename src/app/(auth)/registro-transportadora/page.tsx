@@ -41,11 +41,24 @@ export default function RegistroTransportadoraPage() {
       const result = await validateCarrierCNPJ(cnpj)
       if (result.success) {
         setCompanyData(result.data)
-        // Salva no sessionStorage para evitar URLs longas e erro 500
+        // Salva TODOS os dados no sessionStorage
         sessionStorage.setItem('carrier_data', JSON.stringify({
           cnpj: cnpj.replace(/\D/g, ''),
-          razao: result.data.razao_social,
-          fantasia: result.data.nome_fantasia,
+          razao_social: result.data.razao_social,
+          nome_fantasia: result.data.nome_fantasia,
+          cnae_principal: result.data.cnae_principal,
+          cnae_principal_descricao: result.data.cnae_principal_descricao,
+          cnae_secundarios: result.data.cnae_secundarios,
+          natureza_juridica: result.data.natureza_juridica,
+          porte: result.data.porte,
+          capital_social: result.data.capital_social,
+          data_abertura: result.data.data_abertura,
+          situacao_cadastral: result.data.situacao_cadastral,
+          data_situacao_cadastral: result.data.data_situacao_cadastral,
+          endereco: result.data.endereco,
+          socios: result.data.socios,
+          email: result.data.email,
+          telefone: result.data.telefone,
           role: 'transportadora'
         }))
         toast.success('Empresa validada com sucesso!')
@@ -116,7 +129,9 @@ export default function RegistroTransportadoraPage() {
                   <h4 className="font-bold text-brand-800 text-lg">Empresa Autorizada!</h4>
                   <div className="text-sm text-brand-700 space-y-1">
                     <p><strong>Razão Social:</strong> {companyData.razao_social}</p>
-                    <p><strong>CNAE:</strong> {companyData.cnae_principal}</p>
+                    <p><strong>Nome Fantasia:</strong> {companyData.nome_fantasia}</p>
+                    <p><strong>CNAE Principal:</strong> {companyData.cnae_principal_descricao}</p>
+                    <p><strong>Situação:</strong> {companyData.situacao_cadastral}</p>
                   </div>
                   <Button 
                     onClick={() => window.location.href = '/registro'}

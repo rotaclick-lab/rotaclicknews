@@ -70,12 +70,27 @@ function processBrasilAPI(data: any) {
       data: {
         razao_social: data.razao_social,
         nome_fantasia: data.nome_fantasia || data.razao_social,
-        cnae_principal: data.cnae_fiscal_descricao,
-        logradouro: data.logradouro,
-        numero: data.numero,
-        municipio: data.municipio,
-        uf: data.uf,
-        cep: data.cep
+        cnae_principal: data.cnae_fiscal,
+        cnae_principal_descricao: data.cnae_fiscal_descricao,
+        cnae_secundarios: data.cnaes_secundarios || [],
+        natureza_juridica: data.natureza_juridica,
+        porte: data.porte,
+        capital_social: data.capital_social,
+        data_abertura: data.data_inicio_atividade,
+        situacao_cadastral: data.descricao_situacao_cadastral,
+        data_situacao_cadastral: data.data_situacao_cadastral,
+        endereco: {
+          logradouro: data.logradouro,
+          numero: data.numero,
+          complemento: data.complemento,
+          bairro: data.bairro,
+          municipio: data.municipio,
+          uf: data.uf,
+          cep: data.cep
+        },
+        socios: data.qsa || [],
+        email: data.email,
+        telefone: data.ddd_telefone_1
       }
     }
 }
@@ -102,12 +117,27 @@ function processReceitaWS(data: any) {
     data: {
       razao_social: data.nome,
       nome_fantasia: data.fantasia || data.nome,
-      cnae_principal: data.atividade_principal[0].text,
-      logradouro: data.logradouro,
-      numero: data.numero,
-      municipio: data.municipio,
-      uf: data.uf,
-      cep: data.cep
+      cnae_principal: data.atividade_principal[0].code,
+      cnae_principal_descricao: data.atividade_principal[0].text,
+      cnae_secundarios: data.atividades_secundarias || [],
+      natureza_juridica: data.natureza_juridica,
+      porte: data.porte,
+      capital_social: data.capital_social,
+      data_abertura: data.data_situacao,
+      situacao_cadastral: data.situacao,
+      data_situacao_cadastral: data.data_situacao,
+      endereco: {
+        logradouro: data.logradouro,
+        numero: data.numero,
+        complemento: data.complemento,
+        bairro: data.bairro,
+        municipio: data.municipio,
+        uf: data.uf,
+        cep: data.cep
+      },
+      socios: data.qsa || [],
+      email: data.email,
+      telefone: data.telefone
     }
   }
 }
