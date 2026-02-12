@@ -184,10 +184,19 @@ export function CarrierRegistrationForm() {
   })
 
   const onSubmitStep1 = async (data: CarrierStep1Input) => {
+    console.log('=== SUBMIT STEP 1 CHAMADO ===')
     console.log('Step 1 data:', data)
-    setCompletedSteps(prev => new Set(prev).add('step1'))
-    setCurrentStep('step2')
-    toast.success('Dados pessoais salvos!')
+    console.log('Erros do formulário:', form1.formState.errors)
+    
+    try {
+      setCompletedSteps(prev => new Set(prev).add('step1'))
+      setCurrentStep('step2')
+      toast.success('Dados pessoais salvos!')
+      console.log('✅ Step 1 concluído, indo para Step 2')
+    } catch (error) {
+      console.error('❌ Erro no Step 1:', error)
+      toast.error('Erro ao processar dados')
+    }
   }
 
   const onSubmitStep2 = async (data: CarrierStep2Input) => {
