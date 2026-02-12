@@ -41,8 +41,9 @@ export default function RegistroTransportadoraPage() {
       const result = await validateCarrierCNPJ(cnpj)
       if (result.success) {
         setCompanyData(result.data)
+        
         // Salva TODOS os dados no sessionStorage
-        sessionStorage.setItem('carrier_data', JSON.stringify({
+        const dataToSave = {
           cnpj: cnpj.replace(/\D/g, ''),
           razao_social: result.data.razao_social,
           nome_fantasia: result.data.nome_fantasia,
@@ -60,7 +61,12 @@ export default function RegistroTransportadoraPage() {
           email: result.data.email,
           telefone: result.data.telefone,
           role: 'transportadora'
-        }))
+        }
+        
+        console.log('💾 Salvando no sessionStorage:', dataToSave)
+        console.log('🏠 Endereço que será salvo:', result.data.endereco)
+        sessionStorage.setItem('carrier_data', JSON.stringify(dataToSave))
+        
         toast.success('Empresa validada com sucesso!')
       } else {
         setError(result.error)
