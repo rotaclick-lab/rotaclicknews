@@ -31,13 +31,12 @@ import { searchAddressByCEP } from '@/app/actions/cep-actions'
 type FormData = CarrierStep1Input & CarrierStep2Input & CarrierStep3Input
 
 export function CarrierRegistrationForm() {
-  console.log('🚀 CarrierRegistrationForm montado!')
-  
   const [currentStep, setCurrentStep] = useState<'step1' | 'step2' | 'step3'>('step1')
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCEP, setIsLoadingCEP] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set())
   const [autoFilledFields, setAutoFilledFields] = useState<string[]>([])
+  const [dataLoaded, setDataLoaded] = useState(false)
 
   // Form para Step 1
   const form1 = useForm<CarrierStep1Input>({
@@ -49,86 +48,84 @@ export function CarrierRegistrationForm() {
 
   // Preencher dados do sessionStorage (vindos da validação CNPJ)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedData = sessionStorage.getItem('carrier_data')
-      console.log('SessionStorage carrier_data:', savedData)
-      
-      if (savedData) {
-        try {
-          const data = JSON.parse(savedData)
-          console.log('Dados parseados:', data)
-          const filledFields: string[] = []
-          
-          // Dados da empresa
-          if (data.cnpj) {
-            form1.setValue('cnpj', data.cnpj)
-            filledFields.push('CNPJ')
-          }
-          if (data.razao_social || data.nome_fantasia) {
-            form1.setValue('companyName', data.nome_fantasia || data.razao_social)
-            filledFields.push('Nome da Empresa')
-          }
-          
-          // Endereço (se disponível da Receita Federal)
-          if (data.endereco) {
-            if (data.endereco.cep) {
-              const cleanCEP = data.endereco.cep.replace(/\D/g, '')
-              form1.setValue('cep', cleanCEP)
-              filledFields.push('CEP')
-            }
-            if (data.endereco.logradouro) {
-              form1.setValue('logradouro', data.endereco.logradouro)
-              filledFields.push('Logradouro')
-            }
-            if (data.endereco.numero) {
-              form1.setValue('numero', data.endereco.numero)
-              filledFields.push('Número')
-            }
-            if (data.endereco.complemento) {
-              form1.setValue('complemento', data.endereco.complemento)
-              filledFields.push('Complemento')
-            }
-            if (data.endereco.bairro) {
-              form1.setValue('bairro', data.endereco.bairro)
-              filledFields.push('Bairro')
-            }
-            if (data.endereco.municipio) {
-              form1.setValue('cidade', data.endereco.municipio)
-              filledFields.push('Cidade')
-            }
-            if (data.endereco.uf) {
-              form1.setValue('uf', data.endereco.uf)
-              filledFields.push('UF')
-            }
-          }
-          
-          // Email e telefone (se disponíveis)
-          if (data.email) {
-            form3.setValue('email', data.email)
-            filledFields.push('Email')
-          }
-          if (data.telefone) {
-            const cleanPhone = data.telefone.replace(/\D/g, '')
-            // Verificar se tem 11 dígitos (DDD + 9 dígitos)
-            if (cleanPhone.length === 11) {
-              form1.setValue('phone', cleanPhone)
-              filledFields.push('Telefone')
-            }
-          }
-          
-          setAutoFilledFields(filledFields)
-          
-          if (filledFields.length > 0) {
-            toast.success(`${filledFields.length} campos preenchidos automaticamente da Receita Federal!`, {
-              description: 'Revise os dados e complete as informações restantes.'
-            })
-          }
-        } catch (e) {
-          console.error('Erro ao ler dados da transportadora', e)
+    if (dataLoaded || typeof window === 'undefined') return
+    
+    const savedData = sessionStorage.getItem('carrier_data')
+    
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData)
+        const filledFields: string[] = []
+        
+        // Dados da empresa
+        if (data.cnpj) {
+          form1.setValue('cnpj', data.cnpj)
+          filledFields.push('CNPJ')
         }
+        if (data.razao_social || data.nome_fantasia) {
+          form1.setValue('companyName', data.nome_fantasia || data.razao_social)
+          filledFields.push('Nome da Empresa')
+        }
+        
+        // Endereço (se disponível da Receita Federal)
+        if (data.endereco) {
+          if (data.endereco.cep) {
+            const cleanCEP = data.endereco.cep.replace(/\D/g, '')
+            form1.setValue('cep', cleanCEP)
+            filledFields.push('CEP')
+          }
+          if (data.endereco.logradouro) {
+            form1.setValue('logradouro', data.endereco.logradouro)
+            filledFields.push('Logradouro')
+          }
+          if (data.endereco.numero) {
+            form1.setValue('numero', data.endereco.numero)
+            filledFields.push('Número')
+          }
+          if (data.endereco.complemento) {
+            form1.setValue('complemento', data.endereco.complemento)
+            filledFields.push('Complemento')
+          }
+          if (data.endereco.bairro) {
+            form1.setValue('bairro', data.endereco.bairro)
+            filledFields.push('Bairro')
+          }
+          if (data.endereco.municipio) {
+            form1.setValue('cidade', data.endereco.municipio)
+            filledFields.push('Cidade')
+          }
+          if (data.endereco.uf) {
+            form1.setValue('uf', data.endereco.uf)
+            filledFields.push('UF')
+          }
+        }
+        
+        // Email e telefone (se disponíveis)
+        if (data.email) {
+          form3.setValue('email', data.email)
+          filledFields.push('Email')
+        }
+        if (data.telefone) {
+          const cleanPhone = data.telefone.replace(/\D/g, '')
+          if (cleanPhone.length === 11) {
+            form1.setValue('phone', cleanPhone)
+            filledFields.push('Telefone')
+          }
+        }
+        
+        setAutoFilledFields(filledFields)
+        setDataLoaded(true)
+        
+        if (filledFields.length > 0) {
+          toast.success(`${filledFields.length} campos preenchidos automaticamente!`, {
+            description: 'Revise os dados e complete as informações restantes.'
+          })
+        }
+      } catch (e) {
+        console.error('Erro ao ler dados da transportadora', e)
       }
     }
-  }, [])
+  }, [dataLoaded, form1, form3])
 
   // Função para buscar endereço por CEP
   const handleCEPSearch = async (cep: string) => {
