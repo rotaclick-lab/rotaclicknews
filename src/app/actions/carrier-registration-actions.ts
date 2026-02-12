@@ -13,9 +13,13 @@ interface TermAcceptance {
 }
 
 export async function registerCarrier(data: CarrierRegistrationInput) {
+  console.log('=== INICIANDO CADASTRO ===')
+  console.log('Dados recebidos:', JSON.stringify(data, null, 2))
+  
   const supabase = await createClient()
 
   try {
+    console.log('1. Criando usuário no Supabase Auth...')
     // 1. Criar usuário no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
@@ -49,15 +53,19 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
     })
 
     if (authError) {
-      console.error('Auth error:', authError)
+      console.error('❌ Erro ao criar usuário:', authError)
       return { error: authError.message }
     }
 
     if (!authData.user) {
+      console.error('❌ authData.user está vazio')
       return { error: 'Erro ao criar usuário' }
     }
 
+    console.log('✅ Usuário criado com sucesso:', authData.user.id)
+
     // 2. Registrar aceites de termos
+    console.log('2. Registrando aceites de termos...')
     const termAcceptances: TermAcceptance[] = []
 
     if (data.acceptTerms) {
@@ -90,6 +98,7 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
 
     // Inserir aceites de termos
     if (termAcceptances.length > 0) {
+      console.log(`Inserindo ${termAcceptances.length} aceites de termos...`)
       const acceptancesWithUserId = termAcceptances.map(acceptance => ({
         ...acceptance,
         user_id: authData.user.id,
@@ -100,12 +109,15 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
         .insert(acceptancesWithUserId)
 
       if (termsError) {
-        console.error('Terms acceptance error:', termsError)
+        console.error('❌ Erro ao salvar aceites:', termsError)
         // Não retornar erro aqui, pois o usuário já foi criado
+      } else {
+        console.log('✅ Aceites salvos com sucesso')
       }
     }
 
     // 3. Atualizar profile com dados adicionais
+    console.log('3. Atualizando profile...')
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -118,16 +130,21 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
       .eq('id', authData.user.id)
 
     if (profileError) {
-      console.error('Profile update error:', profileError)
+      console.error('❌ Erro ao atualizar profile:', profileError)
+    } else {
+      console.log('✅ Profile atualizado com sucesso')
     }
 
     // 4. Atualizar company com dados operacionais
+    console.log('4. Atualizando company...')
     // Buscar company_id do profile
     const { data: profileData } = await supabase
       .from('profiles')
       .select('company_id')
       .eq('id', authData.user.id)
       .single()
+
+    console.log('Company ID encontrado:', profileData?.company_id)
 
     if (profileData?.company_id) {
       const { error: companyError } = await supabase
@@ -149,14 +166,21 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
         .eq('id', profileData.company_id)
 
       if (companyError) {
-        console.error('Company update error:', companyError)
+        console.error('❌ Erro ao atualizar company:', companyError)
+      } else {
+        console.log('✅ Company atualizada com sucesso')
       }
+    } else {
+      console.warn('⚠️ Company ID não encontrado no profile')
     }
 
+    console.log('5. Limpando sessionStorage e redirecionando...')
+    console.log('=== CADASTRO CONCLUÍDO COM SUCESSO ===')
+    
     revalidatePath('/', 'layout')
     redirect('/dashboard')
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error('❌ ERRO GERAL NO CADASTRO:', error)
     return { error: 'Erro ao processar cadastro. Tente novamente.' }
   }
 }

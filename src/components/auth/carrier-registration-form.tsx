@@ -198,32 +198,49 @@ export function CarrierRegistrationForm() {
   }
 
   const onSubmitStep3 = async (data: CarrierStep3Input) => {
+    console.log('=== INICIANDO SUBMIT STEP 3 ===')
+    console.log('Step 3 data:', data)
+    
     setIsLoading(true)
     
     // Combinar todos os dados
+    const step1Data = form1.getValues()
+    const step2Data = form2.getValues()
+    
+    console.log('Step 1 values:', step1Data)
+    console.log('Step 2 values:', step2Data)
+    
     const fullData: FormData = {
-      ...form1.getValues(),
-      ...form2.getValues(),
+      ...step1Data,
+      ...step2Data,
       ...data,
     }
 
+    console.log('Dados completos para envio:', fullData)
+
     try {
+      console.log('Chamando registerCarrier...')
       const result = await registerCarrier(fullData)
       
+      console.log('Resultado do registerCarrier:', result)
+      
       if (result?.error) {
+        console.error('Erro retornado pela action:', result.error)
         toast.error(result.error)
         setIsLoading(false)
         return
       }
       
       // Limpar sessionStorage
+      console.log('Limpando sessionStorage...')
       sessionStorage.removeItem('carrier_data')
       
       toast.success('Cadastro realizado com sucesso! Redirecionando...')
+      console.log('=== CADASTRO FINALIZADO ===')
       // O redirect já é feito pela action
     } catch (error) {
+      console.error('❌ EXCEÇÃO NO SUBMIT:', error)
       toast.error('Erro ao realizar cadastro')
-      console.error(error)
       setIsLoading(false)
     }
   }
