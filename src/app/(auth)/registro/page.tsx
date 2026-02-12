@@ -9,8 +9,8 @@ export const metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-4 md:p-6 lg:p-8">
+      <div className="w-full max-w-7xl">
         <div className="flex justify-center mb-6">
           <Image src="/logo.png" alt="RotaClick" width={200} height={100} priority />
         </div>

@@ -264,8 +264,8 @@ export function CarrierRegistrationForm() {
   }
 
   return (
-    <Card className="w-full max-w-4xl border-2 border-brand-200 shadow-xl">
-      <CardHeader className="text-center">
+    <Card className="w-full max-w-6xl border-2 border-brand-200 shadow-xl">
+      <CardHeader className="text-center px-6 py-8">
         <CardTitle className="text-3xl font-black text-brand-700">
           Cadastro de Transportadora
         </CardTitle>
@@ -274,7 +274,7 @@ export function CarrierRegistrationForm() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-6 md:px-8 lg:px-12">
         <Tabs value={currentStep} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger 
