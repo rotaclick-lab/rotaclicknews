@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+// Card removido para design mais livre
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { User, Building2, Truck, Shield, ArrowRight, ArrowLeft, CheckCircle2, Loader2, Search } from 'lucide-react'
@@ -264,17 +264,17 @@ export function CarrierRegistrationForm() {
   }
 
   return (
-    <Card className="w-full border-2 border-brand-200 shadow-xl">
-      <CardHeader className="text-center px-8 py-10">
-        <CardTitle className="text-5xl font-black text-brand-700">
+    <div className="w-full">
+      <div className="text-center mb-10">
+        <h1 className="text-5xl font-black text-brand-700">
           Cadastro de Transportadora
-        </CardTitle>
-        <CardDescription className="text-2xl mt-4">
+        </h1>
+        <p className="text-2xl mt-4 text-muted-foreground">
           Complete seu cadastro em 3 etapas simples
-        </CardDescription>
-      </CardHeader>
+        </p>
+      </div>
 
-      <CardContent className="px-8 md:px-12 lg:px-16 pb-10">
+      <div className="w-full">
         <Tabs value={currentStep} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-10 h-16">
             <TabsTrigger 
@@ -886,7 +886,7 @@ export function CarrierRegistrationForm() {
             </form>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
