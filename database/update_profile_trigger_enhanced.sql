@@ -57,7 +57,7 @@ BEGIN
       NEW.raw_user_meta_data->>'tipo_veiculo_principal',
       NEW.raw_user_meta_data->>'tipo_carroceria_principal',
       NULLIF(NEW.raw_user_meta_data->>'capacidade_carga_toneladas', '')::INTEGER,
-      NULLIF(NEW.raw_user_meta_data->>'regioes_atendimento', '')::JSONB,
+      (NEW.raw_user_meta_data->'regioes_atendimento')::JSONB,
       NEW.raw_user_meta_data->>'raio_atuacao',
       NULLIF(NEW.raw_user_meta_data->>'consumo_medio_diesel', '')::DECIMAL,
       NULLIF(NEW.raw_user_meta_data->>'numero_eixos', '')::INTEGER,
