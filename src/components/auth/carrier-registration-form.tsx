@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Image from 'next/image'
 import { 
   carrierStep1Schema, 
   carrierStep2Schema, 
@@ -265,62 +266,85 @@ export function CarrierRegistrationForm() {
 
   return (
     <div className="w-full">
-      <div className="text-center mb-10">
-        <h1 className="text-5xl font-black text-brand-700">
+      {/* Header Section */}
+      <header className="text-center mb-12">
+        <div className="flex justify-center mb-6">
+          <Image src="/logo.png" alt="RotaClick" width={200} height={80} priority />
+        </div>
+        <h1 className="text-[48px] font-extrabold leading-tight text-slate-900 mb-4">
           Cadastro de Transportadora
         </h1>
-        <p className="text-2xl mt-4 text-muted-foreground">
-          Complete seu cadastro em 3 etapas simples
+        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+          Preencha as informações básicas para começar a operar na plataforma e conectar-se com novas oportunidades de frete.
         </p>
-      </div>
+      </header>
 
-      <div className="w-full">
+      {/* Navigation Tabs */}
+      <nav className="flex gap-4 mb-10">
+        <div className={`flex-1 h-[64px] flex items-center justify-center gap-3 rounded-lg shadow-lg transition-all ${
+          currentStep === 'step1' 
+            ? 'bg-primary text-white shadow-primary/20 cursor-default' 
+            : completedSteps.has('step1')
+            ? 'bg-emerald-500 text-white cursor-default'
+            : 'bg-slate-200/50 text-slate-500 cursor-not-allowed'
+        }`}>
+          {completedSteps.has('step1') ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <User className="h-5 w-5" />
+          )}
+          <span className="font-bold">Dados Pessoais</span>
+        </div>
+        <div className={`flex-1 h-[64px] flex items-center justify-center gap-3 rounded-lg shadow-lg transition-all ${
+          currentStep === 'step2' 
+            ? 'bg-primary text-white shadow-primary/20 cursor-default' 
+            : completedSteps.has('step2')
+            ? 'bg-emerald-500 text-white cursor-default'
+            : 'bg-slate-200/50 text-slate-500 cursor-not-allowed'
+        }`}>
+          {completedSteps.has('step2') ? (
+            <CheckCircle2 className="h-5 w-5" />
+          ) : (
+            <Truck className="h-5 w-5" />
+          )}
+          <span className="font-bold">Dados Operacionais</span>
+        </div>
+        <div className={`flex-1 h-[64px] flex items-center justify-center gap-3 rounded-lg shadow-lg transition-all ${
+          currentStep === 'step3' 
+            ? 'bg-primary text-white shadow-primary/20 cursor-default' 
+            : 'bg-slate-200/50 text-slate-500 cursor-not-allowed'
+        }`}>
+          <Shield className="h-5 w-5" />
+          <span className="font-bold">Credenciais</span>
+        </div>
+      </nav>
+
+      {/* Form Container */}
+      <main className="bg-white/80 backdrop-blur-sm p-8 rounded-xl shadow-xl border border-white/40">
         <Tabs value={currentStep} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-10 h-16">
-            <TabsTrigger 
-              value="step1" 
-              disabled={currentStep !== 'step1'}
-              className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
-            >
-              <User className="h-6 w-6 mr-2" />
-              <span className="text-lg">Dados Pessoais</span>
-              {completedSteps.has('step1') && <CheckCircle2 className="h-6 w-6 ml-2 text-green-500" />}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="step2" 
-              disabled={currentStep === 'step1'}
-              className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
-            >
-              <Truck className="h-6 w-6 mr-2" />
-              <span className="text-lg">Dados Operacionais</span>
-              {completedSteps.has('step2') && <CheckCircle2 className="h-6 w-6 ml-2 text-green-500" />}
-            </TabsTrigger>
-            <TabsTrigger 
-              value="step3" 
-              disabled={currentStep !== 'step3'}
-              className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
-            >
-              <Shield className="h-6 w-6 mr-2" />
-              <span className="text-lg">Credenciais</span>
-            </TabsTrigger>
+          <TabsList className="hidden">
+            <TabsTrigger value="step1">Step 1</TabsTrigger>
+            <TabsTrigger value="step2">Step 2</TabsTrigger>
+            <TabsTrigger value="step3">Step 3</TabsTrigger>
           </TabsList>
 
           {/* STEP 1: Dados Pessoais e Empresa */}
           <TabsContent value="step1">
-            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-8">
-              <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-brand-700 flex items-center gap-3">
-                  <User className="h-7 w-7" />
-                  Dados do Responsável
-                </h3>
+            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-12">
+              {/* Section 1: Dados do Responsável */}
+              <section>
+                <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                  <User className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold text-slate-800">Dados do Responsável</h2>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="fullName" className="text-lg font-medium">Nome Completo *</Label>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">Nome Completo *</label>
                     <Input
                       id="fullName"
-                      placeholder="João Silva"
-                      className="h-14 text-lg"
+                      placeholder="Ex: João Silva"
+                      className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
                       {...form1.register('fullName')}
                     />
                     {form1.formState.errors.fullName && (
@@ -328,42 +352,43 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-3">
-                    <Label htmlFor="cpf" className="text-lg font-medium">CPF *</Label>
-                    <Input
-                      id="cpf"
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                      className="h-14 text-lg"
-                      {...form1.register('cpf')}
+                  <div className="col-span-2 md:col-span-1 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[18px] font-medium text-slate-700 mb-2">CPF *</label>
+                      <Input
+                        id="cpf"
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                        className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
+                        {...form1.register('cpf')}
                       onChange={(e) => {
                         const masked = maskCPF(e.target.value)
                         form1.setValue('cpf', removeMask(masked))
                         e.target.value = masked
                       }}
                     />
-                    {form1.formState.errors.cpf && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.cpf.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="phone" className="text-lg font-medium">Telefone Celular *</Label>
-                    <Input
-                      id="phone"
-                      placeholder="(11) 99999-9999"
-                      maxLength={15}
-                      className="h-14 text-lg"
-                      {...form1.register('phone')}
+                      {form1.formState.errors.cpf && (
+                        <p className="text-sm text-red-500">{form1.formState.errors.cpf.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[18px] font-medium text-slate-700 mb-2">Telefone *</label>
+                      <Input
+                        id="phone"
+                        placeholder="(00) 00000-0000"
+                        maxLength={15}
+                        className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
+                        {...form1.register('phone')}
                       onChange={(e) => {
                         const masked = maskPhone(e.target.value)
                         form1.setValue('phone', removeMask(masked))
                         e.target.value = masked
                       }}
                     />
-                    {form1.formState.errors.phone && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.phone.message}</p>
-                    )}
+                      {form1.formState.errors.phone && (
+                        <p className="text-sm text-red-500">{form1.formState.errors.phone.message}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2 pt-8">
@@ -377,13 +402,14 @@ export function CarrierRegistrationForm() {
                     </Label>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <div className="space-y-6">
-                <h3 className="text-2xl font-semibold text-brand-700 flex items-center gap-3">
-                  <Building2 className="h-7 w-7" />
-                  Dados da Empresa
-                </h3>
+              {/* Section 2: Dados da Empresa */}
+              <section>
+                <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold text-slate-800">Dados da Empresa</h2>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
@@ -441,10 +467,18 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
                 </div>
+              </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="cep" className="text-lg font-medium">CEP *</Label>
+              {/* Section 3: Endereço */}
+              <section>
+                <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold text-slate-800">Endereço</h2>
+                </div>
+
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 md:col-span-3">
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP *</label>
                     <div className="relative">
                       <Input
                         id="cep"
@@ -552,12 +586,14 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <div className="flex justify-end">
-                <Button type="submit" className="bg-brand-500 hover:bg-brand-600 h-14 text-lg px-8">
-                  Próxima Etapa <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+              {/* Action Footer */}
+              <div className="flex justify-end pt-8 mt-8 border-t border-slate-100">
+                <button className="flex items-center gap-3 px-8 h-[64px] bg-primary hover:bg-opacity-90 text-white rounded-lg font-bold text-lg shadow-lg shadow-primary/30 transition-all active:scale-95" type="submit">
+                  Próxima Etapa
+                  <ArrowRight className="h-5 w-5" />
+                </button>
               </div>
             </form>
           </TabsContent>
@@ -886,7 +922,12 @@ export function CarrierRegistrationForm() {
             </form>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
+
+      {/* Page Footer */}
+      <footer className="mt-8 text-center text-slate-500 text-sm">
+        <p>© 2024 RotaClick Logistics. Todos os direitos reservados. Precisa de ajuda? <a className="text-primary font-semibold hover:underline" href="#">Entre em contato.</a></p>
+      </footer>
     </div>
   )
 }
