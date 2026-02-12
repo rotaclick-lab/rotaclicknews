@@ -265,61 +265,62 @@ export function CarrierRegistrationForm() {
 
   return (
     <Card className="w-full border-2 border-brand-200 shadow-xl">
-      <CardHeader className="text-center px-6 py-8">
-        <CardTitle className="text-3xl font-black text-brand-700">
+      <CardHeader className="text-center px-8 py-10">
+        <CardTitle className="text-5xl font-black text-brand-700">
           Cadastro de Transportadora
         </CardTitle>
-        <CardDescription className="text-lg">
+        <CardDescription className="text-2xl mt-4">
           Complete seu cadastro em 3 etapas simples
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="px-8 md:px-12 lg:px-16 pb-8">
+      <CardContent className="px-8 md:px-12 lg:px-16 pb-10">
         <Tabs value={currentStep} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-10 h-16">
             <TabsTrigger 
               value="step1" 
               disabled={currentStep !== 'step1'}
               className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
             >
-              <User className="h-4 w-4 mr-2" />
-              Dados Pessoais
-              {completedSteps.has('step1') && <CheckCircle2 className="h-4 w-4 ml-2 text-green-500" />}
+              <User className="h-6 w-6 mr-2" />
+              <span className="text-lg">Dados Pessoais</span>
+              {completedSteps.has('step1') && <CheckCircle2 className="h-6 w-6 ml-2 text-green-500" />}
             </TabsTrigger>
             <TabsTrigger 
               value="step2" 
               disabled={currentStep === 'step1'}
               className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
             >
-              <Truck className="h-4 w-4 mr-2" />
-              Dados Operacionais
-              {completedSteps.has('step2') && <CheckCircle2 className="h-4 w-4 ml-2 text-green-500" />}
+              <Truck className="h-6 w-6 mr-2" />
+              <span className="text-lg">Dados Operacionais</span>
+              {completedSteps.has('step2') && <CheckCircle2 className="h-6 w-6 ml-2 text-green-500" />}
             </TabsTrigger>
             <TabsTrigger 
               value="step3" 
               disabled={currentStep !== 'step3'}
               className="data-[state=active]:bg-brand-500 data-[state=active]:text-white"
             >
-              <Shield className="h-4 w-4 mr-2" />
-              Credenciais
+              <Shield className="h-6 w-6 mr-2" />
+              <span className="text-lg">Credenciais</span>
             </TabsTrigger>
           </TabsList>
 
           {/* STEP 1: Dados Pessoais e Empresa */}
           <TabsContent value="step1">
-            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700 flex items-center gap-2">
-                  <User className="h-5 w-5" />
+            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-8">
+              <div className="space-y-6">
+                <h3 className="text-2xl font-semibold text-brand-700 flex items-center gap-3">
+                  <User className="h-7 w-7" />
                   Dados do Responsável
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nome Completo *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="fullName" className="text-lg font-medium">Nome Completo *</Label>
                     <Input
                       id="fullName"
                       placeholder="João Silva"
+                      className="h-14 text-lg"
                       {...form1.register('fullName')}
                     />
                     {form1.formState.errors.fullName && (
@@ -327,12 +328,13 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="cpf" className="text-lg font-medium">CPF *</Label>
                     <Input
                       id="cpf"
                       placeholder="000.000.000-00"
                       maxLength={14}
+                      className="h-14 text-lg"
                       {...form1.register('cpf')}
                       onChange={(e) => {
                         const masked = maskCPF(e.target.value)
@@ -345,12 +347,13 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone Celular *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="phone" className="text-lg font-medium">Telefone Celular *</Label>
                     <Input
                       id="phone"
                       placeholder="(11) 99999-9999"
                       maxLength={15}
+                      className="h-14 text-lg"
                       {...form1.register('phone')}
                       onChange={(e) => {
                         const masked = maskPhone(e.target.value)
@@ -369,25 +372,26 @@ export function CarrierRegistrationForm() {
                       checked={form1.watch('whatsappPermission')}
                       onCheckedChange={(checked) => form1.setValue('whatsappPermission', checked as boolean)}
                     />
-                    <Label htmlFor="whatsappPermission" className="text-sm">
+                    <Label htmlFor="whatsappPermission" className="text-base font-medium">
                       Aceito receber mensagens via WhatsApp
                     </Label>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-brand-700 flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
+              <div className="space-y-6">
+                <h3 className="text-2xl font-semibold text-brand-700 flex items-center gap-3">
+                  <Building2 className="h-7 w-7" />
                   Dados da Empresa
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Nome da Empresa *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="companyName" className="text-lg font-medium">Nome da Empresa *</Label>
                     <Input
                       id="companyName"
                       placeholder="Transportadora XYZ Ltda"
+                      className="h-14 text-lg"
                       {...form1.register('companyName')}
                     />
                     {form1.formState.errors.companyName && (
@@ -395,22 +399,23 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cnpj">CNPJ *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="cnpj" className="text-lg font-medium">CNPJ *</Label>
                     <Input
                       id="cnpj"
                       placeholder="00.000.000/0000-00"
                       {...form1.register('cnpj')}
                       disabled
-                      className="bg-muted"
+                      className="bg-muted h-14 text-lg"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="inscricaoEstadual">Inscrição Estadual *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="inscricaoEstadual" className="text-lg font-medium">Inscrição Estadual *</Label>
                     <Input
                       id="inscricaoEstadual"
                       placeholder="000.000.000.000"
+                      className="h-14 text-lg"
                       {...form1.register('inscricaoEstadual')}
                     />
                     {form1.formState.errors.inscricaoEstadual && (
@@ -418,12 +423,13 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="rntrc">RNTRC *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="rntrc" className="text-lg font-medium">RNTRC *</Label>
                     <Input
                       id="rntrc"
                       placeholder="00000000"
                       maxLength={12}
+                      className="h-14 text-lg"
                       {...form1.register('rntrc')}
                       onChange={(e) => {
                         const masked = maskRNTRC(e.target.value)
@@ -436,14 +442,15 @@ export function CarrierRegistrationForm() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cep">CEP *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="cep" className="text-lg font-medium">CEP *</Label>
                     <div className="relative">
                       <Input
                         id="cep"
                         placeholder="00000-000"
                         maxLength={9}
+                        className="h-14 text-lg"
                         {...form1.register('cep')}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '')
@@ -465,11 +472,12 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="logradouro">Logradouro *</Label>
+                  <div className="space-y-3 md:col-span-2">
+                    <Label htmlFor="logradouro" className="text-lg font-medium">Logradouro *</Label>
                     <Input
                       id="logradouro"
                       placeholder="Rua, Avenida, etc"
+                      className="h-14 text-lg"
                       {...form1.register('logradouro')}
                     />
                     {form1.formState.errors.logradouro && (
@@ -477,11 +485,12 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="numero">Número *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="numero" className="text-lg font-medium">Número *</Label>
                     <Input
                       id="numero"
                       placeholder="123"
+                      className="h-14 text-lg"
                       {...form1.register('numero')}
                     />
                     {form1.formState.errors.numero && (
@@ -489,20 +498,22 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="complemento">Complemento</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="complemento" className="text-lg font-medium">Complemento</Label>
                     <Input
                       id="complemento"
                       placeholder="Sala, Andar, etc"
+                      className="h-14 text-lg"
                       {...form1.register('complemento')}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="bairro">Bairro *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="bairro" className="text-lg font-medium">Bairro *</Label>
                     <Input
                       id="bairro"
                       placeholder="Centro"
+                      className="h-14 text-lg"
                       {...form1.register('bairro')}
                     />
                     {form1.formState.errors.bairro && (
@@ -510,11 +521,12 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="cidade" className="text-lg font-medium">Cidade *</Label>
                     <Input
                       id="cidade"
                       placeholder="São Paulo"
+                      className="h-14 text-lg"
                       {...form1.register('cidade')}
                     />
                     {form1.formState.errors.cidade && (
@@ -522,12 +534,13 @@ export function CarrierRegistrationForm() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="uf">UF *</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="uf" className="text-lg font-medium">UF *</Label>
                     <Input
                       id="uf"
                       placeholder="SP"
                       maxLength={2}
+                      className="h-14 text-lg"
                       {...form1.register('uf')}
                       onChange={(e) => {
                         e.target.value = e.target.value.toUpperCase()
@@ -542,8 +555,8 @@ export function CarrierRegistrationForm() {
               </div>
 
               <div className="flex justify-end">
-                <Button type="submit" className="bg-brand-500 hover:bg-brand-600">
-                  Próxima Etapa <ArrowRight className="ml-2 h-4 w-4" />
+                <Button type="submit" className="bg-brand-500 hover:bg-brand-600 h-14 text-lg px-8">
+                  Próxima Etapa <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
             </form>
