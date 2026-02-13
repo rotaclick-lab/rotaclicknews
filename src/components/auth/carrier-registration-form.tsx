@@ -327,76 +327,71 @@ export function CarrierRegistrationForm() {
         {/* STEP 1: Dados Pessoais e Empresa */}
         <TabsContent value="step1">
           <div className="bg-white/80 backdrop-blur-sm p-8 rounded-xl shadow-xl border border-white/40">
-            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-12">
+            <form onSubmit={form1.handleSubmit(onSubmitStep1)} className="space-y-10">
               {/* Section 1: Dados do Responsável */}
               <section>
                 <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
                   <User className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-bold text-slate-800">Dados do Responsável</h2>
                 </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2 md:col-span-1">
-                    <label className="block text-[18px] font-medium text-slate-700 mb-2">Nome Completo *</label>
-                    <Input
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 md:col-span-5">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Nome Completo *</label>
+                    <input
                       id="fullName"
                       placeholder="Ex: João Silva"
-                      className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('fullName')}
                     />
                     {form1.formState.errors.fullName && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.fullName.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.fullName.message}</p>
                     )}
                   </div>
-
-                  <div className="col-span-2 md:col-span-1 grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[18px] font-medium text-slate-700 mb-2">CPF *</label>
-                      <Input
-                        id="cpf"
-                        placeholder="000.000.000-00"
-                        maxLength={14}
-                        className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
-                        {...form1.register('cpf')}
+                  <div className="col-span-12 md:col-span-3">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">CPF *</label>
+                    <input
+                      id="cpf"
+                      placeholder="000.000.000-00"
+                      maxLength={14}
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       onChange={(e) => {
                         const masked = maskCPF(e.target.value)
                         form1.setValue('cpf', removeMask(masked))
                         e.target.value = masked
                       }}
                     />
-                      {form1.formState.errors.cpf && (
-                        <p className="text-sm text-red-500">{form1.formState.errors.cpf.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-[18px] font-medium text-slate-700 mb-2">Telefone *</label>
-                      <Input
-                        id="phone"
-                        placeholder="(00) 00000-0000"
-                        maxLength={15}
-                        className="w-full h-[56px] px-4 rounded-lg border-slate-200 focus:border-primary focus:ring-primary bg-white/50 text-slate-900 placeholder:text-slate-400"
-                        {...form1.register('phone')}
+                    {form1.formState.errors.cpf && (
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.cpf.message}</p>
+                    )}
+                  </div>
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Telefone *</label>
+                    <input
+                      id="phone"
+                      placeholder="(00) 00000-0000"
+                      maxLength={15}
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       onChange={(e) => {
                         const masked = maskPhone(e.target.value)
                         form1.setValue('phone', removeMask(masked))
                         e.target.value = masked
                       }}
                     />
-                      {form1.formState.errors.phone && (
-                        <p className="text-sm text-red-500">{form1.formState.errors.phone.message}</p>
-                      )}
-                    </div>
+                    {form1.formState.errors.phone && (
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.phone.message}</p>
+                    )}
                   </div>
-
-                  <div className="flex items-center space-x-2 pt-8">
-                    <Checkbox
+                  <div className="col-span-12 flex items-center gap-3">
+                    <input
+                      type="checkbox"
                       id="whatsappPermission"
+                      className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
                       checked={form1.watch('whatsappPermission')}
-                      onCheckedChange={(checked) => form1.setValue('whatsappPermission', checked as boolean)}
+                      onChange={(e) => form1.setValue('whatsappPermission', e.target.checked)}
                     />
-                    <Label htmlFor="whatsappPermission" className="text-base font-medium">
+                    <label htmlFor="whatsappPermission" className="text-sm font-medium text-slate-700 cursor-pointer">
                       Aceito receber mensagens via WhatsApp
-                    </Label>
+                    </label>
                   </div>
                 </div>
               </section>
@@ -407,60 +402,56 @@ export function CarrierRegistrationForm() {
                   <Building2 className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-bold text-slate-800">Dados da Empresa</h2>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="companyName" className="text-lg font-medium">Nome da Empresa *</Label>
-                    <Input
+                <div className="grid grid-cols-12 gap-6">
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Nome da Empresa *</label>
+                    <input
                       id="companyName"
                       placeholder="Transportadora XYZ Ltda"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('companyName')}
                     />
                     {form1.formState.errors.companyName && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.companyName.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.companyName.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="cnpj" className="text-lg font-medium">CNPJ *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">CNPJ *</label>
+                    <input
                       id="cnpj"
                       placeholder="00.000.000/0000-00"
-                      {...form1.register('cnpj')}
                       disabled
-                      className="bg-muted h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-100 border border-slate-200 rounded-lg px-4 text-slate-500 cursor-not-allowed"
+                      {...form1.register('cnpj')}
                     />
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="inscricaoEstadual" className="text-lg font-medium">Inscrição Estadual *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Inscrição Estadual *</label>
+                    <input
                       id="inscricaoEstadual"
                       placeholder="000.000.000.000"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('inscricaoEstadual')}
                     />
                     {form1.formState.errors.inscricaoEstadual && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.inscricaoEstadual.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.inscricaoEstadual.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="rntrc" className="text-lg font-medium">RNTRC *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">RNTRC *</label>
+                    <input
                       id="rntrc"
                       placeholder="00000000"
                       maxLength={12}
-                      className="h-14 text-lg"
-                      {...form1.register('rntrc')}
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       onChange={(e) => {
                         const masked = maskRNTRC(e.target.value)
                         form1.setValue('rntrc', masked)
+                        e.target.value = masked
                       }}
                     />
                     {form1.formState.errors.rntrc && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.rntrc.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.rntrc.message}</p>
                     )}
                   </div>
                 </div>
@@ -472,114 +463,104 @@ export function CarrierRegistrationForm() {
                   <Building2 className="h-5 w-5 text-primary" />
                   <h2 className="text-xl font-bold text-slate-800">Endereço</h2>
                 </div>
-
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP *</label>
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">CEP *</label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="cep"
                         placeholder="00000-000"
                         maxLength={9}
-                        className="h-14 text-lg"
-                        {...form1.register('cep')}
+                        className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, '')
                           const masked = value.replace(/^(\d{5})(\d)/, '$1-$2')
                           e.target.value = masked
                           form1.setValue('cep', value)
-                          
                           if (value.length === 8) {
                             handleCEPSearch(value)
                           }
                         }}
                       />
                       {isLoadingCEP && (
-                        <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-brand-500" />
+                        <Loader2 className="absolute right-3 top-3.5 h-5 w-5 animate-spin text-primary" />
                       )}
                     </div>
                     {form1.formState.errors.cep && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.cep.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.cep.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3 md:col-span-2">
-                    <Label htmlFor="logradouro" className="text-lg font-medium">Logradouro *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-5">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Logradouro *</label>
+                    <input
                       id="logradouro"
                       placeholder="Rua, Avenida, etc"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('logradouro')}
                     />
                     {form1.formState.errors.logradouro && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.logradouro.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.logradouro.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="numero" className="text-lg font-medium">Número *</Label>
-                    <Input
+                  <div className="col-span-6 md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Número *</label>
+                    <input
                       id="numero"
                       placeholder="123"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('numero')}
                     />
                     {form1.formState.errors.numero && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.numero.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.numero.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="complemento" className="text-lg font-medium">Complemento</Label>
-                    <Input
+                  <div className="col-span-6 md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Complemento</label>
+                    <input
                       id="complemento"
-                      placeholder="Sala, Andar, etc"
-                      className="h-14 text-lg"
+                      placeholder="Sala, Andar"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('complemento')}
                     />
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="bairro" className="text-lg font-medium">Bairro *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-4">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Bairro *</label>
+                    <input
                       id="bairro"
                       placeholder="Centro"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('bairro')}
                     />
                     {form1.formState.errors.bairro && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.bairro.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.bairro.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="cidade" className="text-lg font-medium">Cidade *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-6">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">Cidade *</label>
+                    <input
                       id="cidade"
                       placeholder="São Paulo"
-                      className="h-14 text-lg"
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none"
                       {...form1.register('cidade')}
                     />
                     {form1.formState.errors.cidade && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.cidade.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.cidade.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="uf" className="text-lg font-medium">UF *</Label>
-                    <Input
+                  <div className="col-span-12 md:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-600 mb-2">UF *</label>
+                    <input
                       id="uf"
                       placeholder="SP"
                       maxLength={2}
-                      className="h-14 text-lg"
-                      {...form1.register('uf')}
+                      className="w-full h-[48px] bg-slate-50 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary px-4 text-slate-900 placeholder:text-slate-400 outline-none uppercase"
                       onChange={(e) => {
                         e.target.value = e.target.value.toUpperCase()
                         form1.setValue('uf', e.target.value)
                       }}
                     />
                     {form1.formState.errors.uf && (
-                      <p className="text-sm text-red-500">{form1.formState.errors.uf.message}</p>
+                      <p className="text-sm text-red-500 mt-1">{form1.formState.errors.uf.message}</p>
                     )}
                   </div>
                 </div>
