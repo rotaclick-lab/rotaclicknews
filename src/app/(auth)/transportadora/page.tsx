@@ -104,7 +104,7 @@ export default function TransportadoraPage() {
         {/* Logo e Título */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.png" alt="RotaClick" width={180} height={90} priority />
+            <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
           </div>
           <div className="mx-auto w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mb-4">
             <Truck className="h-8 w-8 text-brand-600" />

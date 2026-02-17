@@ -84,7 +84,7 @@ export default function RegistroTransportadoraPage() {
       <Card className="w-full max-w-2xl border-2 border-brand-200 shadow-xl">
         <CardHeader className="text-center space-y-2">
           <div className="flex justify-center mb-2">
-            <Image src="/logo.png" alt="RotaClick" width={200} height={100} priority />
+            <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
           </div>
           <div className="mx-auto w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mb-2">
             <Truck className="h-8 w-8 text-brand-600" />

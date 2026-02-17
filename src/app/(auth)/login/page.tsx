@@ -23,7 +23,7 @@ export default function LoginPage() {
       <Card className="border-brand-200 shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
-            <Image src="/logo.png" alt="RotaClick" width={180} height={90} priority />
+            <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
           </div>
           <CardTitle className="text-2xl font-bold text-brand-700">Bem-vindo de volta</CardTitle>
           <CardDescription>

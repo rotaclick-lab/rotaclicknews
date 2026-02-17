@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // ===== MASKS =====
 const maskCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1')
@@ -130,12 +131,7 @@ export default function RegistroPage() {
           {/* Header */}
           <header className="text-center mb-12">
             <div className="flex justify-center mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#13b9a5] rounded-lg flex items-center justify-center text-white">
-                  <span className="material-icons-round text-2xl">local_shipping</span>
-                </div>
-                <span className="text-2xl font-extrabold tracking-tight text-slate-900">Rota<span className="text-[#13b9a5]">Click</span></span>
-              </div>
+              <Image src="/logo.png" alt="RotaClick" width={220} height={70} priority />
             </div>
             <h1 className="text-[48px] font-extrabold leading-tight text-slate-900 mb-4">Cadastro de Transportadora</h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -586,12 +582,7 @@ export default function RegistroPage() {
       {/* Header Navigation */}
       <header className="bg-white border-b border-[#13b9a5]/10 py-4 px-6 sticky top-0 z-50">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-[#13b9a5] rounded-lg flex items-center justify-center">
-              <span className="material-icons-round text-white">local_shipping</span>
-            </div>
-            <span className="text-xl font-extrabold tracking-tight text-slate-800">Rota<span className="text-[#13b9a5]">Click</span></span>
-          </div>
+          <Image src="/logo.png" alt="RotaClick" width={180} height={57} priority />
           <div className="hidden md:flex items-center gap-4 text-sm font-medium text-slate-500">
             <span>Suporte: 0800 123 4567</span>
           </div>

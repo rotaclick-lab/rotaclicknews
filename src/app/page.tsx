@@ -136,15 +136,15 @@ export default function HomePage() {
       {/* Header Público */}
       <header className="sticky top-0 z-50 w-full border-b border-brand-100 bg-white/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             <Image
-              src="/images/rotaclick-logo.png"
+              src="/logo.png"
               alt="RotaClick"
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-lg object-contain"
+              width={160}
+              height={50}
+              className="h-10 w-auto object-contain"
+              priority
             />
-            <span className="text-xl font-bold text-brand-700">Rota<span className="text-orange-500">Click</span></span>
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login">
@@ -487,15 +487,14 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-brand-100 py-6 bg-white">
         <div className="container flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center">
             <Image
-              src="/images/rotaclick-logo.png"
+              src="/logo.png"
               alt="RotaClick"
-              width={24}
-              height={24}
-              className="h-6 w-6 rounded object-contain"
+              width={130}
+              height={41}
+              className="h-8 w-auto object-contain"
             />
-            <span className="font-semibold text-brand-700">Rota<span className="text-orange-500">Click</span></span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/transportadora" className="hover:text-brand-600 transition-colors">Área da Transportadora</Link>

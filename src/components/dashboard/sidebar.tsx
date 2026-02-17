@@ -24,7 +24,7 @@ export function Sidebar() {
       <div className="flex h-16 items-center border-b border-brand-100 px-4">
         {!collapsed ? (
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <Image src="/logo.png" alt="RotaClick" width={140} height={70} priority />
+            <Image src="/logo.png" alt="RotaClick" width={160} height={50} className="h-10 w-auto object-contain" priority />
           </Link>
         ) : (
           <Link href="/dashboard" className="flex items-center justify-center">

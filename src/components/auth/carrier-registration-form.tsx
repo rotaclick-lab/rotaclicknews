@@ -266,7 +266,7 @@ export function CarrierRegistrationForm() {
       {/* Header Section */}
       <header className="text-center mb-12">
         <div className="flex justify-center mb-6">
-          <Image src="/logo.png" alt="RotaClick" width={200} height={80} priority />
+          <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
         </div>
         <h1 className="text-[48px] font-extrabold leading-tight text-slate-900 mb-4">
           Cadastro de Transportadora
