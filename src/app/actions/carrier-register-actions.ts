@@ -121,10 +121,10 @@ export async function registerCarrier(data: CarrierRegistrationData) {
       .single()
 
     if (companyError) {
-      console.error('Erro ao criar empresa:', companyError)
+      console.error('Erro ao criar empresa:', JSON.stringify(companyError))
       return { 
         success: false, 
-        error: 'Conta criada, mas houve um erro ao salvar os dados da empresa. Entre em contato com o suporte.' 
+        error: `Erro ao salvar empresa: ${companyError.message} (${companyError.code}: ${companyError.details || companyError.hint || 'sem detalhes'})` 
       }
     }
 
