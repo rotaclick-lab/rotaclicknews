@@ -1,21 +1,91 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+
+async function resolveLoginEmail(identifier: string): Promise<string | null> {
+  const normalized = identifier.trim()
+
+  if (!normalized) return null
+  if (normalized.includes('@')) return normalized.toLowerCase()
+
+  const digits = normalized.replace(/\D/g, '')
+  const admin = createAdminClient()
+
+  if (digits.length === 11) {
+    const { data, error } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('cpf', digits)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Erro ao resolver CPF para login:', error)
+      return null
+    }
+
+    return data?.email ?? null
+  }
+
+  if (digits.length === 14) {
+    const { data: company, error: companyError } = await admin
+      .from('companies')
+      .select('id, email')
+      .eq('document', digits)
+      .maybeSingle()
+
+    if (companyError) {
+      console.error('Erro ao resolver CNPJ para login (companies):', companyError)
+      return null
+    }
+
+    if (company?.email) {
+      return company.email
+    }
+
+    if (!company?.id) return null
+
+    const { data: profiles, error: profileError } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('company_id', company.id)
+      .eq('role', 'transportadora')
+      .limit(1)
+
+    if (profileError) {
+      console.error('Erro ao resolver CNPJ para login (profiles):', profileError)
+      return null
+    }
+
+    return profiles?.[0]?.email ?? null
+  }
+
+  return null
+}
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
+  const identifier = ((formData.get('identifier') as string) || (formData.get('email') as string) || '').trim()
+  const password = (formData.get('password') as string) || ''
+
+  const resolvedEmail = await resolveLoginEmail(identifier)
+
+  if (!resolvedEmail) {
+    return { error: 'Credenciais inválidas. Use email, CPF ou CNPJ válidos.' }
+  }
+
   const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
+    email: resolvedEmail,
+    password,
   }
 
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    return { error: error.message }
+    return { error: 'Credenciais inválidas. Verifique seu acesso e tente novamente.' }
   }
 
   revalidatePath('/', 'layout')

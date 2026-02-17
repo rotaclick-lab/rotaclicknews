@@ -19,7 +19,7 @@ export default function TransportadoraPage() {
   const [activeTab, setActiveTab] = useState<Tab>('verificar')
 
   // Login state
-  const [loginEmail, setLoginEmail] = useState('')
+  const [loginIdentifier, setLoginIdentifier] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
@@ -42,14 +42,14 @@ export default function TransportadoraPage() {
   }
 
   const handleLogin = async () => {
-    if (!loginEmail || !loginPassword) {
-      toast.error('Preencha email e senha')
+    if (!loginIdentifier || !loginPassword) {
+      toast.error('Preencha seu acesso e senha')
       return
     }
     setLoginLoading(true)
     try {
       const formData = new FormData()
-      formData.append('email', loginEmail)
+      formData.append('identifier', loginIdentifier)
       formData.append('password', loginPassword)
       const result = await login(formData)
       if (result?.error) {
@@ -181,14 +181,14 @@ export default function TransportadoraPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-identifier">Email, CPF ou CNPJ</Label>
                   <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="seu@email.com"
+                    id="login-identifier"
+                    type="text"
+                    placeholder="seu@email.com ou 00.000.000/0000-00"
                     className="focus-visible:ring-brand-500"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
                     disabled={loginLoading}
                   />
                 </div>

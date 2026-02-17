@@ -22,7 +22,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginInput) => {
     setIsLoading(true)
     const formData = new FormData()
-    formData.append('email', data.email)
+    formData.append('identifier', data.identifier)
     formData.append('password', data.password)
     
     const result = await login(formData)
@@ -40,17 +40,17 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="identifier">Email, CPF ou CNPJ</Label>
         <Input
-          id="email"
-          type="email"
-          placeholder="seu@email.com"
+          id="identifier"
+          type="text"
+          placeholder="seu@email.com ou 000.000.000-00"
           className="focus-visible:ring-brand-500"
-          {...register('email')}
+          {...register('identifier')}
           disabled={isLoading}
         />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
+        {errors.identifier && (
+          <p className="text-sm text-red-500">{errors.identifier.message}</p>
         )}
       </div>
 
