@@ -1,5 +1,7 @@
 'use server'
 
+import { createAdminClient } from '@/lib/supabase/admin'
+
 /**
  * Lista de CNAEs permitidos para transportadoras (Grupo 49.30-2)
  * 4930-2/01: Transporte rodoviário de carga, exceto produtos perigosos e mudanças, municipal.
@@ -19,6 +21,22 @@ export async function validateCarrierCNPJ(cnpj: string) {
 
   if (cleanCNPJ.length !== 14) {
     return { success: false, error: 'CNPJ inválido. Deve conter 14 dígitos.' }
+  }
+
+  const admin = createAdminClient()
+  const { data: existingCompany, error: duplicateCheckError } = await admin
+    .from('companies')
+    .select('id')
+    .eq('document', cleanCNPJ)
+    .maybeSingle()
+
+  if (duplicateCheckError) {
+    console.error('Erro ao verificar duplicidade de CNPJ:', duplicateCheckError)
+    return { success: false, error: 'Erro ao verificar CNPJ cadastrado. Tente novamente em instantes.' }
+  }
+
+  if (existingCompany?.id) {
+    return { success: false, error: 'Este CNPJ já está cadastrado na plataforma.' }
   }
 
   try {

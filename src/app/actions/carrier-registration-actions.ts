@@ -17,8 +17,24 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
   console.log('Dados recebidos:', JSON.stringify(data, null, 2))
   
   const supabase = await createClient()
+  const cleanCnpj = data.cnpj.replace(/\D/g, '')
 
   try {
+    const { data: duplicateCompany, error: duplicateCheckError } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('document', cleanCnpj)
+      .maybeSingle()
+
+    if (duplicateCheckError) {
+      console.error('❌ Erro ao verificar CNPJ existente:', duplicateCheckError)
+      return { error: 'Erro ao verificar CNPJ já cadastrado. Tente novamente.' }
+    }
+
+    if (duplicateCompany?.id) {
+      return { error: 'Este CNPJ já está cadastrado na plataforma.' }
+    }
+
     console.log('1. Criando usuário no Supabase Auth...')
     // 1. Criar usuário no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -30,7 +46,7 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
           cpf: data.cpf,
           phone: data.phone,
           company_name: data.companyName,
-          cnpj: data.cnpj,
+          cnpj: cleanCnpj,
           role: 'transportadora',
           // Dados adicionais que o trigger vai processar
           inscricao_estadual: data.inscricaoEstadual,
@@ -70,7 +86,9 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
       return { error: 'Erro ao criar usuário' }
     }
 
-    console.log('✅ Usuário criado com sucesso:', authData.user.id)
+    const userId = authData.user.id
+
+    console.log('✅ Usuário criado com sucesso:', userId)
 
     // 2. Registrar aceites de termos
     console.log('2. Registrando aceites de termos...')
@@ -109,7 +127,7 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
       console.log(`Inserindo ${termAcceptances.length} aceites de termos...`)
       const acceptancesWithUserId = termAcceptances.map(acceptance => ({
         ...acceptance,
-        user_id: authData.user.id,
+        user_id: userId,
       }))
 
       const { error: termsError } = await supabase
@@ -135,7 +153,7 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
         accept_communications: data.acceptCommunications,
         accept_credit_analysis: data.acceptCreditAnalysis,
       })
-      .eq('id', authData.user.id)
+      .eq('id', userId)
 
     if (profileError) {
       console.error('❌ Erro ao atualizar profile:', profileError)
@@ -149,7 +167,7 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
     const { data: profileData } = await supabase
       .from('profiles')
       .select('company_id')
-      .eq('id', authData.user.id)
+      .eq('id', userId)
       .single()
 
     console.log('Company ID encontrado:', profileData?.company_id)
@@ -175,6 +193,9 @@ export async function registerCarrier(data: CarrierRegistrationInput) {
 
       if (companyError) {
         console.error('❌ Erro ao atualizar company:', companyError)
+        if (companyError.code === '23505') {
+          return { error: 'Este CNPJ já está cadastrado na plataforma.' }
+        }
       } else {
         console.log('✅ Company atualizada com sucesso')
       }
