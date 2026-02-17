@@ -745,16 +745,17 @@ export default function RegistroPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-600">Raio de Operação</label>
-                  <div className="relative">
-                    <input
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg focus:ring-[#13b9a5] focus:border-[#13b9a5] py-2.5 px-3 pr-12 outline-none transition-all"
-                      placeholder="0"
-                      type="number"
-                      value={form.raioOperacao}
-                      onChange={e => set('raioOperacao', e.target.value)}
-                    />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 font-medium">km</div>
-                  </div>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg focus:ring-[#13b9a5] focus:border-[#13b9a5] py-2.5 px-3 outline-none transition-all"
+                    value={form.raioOperacao}
+                    onChange={e => set('raioOperacao', e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="Municipal">Municipal</option>
+                    <option value="Estadual">Estadual</option>
+                    <option value="Regional">Regional</option>
+                    <option value="Nacional">Nacional</option>
+                  </select>
                 </div>
               </div>
             </section>

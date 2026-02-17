@@ -108,7 +108,7 @@ export async function registerCarrier(data: CarrierRegistrationData) {
         tipo_veiculo_principal: data.tipoVeiculo,
         tipo_carroceria_principal: data.tipoCarroceria,
         capacidade_carga_toneladas: data.capacidadeCarga ? parseInt(data.capacidadeCarga) : null,
-        raio_atuacao: data.raioOperacao ? `${data.raioOperacao} km` : null,
+        raio_atuacao: data.raioOperacao || null,
         regioes_atendimento: data.regioes,
         consumo_medio_diesel: data.consumoMedio ? parseFloat(data.consumoMedio) : null,
         numero_eixos: data.qtdEixos ? parseInt(data.qtdEixos) : null,
