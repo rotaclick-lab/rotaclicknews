@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Truck, ShieldCheck, AlertTriangle, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ export default function RegistroTransportadoraPage() {
   const [loading, setLoading] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [lastValidatedCnpj, setLastValidatedCnpj] = useState('')
 
   const maskCNPJ = (value: string) => {
     return value
@@ -28,7 +29,9 @@ export default function RegistroTransportadoraPage() {
   }
 
   const handleVerifyCNPJ = async () => {
-    if (cnpj.length < 18) {
+    const cleanCnpj = cnpj.replace(/\D/g, '')
+
+    if (cleanCnpj.length !== 14) {
       toast.error('Informe o CNPJ completo')
       return
     }
@@ -38,9 +41,10 @@ export default function RegistroTransportadoraPage() {
     setCompanyData(null)
 
     try {
-      const result = await validateCarrierCNPJ(cnpj)
+      const result = await validateCarrierCNPJ(cleanCnpj)
       if (result.success) {
         setCompanyData(result.data)
+        setLastValidatedCnpj(cleanCnpj)
         
         // Salva TODOS os dados no sessionStorage
         const dataToSave = {
@@ -70,6 +74,7 @@ export default function RegistroTransportadoraPage() {
         toast.success('Empresa validada com sucesso!')
       } else {
         setError(result.error)
+        setLastValidatedCnpj(cleanCnpj)
         toast.error(result.error)
       }
     } catch (err) {
@@ -78,6 +83,26 @@ export default function RegistroTransportadoraPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const cleanCnpj = cnpj.replace(/\D/g, '')
+
+    if (cleanCnpj.length !== 14) {
+      setCompanyData(null)
+      setError(null)
+      return
+    }
+
+    if (cleanCnpj === lastValidatedCnpj || loading) {
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      void handleVerifyCNPJ()
+    }, 500)
+
+    return () => clearTimeout(timeout)
+  }, [cnpj, lastValidatedCnpj, loading])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center p-6">
@@ -122,6 +147,9 @@ export default function RegistroTransportadoraPage() {
                     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'VERIFICAR'}
                   </Button>
                 </div>
+                {cnpj.replace(/\D/g, '').length === 14 && !loading && !error && !companyData && (
+                  <p className="text-xs text-slate-500">Validando CNPJ em tempo real...</p>
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Truck, ShieldCheck, AlertTriangle, CheckCircle2, ArrowRight, Loader2, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react'
@@ -29,6 +29,7 @@ export default function TransportadoraPage() {
   const [cnpjLoading, setCnpjLoading] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [lastValidatedCnpj, setLastValidatedCnpj] = useState('')
 
   const maskCNPJ = (value: string) => {
     return value
@@ -60,9 +61,11 @@ export default function TransportadoraPage() {
     }
   }
 
-  const handleVerifyCNPJ = async () => {
-    if (cnpj.length < 18) {
-      toast.error('Informe o CNPJ completo')
+  const handleVerifyCNPJ = async (showToast = true) => {
+    const cleanCnpj = cnpj.replace(/\D/g, '')
+
+    if (cleanCnpj.length !== 14) {
+      if (showToast) toast.error('Informe o CNPJ completo')
       return
     }
 
@@ -71,11 +74,12 @@ export default function TransportadoraPage() {
     setCompanyData(null)
 
     try {
-      const result = await validateCarrierCNPJ(cnpj)
+      const result = await validateCarrierCNPJ(cleanCnpj)
       if (result.success) {
         setCompanyData(result.data)
+        setLastValidatedCnpj(cleanCnpj)
         sessionStorage.setItem('carrier_data', JSON.stringify({
-          cnpj: cnpj.replace(/\D/g, ''),
+          cnpj: cleanCnpj,
           razao: result.data.razao_social,
           fantasia: result.data.nome_fantasia,
           logradouro: result.data.endereco?.logradouro || result.data.logradouro,
@@ -90,17 +94,40 @@ export default function TransportadoraPage() {
           telefone: result.data.telefone || '',
           role: 'transportadora'
         }))
-        toast.success('Empresa validada com sucesso!')
+        if (showToast) toast.success('Empresa validada com sucesso!')
       } else {
         setError(result.error)
-        toast.error(result.error)
+        setLastValidatedCnpj(cleanCnpj)
+        if (showToast) toast.error(result.error)
       }
     } catch {
-      toast.error('Erro ao conectar com o serviço de validação')
+      if (showToast) toast.error('Erro ao conectar com o serviço de validação')
     } finally {
       setCnpjLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (activeTab !== 'verificar') return
+
+    const cleanCnpj = cnpj.replace(/\D/g, '')
+
+    if (cleanCnpj.length !== 14) {
+      setCompanyData(null)
+      setError(null)
+      return
+    }
+
+    if (cnpjLoading || cleanCnpj === lastValidatedCnpj) {
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      void handleVerifyCNPJ(false)
+    }, 500)
+
+    return () => clearTimeout(timeout)
+  }, [activeTab, cnpj, cnpjLoading, lastValidatedCnpj])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-orange-50 flex items-center justify-center p-6">
@@ -232,6 +259,9 @@ export default function TransportadoraPage() {
                       {cnpjLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'VERIFICAR'}
                     </Button>
                   </div>
+                  {cnpj.replace(/\D/g, '').length === 14 && cnpjLoading && !companyData && !error && (
+                    <p className="text-xs text-slate-500">Validando CNPJ em tempo real...</p>
+                  )}
                 </div>
 
                 {/* Resultado positivo */}
