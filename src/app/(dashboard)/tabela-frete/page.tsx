@@ -2,26 +2,30 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, MapPin, Truck, DollarSign, Clock, Trash2, Save, Search, Filter } from 'lucide-react'
+import { Plus, MapPin, Truck, DollarSign, Trash2, Search, Filter, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+
+type InsertMode = 'single' | 'range'
 
 interface FreightRoute {
   id: string
-  originZip: string
-  destZip: string
-  pricePerKg: number
-  minPrice: number
-  deadlineDays: number
+  origin_zip: string
+  dest_zip: string
+  origin_zip_end?: string
+  dest_zip_end?: string
+  price_per_kg: number
+  min_price: number
+  deadline_days: number
 }
 
 export default function TabelaFretePage() {
   const supabase = createClient()
-  const [loading, setLoading] = useState(true)
   const [routes, setRoutes] = useState<FreightRoute[]>([])
 
   useEffect(() => {
@@ -29,7 +33,6 @@ export default function TabelaFretePage() {
   }, [])
 
   const fetchRoutes = async () => {
-    setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -44,15 +47,17 @@ export default function TabelaFretePage() {
     } else {
       setRoutes(data || [])
     }
-    setLoading(false)
   }
 
+  const [insertMode, setInsertMode] = useState<InsertMode>('single')
   const [newRoute, setNewRoute] = useState<Partial<FreightRoute>>({
-    originZip: '',
-    destZip: '',
-    pricePerKg: 0,
-    minPrice: 0,
-    deadlineDays: 0
+    origin_zip: '',
+    dest_zip: '',
+    origin_zip_end: '',
+    dest_zip_end: '',
+    price_per_kg: 0,
+    min_price: 0,
+    deadline_days: 0
   })
 
   // Máscaras (Reutilizando lógica solicitada)
@@ -70,8 +75,13 @@ export default function TabelaFretePage() {
   }
 
   const handleAddRoute = async () => {
-    if (!newRoute.originZip || !newRoute.destZip) {
+    if (!newRoute.origin_zip || !newRoute.dest_zip) {
       toast.error('Preencha a origem e o destino')
+      return
+    }
+
+    if (insertMode === 'range' && (!newRoute.origin_zip_end || !newRoute.dest_zip_end)) {
+      toast.error('Preencha todos os CEPs do bloco')
       return
     }
 
@@ -90,7 +100,7 @@ export default function TabelaFretePage() {
     } else {
       toast.success('Rota adicionada com sucesso!')
       fetchRoutes()
-      setNewRoute({ originZip: '', destZip: '', pricePerKg: 0, minPrice: 0, deadlineDays: 0 })
+      setNewRoute({ origin_zip: '', dest_zip: '', origin_zip_end: '', dest_zip_end: '', price_per_kg: 0, min_price: 0, deadline_days: 0 })
     }
   }
 
@@ -127,38 +137,96 @@ export default function TabelaFretePage() {
             <CardDescription>Adicione uma nova regra de preço</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Seletor de Modo */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Modo de Inserção</Label>
+              <RadioGroup value={insertMode} onValueChange={(value) => setInsertMode(value as InsertMode)}>
+                <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="single" id="single" />
+                  <Label htmlFor="single" className="cursor-pointer flex-1">
+                    <div className="font-medium">CEP a CEP</div>
+                    <div className="text-xs text-muted-foreground">Rota específica entre dois CEPs</div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                  <RadioGroupItem value="range" id="range" />
+                  <Label htmlFor="range" className="cursor-pointer flex-1">
+                    <div className="font-medium">Bloco de CEPs</div>
+                    <div className="text-xs text-muted-foreground">Faixa de CEPs de origem para destino</div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="grid gap-4">
+              {/* Campos de Origem */}
               <div className="space-y-2">
-                <Label>CEP Origem (Início)</Label>
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-3 w-3 text-brand-500" />
+                  {insertMode === 'single' ? 'CEP Origem' : 'CEP Origem (Início)'}
+                </Label>
                 <Input 
                   placeholder="00000-000" 
-                  value={newRoute.originZip} 
-                  onChange={(e) => setNewRoute({...newRoute, originZip: maskCEP(e.target.value)})}
+                  value={newRoute.origin_zip} 
+                  onChange={(e) => setNewRoute({...newRoute, origin_zip: maskCEP(e.target.value)})}
                 />
               </div>
+              
+              {insertMode === 'range' && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    CEP Origem (Fim)
+                  </Label>
+                  <Input 
+                    placeholder="00000-000" 
+                    value={newRoute.origin_zip_end} 
+                    onChange={(e) => setNewRoute({...newRoute, origin_zip_end: maskCEP(e.target.value)})}
+                  />
+                </div>
+              )}
+
+              {/* Campos de Destino */}
               <div className="space-y-2">
-                <Label>CEP Destino (Início)</Label>
+                <Label className="flex items-center gap-2">
+                  <Truck className="h-3 w-3 text-brand-500" />
+                  {insertMode === 'single' ? 'CEP Destino' : 'CEP Destino (Início)'}
+                </Label>
                 <Input 
                   placeholder="00000-000" 
-                  value={newRoute.destZip} 
-                  onChange={(e) => setNewRoute({...newRoute, destZip: maskCEP(e.target.value)})}
+                  value={newRoute.dest_zip} 
+                  onChange={(e) => setNewRoute({...newRoute, dest_zip: maskCEP(e.target.value)})}
                 />
               </div>
+              
+              {insertMode === 'range' && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    CEP Destino (Fim)
+                  </Label>
+                  <Input 
+                    placeholder="00000-000" 
+                    value={newRoute.dest_zip_end} 
+                    onChange={(e) => setNewRoute({...newRoute, dest_zip_end: maskCEP(e.target.value)})}
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Preço/KG (R$)</Label>
                   <Input 
                     className="text-right"
-                    value={newRoute.pricePerKg?.toFixed(2)} 
-                    onChange={(e) => setNewRoute({...newRoute, pricePerKg: Number(maskDecimal(e.target.value))})}
+                    value={newRoute.price_per_kg?.toFixed(2)} 
+                    onChange={(e) => setNewRoute({...newRoute, price_per_kg: Number(maskDecimal(e.target.value))})}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Mínimo (R$)</Label>
                   <Input 
                     className="text-right"
-                    value={newRoute.minPrice?.toFixed(2)} 
-                    onChange={(e) => setNewRoute({...newRoute, minPrice: Number(maskDecimal(e.target.value))})}
+                    value={newRoute.min_price?.toFixed(2)} 
+                    onChange={(e) => setNewRoute({...newRoute, min_price: Number(maskDecimal(e.target.value))})}
                   />
                 </div>
               </div>
@@ -166,8 +234,8 @@ export default function TabelaFretePage() {
                 <Label>Prazo (Dias Úteis)</Label>
                 <Input 
                   type="number" 
-                  value={newRoute.deadlineDays} 
-                  onChange={(e) => setNewRoute({...newRoute, deadlineDays: Number(e.target.value)})}
+                  value={newRoute.deadline_days} 
+                  onChange={(e) => setNewRoute({...newRoute, deadline_days: Number(e.target.value)})}
                 />
               </div>
             </div>
@@ -212,23 +280,37 @@ export default function TabelaFretePage() {
                   ) : (
                     routes.map((route) => (
                       <TableRow key={route.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-medium flex items-center gap-2">
-                          <MapPin className="h-3 w-3 text-brand-500" /> {route.originZip}
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-brand-500" />
+                            <div>
+                              {route.origin_zip}
+                              {route.origin_zip_end && (
+                                <span className="text-muted-foreground"> até {route.origin_zip_end}</span>
+                              )}
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Truck className="h-3 w-3 text-muted-foreground" /> {route.destZip}
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                            <div>
+                              {route.dest_zip}
+                              {route.dest_zip_end && (
+                                <span className="text-muted-foreground"> até {route.dest_zip_end}</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          R$ {route.pricePerKg.toFixed(2)}
+                          R$ {route.price_per_kg.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-brand-600">
-                          R$ {route.minPrice.toFixed(2)}
+                          R$ {route.min_price.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-center">
                           <span className="bg-brand-50 text-brand-700 px-2 py-1 rounded text-xs font-bold">
-                            {route.deadlineDays}d
+                            {route.deadline_days}d
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
