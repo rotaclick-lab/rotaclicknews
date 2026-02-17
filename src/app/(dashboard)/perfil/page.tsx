@@ -716,7 +716,7 @@ export default function PerfilPage() {
                     >
                       <option value="">Selecione</option>
                       {BRAZILIAN_STATES.map(uf => (
-                        <option key={uf} value={uf}>{uf}</option>
+                        <option key={uf.value} value={uf.value}>{uf.label}</option>
                       ))}
                     </select>
                   </div>
