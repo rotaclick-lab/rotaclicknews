@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, MapPin, Truck, DollarSign, Trash2, Search, Filter, ArrowRight } from 'lucide-react'
+import { Plus, MapPin, Truck, DollarSign, Trash2, Search, Filter, ArrowRight, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -24,13 +24,76 @@ interface FreightRoute {
   deadline_days: number
 }
 
+interface PricingAnalyzeResponse {
+  success: boolean
+  total_cost: number
+  breakdown: {
+    fuel: number
+    variable: number
+    fixed_alloc: number
+    tolls: number
+    time_cost: number
+    fees: number
+    empty_return: number
+  }
+  profit_value: number
+  margin_percent: number
+  classification: 'LOSS' | 'CRITICAL' | 'OK' | 'GREAT'
+  blocking: boolean
+  alerts: Array<{ severity: 'error' | 'warning' | 'info'; code: string; message: string }>
+  suggestions: string[]
+}
+
 export default function TabelaFretePage() {
   const supabase = createClient()
   const [routes, setRoutes] = useState<FreightRoute[]>([])
+  const [carrierId, setCarrierId] = useState('')
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const [analyzeResult, setAnalyzeResult] = useState<PricingAnalyzeResponse | null>(null)
+  const [analysisInputs, setAnalysisInputs] = useState({
+    km_estimado: 0,
+    horas_estimadas: 0,
+    pedagio_estimado: 0,
+    vale_pedagio_included: false,
+  })
 
   useEffect(() => {
     fetchRoutes()
+    ensureCarrierProfile()
   }, [])
+
+  const ensureCarrierProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: carrier } = await supabase
+      .from('carriers')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (carrier?.id) {
+      setCarrierId(carrier.id)
+      return
+    }
+
+    const { data: createdCarrier, error } = await supabase
+      .from('carriers')
+      .insert({
+        user_id: user.id,
+        company_name: user.user_metadata?.company_name ?? user.email,
+      })
+      .select('id')
+      .single()
+
+    if (error || !createdCarrier?.id) {
+      setAnalysisError('Não foi possível inicializar o perfil regulatório da transportadora.')
+      return
+    }
+
+    setCarrierId(createdCarrier.id)
+  }
 
   const fetchRoutes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -74,6 +137,62 @@ export default function TabelaFretePage() {
     return numberValue.toFixed(2)
   }
 
+  const analyzePricing = useCallback(async () => {
+    if (!carrierId) return null
+
+    const computedPrice = Math.max(Number(newRoute.price_per_kg ?? 0), Number(newRoute.min_price ?? 0))
+    if (computedPrice <= 0 || analysisInputs.km_estimado <= 0) {
+      setAnalyzeResult(null)
+      return null
+    }
+
+    setIsAnalyzing(true)
+    setAnalysisError(null)
+
+    try {
+      const response = await fetch('/api/pricing/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          carrier_id: carrierId,
+          origem: { cep: newRoute.origin_zip ?? '' },
+          destino: { cep: newRoute.dest_zip ?? '' },
+          km_estimado: analysisInputs.km_estimado,
+          horas_estimadas: analysisInputs.horas_estimadas,
+          pedagio_estimado: analysisInputs.pedagio_estimado,
+          modelo_de_preco: 'CEP_RANGE',
+          price_input: computedPrice,
+          vale_pedagio_included: analysisInputs.vale_pedagio_included,
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !data.success) {
+        setAnalysisError(data.error ?? 'Não foi possível analisar a regra no momento.')
+        setAnalyzeResult(null)
+        return null
+      }
+
+      setAnalyzeResult(data as PricingAnalyzeResponse)
+      return data as PricingAnalyzeResponse
+    } catch (error) {
+      console.error('Erro ao analisar rentabilidade:', error)
+      setAnalysisError('Erro de comunicação com o serviço de análise.')
+      setAnalyzeResult(null)
+      return null
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }, [carrierId, newRoute.price_per_kg, newRoute.min_price, newRoute.origin_zip, newRoute.dest_zip, analysisInputs])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      void analyzePricing()
+    }, 300)
+
+    return () => clearTimeout(timeout)
+  }, [analyzePricing])
+
   const handleAddRoute = async () => {
     if (!newRoute.origin_zip || !newRoute.dest_zip) {
       toast.error('Preencha a origem e o destino')
@@ -88,6 +207,12 @@ export default function TabelaFretePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const latestAnalysis = await analyzePricing()
+    if (latestAnalysis?.blocking) {
+      toast.error('Regra bloqueada por conformidade ANTT. Corrija os alertas antes de salvar.')
+      return
+    }
+
     const { error } = await supabase
       .from('freight_routes')
       .insert([{
@@ -101,6 +226,7 @@ export default function TabelaFretePage() {
       toast.success('Rota adicionada com sucesso!')
       fetchRoutes()
       setNewRoute({ origin_zip: '', dest_zip: '', origin_zip_end: '', dest_zip_end: '', price_per_kg: 0, min_price: 0, deadline_days: 0 })
+      setAnalyzeResult(null)
     }
   }
 
@@ -128,15 +254,16 @@ export default function TabelaFretePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Card */}
-        <Card className="lg:col-span-1 border-2 border-brand-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-brand-500" /> Nova Rota
-            </CardTitle>
-            <CardDescription>Adicione uma nova regra de preço</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="lg:col-span-1 space-y-6">
+          {/* Form Card */}
+          <Card className="border-2 border-brand-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5 text-brand-500" /> Nova Rota
+              </CardTitle>
+              <CardDescription>Adicione uma nova regra de preço</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
             {/* Seletor de Modo */}
             <div className="space-y-3">
               <Label className="text-sm font-semibold">Modo de Inserção</Label>
@@ -238,12 +365,103 @@ export default function TabelaFretePage() {
                   onChange={(e) => setNewRoute({...newRoute, deadline_days: Number(e.target.value)})}
                 />
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>KM Estimado *</Label>
+                  <Input
+                    type="number"
+                    value={analysisInputs.km_estimado}
+                    onChange={(e) => setAnalysisInputs({ ...analysisInputs, km_estimado: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Horas Estimadas</Label>
+                  <Input
+                    type="number"
+                    value={analysisInputs.horas_estimadas}
+                    onChange={(e) => setAnalysisInputs({ ...analysisInputs, horas_estimadas: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pedágio Estimado (R$)</Label>
+                <Input
+                  className="text-right"
+                  value={analysisInputs.pedagio_estimado.toFixed(2)}
+                  onChange={(e) => setAnalysisInputs({ ...analysisInputs, pedagio_estimado: Number(maskDecimal(e.target.value)) })}
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={analysisInputs.vale_pedagio_included}
+                  onChange={(e) => setAnalysisInputs({ ...analysisInputs, vale_pedagio_included: e.target.checked })}
+                />
+                Vale-pedágio incluído
+              </label>
             </div>
             <Button className="w-full font-bold bg-brand-500 hover:bg-brand-600 text-white" onClick={handleAddRoute}>
               SALVAR ROTA NA TABELA
             </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-base">Rentabilidade & Conformidade</CardTitle>
+              <CardDescription>Análise em tempo real (ANTT + margem)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {isAnalyzing && <p className="text-sm text-muted-foreground">Analisando...</p>}
+              {analysisError && <p className="text-sm text-red-500">{analysisError}</p>}
+
+              {analyzeResult && (
+                <>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded border p-2">
+                      <p className="text-muted-foreground">Custo Total</p>
+                      <p className="font-bold">R$ {analyzeResult.total_cost.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded border p-2">
+                      <p className="text-muted-foreground">Margem</p>
+                      <p className="font-bold">{analyzeResult.margin_percent.toFixed(2)}%</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded border p-2 text-sm">
+                    <p className="text-muted-foreground">Classificação</p>
+                    <p className="font-bold">{analyzeResult.classification}</p>
+                  </div>
+
+                  <div className="text-sm space-y-1">
+                    <p className="font-semibold">Breakdown</p>
+                    <p>Combustível: R$ {analyzeResult.breakdown.fuel.toFixed(2)}</p>
+                    <p>Variável: R$ {analyzeResult.breakdown.variable.toFixed(2)}</p>
+                    <p>Fixo rateado: R$ {analyzeResult.breakdown.fixed_alloc.toFixed(2)}</p>
+                    <p>Pedágio: R$ {analyzeResult.breakdown.tolls.toFixed(2)}</p>
+                    <p>Tempo: R$ {analyzeResult.breakdown.time_cost.toFixed(2)}</p>
+                    <p>Taxas: R$ {analyzeResult.breakdown.fees.toFixed(2)}</p>
+                    <p>Retorno vazio: R$ {analyzeResult.breakdown.empty_return.toFixed(2)}</p>
+                  </div>
+
+                  {analyzeResult.alerts.length > 0 && (
+                    <div className="space-y-2">
+                      {analyzeResult.alerts.map((alert) => (
+                        <div key={alert.code} className="flex items-start gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700 text-sm">
+                          <AlertTriangle className="h-4 w-4 mt-0.5" />
+                          <span>{alert.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Table Card */}
         <Card className="lg:col-span-2 border-2 border-brand-100">
