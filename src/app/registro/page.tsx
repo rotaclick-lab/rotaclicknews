@@ -706,12 +706,15 @@ export default function RegistroPage() {
                     onChange={e => set('tipoVeiculo', e.target.value)}
                   >
                     <option value="">Selecione o veículo</option>
-                    <option>Toco</option>
-                    <option>Truck</option>
-                    <option>Bitruck</option>
-                    <option>Carreta 2 Eixos</option>
-                    <option>Carreta 3 Eixos</option>
-                    <option>Vanderleia</option>
+                    <option value="Caminhão Toco">Caminhão Toco</option>
+                    <option value="Caminhão Truck">Caminhão Truck</option>
+                    <option value="Caminhão Bitruck">Caminhão Bitruck</option>
+                    <option value="Carreta">Carreta</option>
+                    <option value="Bitrem">Bitrem</option>
+                    <option value="Rodotrem">Rodotrem</option>
+                    <option value="Van">Van</option>
+                    <option value="VUC">VUC</option>
+                    <option value="Utilitário">Utilitário</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -722,12 +725,16 @@ export default function RegistroPage() {
                     onChange={e => set('tipoCarroceria', e.target.value)}
                   >
                     <option value="">Selecione a carroceria</option>
-                    <option>Baú</option>
-                    <option>Sider</option>
-                    <option>Grade Baixa</option>
-                    <option>Graneleiro</option>
-                    <option>Prancha</option>
-                    <option>Frigorífico</option>
+                    <option value="Baú">Baú</option>
+                    <option value="Sider">Sider</option>
+                    <option value="Graneleiro">Graneleiro</option>
+                    <option value="Refrigerado">Refrigerado</option>
+                    <option value="Tanque">Tanque</option>
+                    <option value="Cegonha">Cegonha</option>
+                    <option value="Prancha">Prancha</option>
+                    <option value="Basculante">Basculante</option>
+                    <option value="Container">Container</option>
+                    <option value="Aberta">Aberta</option>
                   </select>
                 </div>
                 <div className="space-y-2">
