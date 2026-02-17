@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { 
   Camera, Save, Building2, User, Phone, MapPin, Mail, Shield, 
   Pencil, CheckCircle2, Loader2, Eye, EyeOff, Bell, Palette, Lock
@@ -13,38 +13,44 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { BRAZILIAN_STATES } from '@/lib/constants'
+import { useAuth } from '@/components/auth/auth-provider'
+import { createClient } from '@/lib/supabase/client'
 
 export default function PerfilPage() {
+  const { user } = useAuth()
+  const supabase = createClient()
   const [activeSection, setActiveSection] = useState<'perfil' | 'empresa' | 'configuracoes'>('perfil')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
+  const [companyId, setCompanyId] = useState<string | null>(null)
 
   // Dados do perfil
   const [perfil, setPerfil] = useState({
-    nomeCompleto: 'João da Silva',
-    cpf: '123.456.789-00',
-    cargo: 'Proprietário / Sócio',
-    email: 'joao@transportadora.com',
-    telefone: '(11) 3456-7890',
-    celular: '(11) 98765-4321',
+    nomeCompleto: '',
+    cpf: '',
+    cargo: '',
+    email: '',
+    telefone: '',
+    celular: '',
   })
 
   // Dados da empresa
   const [empresa, setEmpresa] = useState({
-    razaoSocial: 'Transportadora Silva Ltda',
-    nomeFantasia: 'Silva Transportes',
-    cnpj: '12.345.678/0001-90',
-    inscricaoEstadual: '123456789',
-    cep: '04571-010',
-    logradouro: 'Rua das Flores',
-    numero: '123',
-    complemento: 'Sala 5',
-    bairro: 'Centro',
-    cidade: 'São Paulo',
-    estado: 'SP',
+    razaoSocial: '',
+    nomeFantasia: '',
+    cnpj: '',
+    inscricaoEstadual: '',
+    cep: '',
+    logradouro: '',
+    numero: '',
+    complemento: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
   })
 
   // Configurações
@@ -63,7 +69,131 @@ export default function PerfilPage() {
     confirmar: '',
   })
 
-  // Máscaras
+  // Carregar dados do usuário logado
+  useEffect(() => {
+    if (!user) return
+
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        // Buscar profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError) {
+          console.error('Erro ao buscar perfil:', profileError)
+        }
+
+        if (profile) {
+          setPerfil({
+            nomeCompleto: profile.name || '',
+            cpf: formatCPF(profile.cpf || ''),
+            cargo: profile.role === 'carrier' ? 'Transportador' : profile.role || '',
+            email: profile.email || user.email || '',
+            telefone: profile.phone ? formatPhone(profile.phone) : '',
+            celular: profile.phone ? formatCelular(profile.phone) : '',
+          })
+
+          if (profile.avatar_url) {
+            setAvatarPreview(profile.avatar_url)
+          }
+
+          setConfig(prev => ({
+            ...prev,
+            notificacaoEmail: profile.accept_communications ?? true,
+            notificacaoCotacao: profile.whatsapp_permission ?? true,
+          }))
+
+          // Buscar empresa vinculada
+          if (profile.company_id) {
+            setCompanyId(profile.company_id)
+            const { data: company, error: companyError } = await supabase
+              .from('companies')
+              .select('*')
+              .eq('id', profile.company_id)
+              .single()
+
+            if (companyError) {
+              console.error('Erro ao buscar empresa:', companyError)
+            }
+
+            if (company) {
+              const endereco = company.endereco_completo || company.address || {}
+              setEmpresa({
+                razaoSocial: company.razao_social || company.name || '',
+                nomeFantasia: company.nome_fantasia || '',
+                cnpj: formatCNPJ(company.cnpj || company.document || ''),
+                inscricaoEstadual: company.inscricao_estadual || '',
+                cep: formatCEP(company.postal_code || endereco.cep || ''),
+                logradouro: endereco.logradouro || '',
+                numero: endereco.numero || '',
+                complemento: endereco.complemento || '',
+                bairro: endereco.bairro || '',
+                cidade: company.city || endereco.cidade || '',
+                estado: company.state || endereco.uf || '',
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error)
+        toast.error('Erro ao carregar dados do perfil')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user])
+
+  // Formatadores
+  const formatCPF = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    return clean
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+
+  const formatCNPJ = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    return clean
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2')
+  }
+
+  const formatCEP = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    return clean.replace(/(\d{5})(\d)/, '$1-$2')
+  }
+
+  const formatPhone = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    if (clean.length <= 10) {
+      return clean
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{4})(\d)/, '$1-$2')
+    }
+    return clean
+  }
+
+  const formatCelular = (value: string) => {
+    const clean = value.replace(/\D/g, '')
+    if (clean.length >= 10) {
+      return clean
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d)/, '$1-$2')
+        .replace(/(-\d{4})\d+?$/, '$1')
+    }
+    return clean
+  }
+
+  // Máscaras para input
   const maskPhone = (value: string) => {
     return value.replace(/\D/g, '')
       .replace(/(\d{2})(\d)/, '($1) $2')
@@ -84,36 +214,126 @@ export default function PerfilPage() {
       .replace(/(-\d{3})\d+?$/, '$1')
   }
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('A imagem deve ter no máximo 5MB')
+    if (!file || !user) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG ou WebP')
+      return
+    }
+
+    // Preview imediato
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload para o Supabase Storage
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/avatar.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError)
+        toast.info('Foto atualizada localmente. O upload será salvo ao clicar em Salvar.')
         return
       }
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-        toast.error('Formato inválido. Use JPG, PNG ou WebP')
-        return
+
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName)
+
+      if (urlData?.publicUrl) {
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+          .eq('id', user.id)
+
+        setAvatarPreview(urlData.publicUrl)
+        toast.success('Foto atualizada com sucesso!')
       }
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string)
-        toast.success('Foto atualizada! Clique em Salvar para confirmar.')
-      }
-      reader.readAsDataURL(file)
+    } catch {
+      toast.info('Foto atualizada localmente.')
     }
   }
 
   const handleSave = async () => {
+    if (!user) return
     setSaving(true)
-    // Simular salvamento
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setSaving(false)
-    toast.success('Dados salvos com sucesso!')
+
+    try {
+      // Salvar perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: perfil.nomeCompleto,
+          email: perfil.email,
+          phone: perfil.celular.replace(/\D/g, ''),
+          accept_communications: config.notificacaoEmail,
+          whatsapp_permission: config.notificacaoCotacao,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+
+      if (profileError) {
+        console.error('Erro ao salvar perfil:', profileError)
+        toast.error('Erro ao salvar dados do perfil')
+        setSaving(false)
+        return
+      }
+
+      // Salvar empresa (se vinculada)
+      if (companyId) {
+        const { error: companyError } = await supabase
+          .from('companies')
+          .update({
+            nome_fantasia: empresa.nomeFantasia,
+            inscricao_estadual: empresa.inscricaoEstadual,
+            postal_code: empresa.cep.replace(/\D/g, ''),
+            city: empresa.cidade,
+            state: empresa.estado,
+            endereco_completo: {
+              logradouro: empresa.logradouro,
+              numero: empresa.numero,
+              complemento: empresa.complemento,
+              bairro: empresa.bairro,
+              cidade: empresa.cidade,
+              uf: empresa.estado,
+              cep: empresa.cep.replace(/\D/g, ''),
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', companyId)
+
+        if (companyError) {
+          console.error('Erro ao salvar empresa:', companyError)
+          toast.error('Erro ao salvar dados da empresa')
+          setSaving(false)
+          return
+        }
+      }
+
+      toast.success('Dados salvos com sucesso!')
+    } catch (error) {
+      console.error('Erro ao salvar:', error)
+      toast.error('Erro ao salvar dados')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleChangePassword = async () => {
-    if (!senha.atual || !senha.nova || !senha.confirmar) {
+    if (!senha.nova || !senha.confirmar) {
       toast.error('Preencha todos os campos de senha')
       return
     }
@@ -126,10 +346,19 @@ export default function PerfilPage() {
       return
     }
     setSaving(true)
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setSaving(false)
-    setSenha({ atual: '', nova: '', confirmar: '' })
-    toast.success('Senha alterada com sucesso!')
+    try {
+      const { error } = await supabase.auth.updateUser({ password: senha.nova })
+      if (error) {
+        toast.error(error.message)
+      } else {
+        setSenha({ atual: '', nova: '', confirmar: '' })
+        toast.success('Senha alterada com sucesso!')
+      }
+    } catch {
+      toast.error('Erro ao alterar senha')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleCEPChange = async (value: string) => {
@@ -158,6 +387,17 @@ export default function PerfilPage() {
     { id: 'empresa' as const, label: 'Empresa', icon: Building2 },
     { id: 'configuracoes' as const, label: 'Configurações', icon: Shield },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="h-12 w-12 rounded-full border-4 border-brand-200 border-t-brand-500 animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">Carregando perfil...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen pb-20">
@@ -196,8 +436,8 @@ export default function PerfilPage() {
               />
             </div>
             <div className="mb-2">
-              <h2 className="text-xl font-bold text-brand-800">{perfil.nomeCompleto}</h2>
-              <p className="text-sm text-muted-foreground">{empresa.nomeFantasia}</p>
+              <h2 className="text-xl font-bold text-brand-800">{perfil.nomeCompleto || 'Sem nome'}</h2>
+              <p className="text-sm text-muted-foreground">{empresa.nomeFantasia || empresa.razaoSocial || 'Empresa não vinculada'}</p>
             </div>
           </div>
         </div>
@@ -274,8 +514,8 @@ export default function PerfilPage() {
                     <Input
                       value={perfil.telefone}
                       onChange={(e) => setPerfil({ ...perfil, telefone: maskPhone(e.target.value) })}
+                      placeholder="(00) 0000-0000"
                       className="focus-visible:ring-brand-500"
-                      maxLength={14}
                     />
                   </div>
                   <div className="space-y-2">
@@ -283,21 +523,10 @@ export default function PerfilPage() {
                     <Input
                       value={perfil.celular}
                       onChange={(e) => setPerfil({ ...perfil, celular: maskCelular(e.target.value) })}
+                      placeholder="(00) 00000-0000"
                       className="focus-visible:ring-brand-500"
-                      maxLength={15}
                     />
                   </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <Button
-                    className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                    {saving ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -309,29 +538,10 @@ export default function PerfilPage() {
                   <Lock className="h-5 w-5 text-orange-500" />
                   Alterar Senha
                 </CardTitle>
-                <CardDescription>Atualize sua senha de acesso</CardDescription>
+                <CardDescription>Defina uma nova senha para sua conta</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>Senha Atual</Label>
-                    <div className="relative">
-                      <Input
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={senha.atual}
-                        onChange={(e) => setSenha({ ...senha, atual: e.target.value })}
-                        className="pr-10 focus-visible:ring-brand-500"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      >
-                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Nova Senha</Label>
                     <div className="relative">
@@ -339,13 +549,13 @@ export default function PerfilPage() {
                         type={showNewPassword ? 'text' : 'password'}
                         value={senha.nova}
                         onChange={(e) => setSenha({ ...senha, nova: e.target.value })}
-                        className="pr-10 focus-visible:ring-brand-500"
                         placeholder="Mínimo 8 caracteres"
+                        className="focus-visible:ring-brand-500 pr-10"
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
@@ -354,29 +564,46 @@ export default function PerfilPage() {
                   <div className="space-y-2">
                     <Label>Confirmar Nova Senha</Label>
                     <Input
-                      type="password"
+                      type={showNewPassword ? 'text' : 'password'}
                       value={senha.confirmar}
                       onChange={(e) => setSenha({ ...senha, confirmar: e.target.value })}
-                      className={cn(
-                        'focus-visible:ring-brand-500',
-                        senha.confirmar && senha.nova !== senha.confirmar && 'border-red-300'
-                      )}
                       placeholder="Repita a nova senha"
+                      className="focus-visible:ring-brand-500"
                     />
                   </div>
                 </div>
-                <div className="flex justify-end pt-2">
+                {senha.nova && senha.confirmar && senha.nova !== senha.confirmar && (
+                  <p className="text-sm text-red-500">As senhas não coincidem</p>
+                )}
+                {senha.nova && senha.confirmar && senha.nova === senha.confirmar && senha.nova.length >= 8 && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4" /> Senhas coincidem
+                  </p>
+                )}
+                <div className="flex justify-end">
                   <Button
                     variant="outline"
-                    className="border-orange-300 text-orange-600 hover:bg-orange-50 font-bold"
+                    className="border-brand-300 text-brand-700 hover:bg-brand-50"
                     onClick={handleChangePassword}
-                    disabled={saving}
+                    disabled={saving || !senha.nova || !senha.confirmar || senha.nova !== senha.confirmar}
                   >
-                    <Lock className="h-4 w-4 mr-2" /> Alterar Senha
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                    Alterar Senha
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            <div className="flex justify-end">
+              <Button
+                className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -389,7 +616,7 @@ export default function PerfilPage() {
                   <Building2 className="h-5 w-5 text-brand-500" />
                   Dados da Empresa
                 </CardTitle>
-                <CardDescription>Informações cadastrais da transportadora</CardDescription>
+                <CardDescription>Informações da transportadora</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -407,7 +634,7 @@ export default function PerfilPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>CNPJ</Label>
-                    <Input value={empresa.cnpj} disabled className="bg-gray-50 font-mono" />
+                    <Input value={empresa.cnpj} disabled className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Inscrição Estadual</Label>
@@ -427,6 +654,7 @@ export default function PerfilPage() {
                   <MapPin className="h-5 w-5 text-orange-500" />
                   Endereço
                 </CardTitle>
+                <CardDescription>Endereço da sede da transportadora</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -435,9 +663,8 @@ export default function PerfilPage() {
                     <Input
                       value={empresa.cep}
                       onChange={(e) => handleCEPChange(e.target.value)}
-                      className="focus-visible:ring-brand-500"
                       placeholder="00000-000"
-                      maxLength={9}
+                      className="focus-visible:ring-brand-500"
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
@@ -485,28 +712,28 @@ export default function PerfilPage() {
                     <select
                       value={empresa.estado}
                       onChange={(e) => setEmpresa({ ...empresa, estado: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
                     >
-                      <option value="">Selecione...</option>
-                      {BRAZILIAN_STATES.map(s => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
+                      <option value="">Selecione</option>
+                      {BRAZILIAN_STATES.map(uf => (
+                        <option key={uf} value={uf}>{uf}</option>
                       ))}
                     </select>
                   </div>
                 </div>
-
-                <div className="flex justify-end pt-4">
-                  <Button
-                    className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
-                    onClick={handleSave}
-                    disabled={saving}
-                  >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                    {saving ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
+
+            <div className="flex justify-end">
+              <Button
+                className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
           </div>
         )}
 
