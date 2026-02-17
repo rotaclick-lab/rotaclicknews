@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -10,6 +10,39 @@ const maskCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$
 const maskPhone = (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{4})\d+?$/, '$1')
 const maskCNPJ = (v: string) => v.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1')
 const maskCEP = (v: string) => v.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{3})\d+?$/, '$1')
+const maskIE = (v: string) => v.replace(/[^0-9./-]/g, '')
+
+// ===== VALIDATORS =====
+function validateCPF(cpf: string): boolean {
+  const clean = cpf.replace(/\D/g, '')
+  if (clean.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(clean)) return false
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i)
+  let rest = (sum * 10) % 11
+  if (rest === 10) rest = 0
+  if (rest !== parseInt(clean[9])) return false
+  sum = 0
+  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i)
+  rest = (sum * 10) % 11
+  if (rest === 10) rest = 0
+  return rest === parseInt(clean[10])
+}
+
+function validateIE(ie: string, uf: string): boolean {
+  const clean = ie.replace(/\D/g, '')
+  if (clean.length === 0) return false
+  if (uf === 'SP' && clean.length !== 12) return false
+  if (uf === 'MG' && clean.length !== 13) return false
+  if (uf === 'RJ' && clean.length !== 8) return false
+  if (uf === 'PR' && clean.length !== 10) return false
+  if (uf === 'RS' && clean.length !== 10) return false
+  if (uf === 'SC' && clean.length !== 9) return false
+  if (uf === 'BA' && (clean.length < 8 || clean.length > 9)) return false
+  // Para outros estados, aceitar entre 7 e 14 dígitos
+  if (clean.length < 7 || clean.length > 14) return false
+  return true
+}
 
 // ===== TYPES =====
 interface FormData {
@@ -49,6 +82,15 @@ interface FormData {
   aceitaAnalise: boolean
 }
 
+interface FieldErrors {
+  cpf?: string
+  cep?: string
+  inscricaoEstadual?: string
+  email?: string
+  senha?: string
+  confirmarSenha?: string
+}
+
 const UF_OPTIONS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
 export default function RegistroPage() {
@@ -56,6 +98,9 @@ export default function RegistroPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [errors, setErrors] = useState<FieldErrors>({})
+  const [cepLoading, setCepLoading] = useState(false)
+  const [cepValid, setCepValid] = useState<boolean | null>(null)
   const [form, setForm] = useState<FormData>({
     nomeCompleto: '', cpf: '', telefone: '',
     razaoSocial: '', cnpj: '', inscricaoEstadual: '', rntrc: '',
@@ -67,8 +112,38 @@ export default function RegistroPage() {
     aceitaTermos: false, aceitaPrivacidade: false, aceitaComunicacoes: false, aceitaAnalise: false,
   })
 
+  // ===== AUTO-FILL FROM CNPJ DATA =====
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('carrier_data')
+      if (stored) {
+        const data = JSON.parse(stored)
+        setForm(prev => ({
+          ...prev,
+          cnpj: data.cnpj ? maskCNPJ(data.cnpj) : prev.cnpj,
+          razaoSocial: data.razao || prev.razaoSocial,
+          logradouro: data.logradouro || prev.logradouro,
+          numero: data.numero || prev.numero,
+          complemento: data.complemento || prev.complemento,
+          cidade: data.municipio || prev.cidade,
+          uf: data.uf || prev.uf,
+          cep: data.cep ? maskCEP(data.cep.replace(/\D/g, '')) : prev.cep,
+          bairro: data.bairro || prev.bairro,
+          email: data.email || prev.email,
+          telefone: data.telefone ? maskPhone(data.telefone) : prev.telefone,
+        }))
+        // Se tem CEP, marcar como válido
+        if (data.cep && data.cep.replace(/\D/g, '').length === 8) {
+          setCepValid(true)
+        }
+      }
+    } catch {}
+  }, [])
+
   const set = useCallback((field: keyof FormData, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }))
+    // Limpar erro do campo ao editar
+    setErrors(prev => ({ ...prev, [field]: undefined }))
   }, [])
 
   const toggleRegiao = (regiao: string) => {
@@ -78,6 +153,78 @@ export default function RegistroPage() {
         ? prev.regioes.filter(r => r !== regiao)
         : [...prev.regioes, regiao]
     }))
+  }
+
+  // ===== REAL-TIME CPF VALIDATION =====
+  const handleCPFChange = (value: string) => {
+    const masked = maskCPF(value)
+    set('cpf', masked)
+    const clean = masked.replace(/\D/g, '')
+    if (clean.length === 11) {
+      if (!validateCPF(masked)) {
+        setErrors(prev => ({ ...prev, cpf: 'CPF inválido. Verifique os dígitos.' }))
+      } else {
+        setErrors(prev => ({ ...prev, cpf: undefined }))
+      }
+    } else if (clean.length > 0 && clean.length < 11) {
+      setErrors(prev => ({ ...prev, cpf: undefined }))
+    }
+  }
+
+  // ===== REAL-TIME CEP VALIDATION + LOOKUP =====
+  const handleCEPChange = async (value: string) => {
+    const masked = maskCEP(value)
+    set('cep', masked)
+    const clean = masked.replace(/\D/g, '')
+    
+    if (clean.length === 8) {
+      setCepLoading(true)
+      setCepValid(null)
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
+        const data = await res.json()
+        if (!data.erro) {
+          setForm(prev => ({
+            ...prev,
+            cep: masked,
+            logradouro: data.logradouro || prev.logradouro,
+            bairro: data.bairro || prev.bairro,
+            cidade: data.localidade || prev.cidade,
+            uf: data.uf || prev.uf,
+          }))
+          setCepValid(true)
+          setErrors(prev => ({ ...prev, cep: undefined }))
+        } else {
+          setCepValid(false)
+          setErrors(prev => ({ ...prev, cep: 'CEP não encontrado.' }))
+        }
+      } catch {
+        setCepValid(false)
+        setErrors(prev => ({ ...prev, cep: 'Erro ao buscar CEP. Tente novamente.' }))
+      } finally {
+        setCepLoading(false)
+      }
+    } else {
+      setCepValid(null)
+      setErrors(prev => ({ ...prev, cep: undefined }))
+    }
+  }
+
+  // ===== REAL-TIME IE VALIDATION =====
+  const handleIEChange = (value: string) => {
+    const masked = maskIE(value)
+    set('inscricaoEstadual', masked)
+    const clean = masked.replace(/\D/g, '')
+    if (clean.length >= 7) {
+      const uf = form.uf || 'SP'
+      if (!validateIE(masked, uf)) {
+        setErrors(prev => ({ ...prev, inscricaoEstadual: `Inscrição Estadual inválida para ${uf}.` }))
+      } else {
+        setErrors(prev => ({ ...prev, inscricaoEstadual: undefined }))
+      }
+    } else {
+      setErrors(prev => ({ ...prev, inscricaoEstadual: undefined }))
+    }
   }
 
   // Password strength
@@ -94,23 +241,34 @@ export default function RegistroPage() {
   const strengthLabels = ['', 'Fraca', 'Razoável', 'Forte', 'Muito Forte']
   const strength = getPasswordStrength(form.senha)
 
-  // CEP lookup
-  const buscarCEP = async (cep: string) => {
-    const clean = cep.replace(/\D/g, '')
-    if (clean.length === 8) {
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
-        const data = await res.json()
-        if (!data.erro) {
-          setForm(prev => ({
-            ...prev,
-            logradouro: data.logradouro || '',
-            bairro: data.bairro || '',
-            cidade: data.localidade || '',
-            uf: data.uf || '',
-          }))
-        }
-      } catch {}
+  // ===== STEP 1 VALIDATION =====
+  const validateStep1 = (): boolean => {
+    const newErrors: FieldErrors = {}
+    const cpfClean = form.cpf.replace(/\D/g, '')
+    if (cpfClean.length === 11 && !validateCPF(form.cpf)) {
+      newErrors.cpf = 'CPF inválido. Verifique os dígitos.'
+    }
+    if (cpfClean.length > 0 && cpfClean.length < 11) {
+      newErrors.cpf = 'CPF incompleto.'
+    }
+    const cepClean = form.cep.replace(/\D/g, '')
+    if (cepClean.length > 0 && cepClean.length < 8) {
+      newErrors.cep = 'CEP incompleto.'
+    }
+    if (cepValid === false) {
+      newErrors.cep = 'CEP não encontrado.'
+    }
+    const ieClean = form.inscricaoEstadual.replace(/\D/g, '')
+    if (ieClean.length > 0 && !validateIE(form.inscricaoEstadual, form.uf || 'SP')) {
+      newErrors.inscricaoEstadual = `Inscrição Estadual inválida para ${form.uf || 'SP'}.`
+    }
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleNextStep1 = () => {
+    if (validateStep1()) {
+      setStep(2)
     }
   }
 
@@ -121,6 +279,33 @@ export default function RegistroPage() {
       setLoading(false)
       router.push('/login')
     }, 2000)
+  }
+
+  // ===== HELPER: Input with validation =====
+  const inputClass = (field?: string) => {
+    const hasError = field && errors[field as keyof FieldErrors]
+    return `w-full h-[56px] px-4 rounded-lg border ${hasError ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200' : 'border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5]'} bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all`
+  }
+
+  const errorMessage = (field: keyof FieldErrors) => {
+    if (!errors[field]) return null
+    return (
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <span className="material-icons-round text-red-500 text-sm">error</span>
+        <span className="text-xs font-medium text-red-500">{errors[field]}</span>
+      </div>
+    )
+  }
+
+  const successIndicator = (valid: boolean | null) => {
+    if (valid === null) return null
+    if (valid) return (
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <span className="material-icons-round text-emerald-500 text-sm">check_circle</span>
+        <span className="text-xs font-medium text-emerald-500">Validado com sucesso</span>
+      </div>
+    )
+    return null
   }
 
   // ===== STEP 1 =====
@@ -168,7 +353,7 @@ export default function RegistroPage() {
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Nome Completo</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Ex: João Silva"
                       value={form.nomeCompleto}
                       onChange={e => set('nomeCompleto', e.target.value)}
@@ -176,19 +361,26 @@ export default function RegistroPage() {
                   </div>
                   <div className="col-span-2 md:col-span-1 grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[18px] font-medium text-slate-700 mb-2">CPF</label>
-                      <input
-                        className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
-                        placeholder="000.000.000-00"
-                        value={form.cpf}
-                        onChange={e => set('cpf', maskCPF(e.target.value))}
-                        maxLength={14}
-                      />
+                      <label className="block text-[18px] font-medium text-slate-700 mb-2">CPF <span className="text-red-400">*</span></label>
+                      <div className="relative">
+                        <input
+                          className={inputClass('cpf')}
+                          placeholder="000.000.000-00"
+                          value={form.cpf}
+                          onChange={e => handleCPFChange(e.target.value)}
+                          maxLength={14}
+                        />
+                        {form.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-emerald-500">check_circle</span>
+                        )}
+                      </div>
+                      {errorMessage('cpf')}
+                      {form.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && successIndicator(true)}
                     </div>
                     <div>
                       <label className="block text-[18px] font-medium text-slate-700 mb-2">Telefone</label>
                       <input
-                        className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                        className={inputClass()}
                         placeholder="(00) 00000-0000"
                         value={form.telefone}
                         onChange={e => set('telefone', maskPhone(e.target.value))}
@@ -204,38 +396,52 @@ export default function RegistroPage() {
                 <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
                   <span className="material-icons-round text-[#13b9a5]">business</span>
                   <h2 className="text-xl font-bold text-slate-800">Dados da Empresa</h2>
+                  {form.cnpj && (
+                    <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                      <span className="material-icons-round text-sm">verified</span>
+                      Dados preenchidos via CNPJ
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Razão Social</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 outline-none transition-all"
                       placeholder="Nome da sua transportadora"
                       value={form.razaoSocial}
                       onChange={e => set('razaoSocial', e.target.value)}
+                      readOnly={!!form.razaoSocial && form.cnpj !== ''}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">CNPJ</label>
-                    <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed italic outline-none"
-                      disabled
-                      value={form.cnpj || '12.345.678/0001-90'}
-                    />
+                    <div className="relative">
+                      <input
+                        className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed italic outline-none"
+                        disabled
+                        value={form.cnpj || ''}
+                      />
+                      {form.cnpj && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-emerald-500">verified</span>
+                      )}
+                    </div>
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="block text-[18px] font-medium text-slate-700 mb-2">Inscrição Estadual</label>
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">Inscrição Estadual <span className="text-red-400">*</span></label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
-                      placeholder="Ex: 123456789"
+                      className={inputClass('inscricaoEstadual')}
+                      placeholder={`Ex: ${form.uf === 'SP' ? '123.456.789.012' : form.uf === 'MG' ? '1234567890123' : '123456789'}`}
                       value={form.inscricaoEstadual}
-                      onChange={e => set('inscricaoEstadual', e.target.value)}
+                      onChange={e => handleIEChange(e.target.value)}
                     />
+                    {errorMessage('inscricaoEstadual')}
+                    {form.inscricaoEstadual.replace(/\D/g, '').length >= 7 && !errors.inscricaoEstadual && successIndicator(true)}
                   </div>
                   <div className="col-span-2 md:col-span-1">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">RNTRC</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Registro na ANTT"
                       value={form.rntrc}
                       onChange={e => set('rntrc', e.target.value)}
@@ -249,26 +455,43 @@ export default function RegistroPage() {
                 <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
                   <span className="material-icons-round text-[#13b9a5]">place</span>
                   <h2 className="text-xl font-bold text-slate-800">Endereço</h2>
+                  {form.cep && cepValid && (
+                    <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+                      <span className="material-icons-round text-sm">verified</span>
+                      Endereço preenchido via CEP
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 md:col-span-3">
-                    <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP</label>
-                    <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
-                      placeholder="00000-000"
-                      value={form.cep}
-                      onChange={e => {
-                        const masked = maskCEP(e.target.value)
-                        set('cep', masked)
-                        buscarCEP(masked)
-                      }}
-                      maxLength={9}
-                    />
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP <span className="text-red-400">*</span></label>
+                    <div className="relative">
+                      <input
+                        className={inputClass('cep')}
+                        placeholder="00000-000"
+                        value={form.cep}
+                        onChange={e => handleCEPChange(e.target.value)}
+                        maxLength={9}
+                      />
+                      {cepLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="w-5 h-5 border-2 border-[#13b9a5] border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {!cepLoading && cepValid === true && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-emerald-500">check_circle</span>
+                      )}
+                      {!cepLoading && cepValid === false && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-red-500">error</span>
+                      )}
+                    </div>
+                    {errorMessage('cep')}
+                    {cepValid === true && !errors.cep && successIndicator(true)}
                   </div>
                   <div className="col-span-12 md:col-span-7">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Logradouro</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Nome da rua, avenida..."
                       value={form.logradouro}
                       onChange={e => set('logradouro', e.target.value)}
@@ -277,7 +500,7 @@ export default function RegistroPage() {
                   <div className="col-span-12 md:col-span-2">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Número</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="123"
                       value={form.numero}
                       onChange={e => set('numero', e.target.value)}
@@ -286,7 +509,7 @@ export default function RegistroPage() {
                   <div className="col-span-12 md:col-span-4">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Complemento</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Ex: Sala 101"
                       value={form.complemento}
                       onChange={e => set('complemento', e.target.value)}
@@ -295,7 +518,7 @@ export default function RegistroPage() {
                   <div className="col-span-12 md:col-span-3">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Bairro</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Ex: Centro"
                       value={form.bairro}
                       onChange={e => set('bairro', e.target.value)}
@@ -304,7 +527,7 @@ export default function RegistroPage() {
                   <div className="col-span-12 md:col-span-3">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Cidade</label>
                     <input
-                      className="w-full h-[56px] px-4 rounded-lg border border-slate-200 focus:border-[#13b9a5] focus:ring-2 focus:ring-[#13b9a5] bg-white/50 text-slate-900 placeholder:text-slate-400 outline-none transition-all"
+                      className={inputClass()}
                       placeholder="Ex: São Paulo"
                       value={form.cidade}
                       onChange={e => set('cidade', e.target.value)}
@@ -327,7 +550,7 @@ export default function RegistroPage() {
               {/* Action Footer */}
               <div className="flex justify-end pt-8 mt-8 border-t border-slate-100">
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={handleNextStep1}
                   className="flex items-center gap-3 px-8 h-[64px] bg-[#13b9a5] hover:bg-[#13b9a5]/90 text-white rounded-lg font-bold text-lg shadow-lg shadow-[#13b9a5]/30 transition-all active:scale-95"
                 >
                   Próxima Etapa
@@ -452,46 +675,41 @@ export default function RegistroPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-600">Raio de Operação</label>
-                  <select
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg focus:ring-[#13b9a5] focus:border-[#13b9a5] py-2.5 px-3 outline-none transition-all"
-                    value={form.raioOperacao}
-                    onChange={e => set('raioOperacao', e.target.value)}
-                  >
-                    <option value="">Selecione o raio (km)</option>
-                    <option>Até 100km</option>
-                    <option>Até 500km</option>
-                    <option>Até 1000km</option>
-                    <option>Todo Brasil</option>
-                  </select>
+                  <div className="relative">
+                    <input
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg focus:ring-[#13b9a5] focus:border-[#13b9a5] py-2.5 px-3 pr-12 outline-none transition-all"
+                      placeholder="0"
+                      type="number"
+                      value={form.raioOperacao}
+                      onChange={e => set('raioOperacao', e.target.value)}
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 font-medium">km</div>
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* Section 2: Regiões de Atendimento */}
+            {/* Section 2: Regiões */}
             <section className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-slate-200">
               <div className="flex items-center gap-2 mb-6 border-b border-slate-100 pb-4">
                 <span className="material-icons-round text-[#13b9a5]">map</span>
-                <h2 className="text-xl font-bold">Regiões de Atendimento</h2>
+                <h2 className="text-xl font-bold">Regiões de Atuação</h2>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {['Norte', 'Nordeste', 'Centro-Oeste', 'Sudeste', 'Sul'].map(regiao => (
-                  <label key={regiao} className="group relative cursor-pointer" onClick={() => toggleRegiao(regiao)}>
-                    <input type="checkbox" className="peer sr-only" checked={form.regioes.includes(regiao)} readOnly />
-                    <div className={`h-32 flex flex-col items-center justify-center p-4 border-2 rounded-xl transition-all hover:border-[#13b9a5]/50 ${
+                  <button
+                    key={regiao}
+                    type="button"
+                    onClick={() => toggleRegiao(regiao)}
+                    className={`p-4 rounded-xl border-2 text-center font-bold transition-all ${
                       form.regioes.includes(regiao)
-                        ? 'border-[#13b9a5] bg-[#13b9a5]/5'
-                        : 'border-slate-100'
-                    }`}>
-                      <div className={`w-12 h-12 mb-3 rounded-full flex items-center justify-center transition-colors ${
-                        form.regioes.includes(regiao)
-                          ? 'bg-[#13b9a5] text-white'
-                          : 'bg-slate-50 text-slate-400 group-hover:text-[#13b9a5]'
-                      }`}>
-                        <span className="material-icons-round">explore</span>
-                      </div>
-                      <span className={`font-bold ${form.regioes.includes(regiao) ? 'text-[#13b9a5]' : 'text-slate-600'}`}>{regiao}</span>
-                    </div>
-                  </label>
+                        ? 'border-[#13b9a5] bg-[#13b9a5]/5 text-[#13b9a5] shadow-md shadow-[#13b9a5]/10'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="material-icons-round block mb-1 text-2xl">{form.regioes.includes(regiao) ? 'check_circle' : 'radio_button_unchecked'}</span>
+                    {regiao}
+                  </button>
                 ))}
               </div>
             </section>
@@ -673,12 +891,24 @@ export default function RegistroPage() {
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Senha</label>
                       <input
-                        className="w-full h-[56px] px-4 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-[#13b9a5] focus:border-[#13b9a5] transition-all text-slate-900 outline-none"
+                        className={`w-full h-[56px] px-4 rounded-lg border bg-slate-50 focus:ring-2 focus:ring-[#13b9a5] focus:border-[#13b9a5] transition-all text-slate-900 outline-none ${form.confirmarSenha && form.confirmarSenha !== form.senha ? 'border-red-400' : 'border-slate-200'}`}
                         placeholder="••••••••"
                         type="password"
                         value={form.confirmarSenha}
                         onChange={e => set('confirmarSenha', e.target.value)}
                       />
+                      {form.confirmarSenha && form.confirmarSenha !== form.senha && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="material-icons-round text-red-500 text-sm">error</span>
+                          <span className="text-xs font-medium text-red-500">As senhas não coincidem</span>
+                        </div>
+                      )}
+                      {form.confirmarSenha && form.confirmarSenha === form.senha && form.senha.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="material-icons-round text-emerald-500 text-sm">check_circle</span>
+                          <span className="text-xs font-medium text-emerald-500">Senhas coincidem</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -701,7 +931,7 @@ export default function RegistroPage() {
                       />
                     </div>
                     <div className="text-sm text-slate-600 leading-relaxed">
-                      Li e aceito os <a href="#" className="text-[#13b9a5] font-bold underline hover:no-underline">Termos de Uso</a> da plataforma RotaClick, incluindo as responsabilidades de transporte.
+                      Li e aceito os <a href="/termos" className="text-[#13b9a5] font-bold underline hover:no-underline">Termos de Uso</a> da plataforma RotaClick, incluindo as responsabilidades de transporte.
                     </div>
                   </label>
                   <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group">
@@ -714,7 +944,7 @@ export default function RegistroPage() {
                       />
                     </div>
                     <div className="text-sm text-slate-600 leading-relaxed">
-                      Estou ciente e concordo com a <a href="#" className="text-[#13b9a5] font-bold underline hover:no-underline">Política de Privacidade</a> referente ao tratamento de meus dados.
+                      Estou ciente e concordo com a <a href="/privacidade" className="text-[#13b9a5] font-bold underline hover:no-underline">Política de Privacidade</a> referente ao tratamento de meus dados.
                     </div>
                   </label>
                   <label className="flex items-start gap-4 p-4 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group">

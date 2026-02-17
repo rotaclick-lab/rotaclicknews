@@ -78,12 +78,16 @@ export default function TransportadoraPage() {
           cnpj: cnpj.replace(/\D/g, ''),
           razao: result.data.razao_social,
           fantasia: result.data.nome_fantasia,
-          logradouro: result.data.logradouro,
-          numero: result.data.numero,
-          municipio: result.data.municipio,
-          uf: result.data.uf,
-          cep: result.data.cep,
+          logradouro: result.data.endereco?.logradouro || result.data.logradouro,
+          numero: result.data.endereco?.numero || result.data.numero,
+          complemento: result.data.endereco?.complemento || '',
+          bairro: result.data.endereco?.bairro || '',
+          municipio: result.data.endereco?.municipio || result.data.municipio,
+          uf: result.data.endereco?.uf || result.data.uf,
+          cep: result.data.endereco?.cep || result.data.cep,
           cnae: result.data.cnae_principal,
+          email: result.data.email || '',
+          telefone: result.data.telefone || '',
           role: 'transportadora'
         }))
         toast.success('Empresa validada com sucesso!')
