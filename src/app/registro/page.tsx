@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { registerCarrier } from '@/app/actions/carrier-register-actions'
+import { toast } from 'sonner'
 
 // ===== MASKS =====
 const maskCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1')
@@ -273,12 +275,80 @@ export default function RegistroPage() {
   }
 
   const handleSubmit = async () => {
+    // Validar campos obrigatórios do Step 3
+    if (!form.email) {
+      toast.error('Preencha o email de acesso')
+      return
+    }
+    if (!form.senha || form.senha.length < 8) {
+      toast.error('A senha deve ter no mínimo 8 caracteres')
+      return
+    }
+    if (form.senha !== form.confirmarSenha) {
+      toast.error('As senhas não coincidem')
+      return
+    }
+    if (!form.aceitaTermos || !form.aceitaPrivacidade) {
+      toast.error('Você precisa aceitar os Termos de Uso e a Política de Privacidade')
+      return
+    }
+
     setLoading(true)
-    // TODO: integrar com Supabase
-    setTimeout(() => {
+    try {
+      const result = await registerCarrier({
+        // Responsável
+        nomeCompleto: form.nomeCompleto,
+        cpf: form.cpf,
+        telefone: form.telefone,
+        // Empresa
+        razaoSocial: form.razaoSocial,
+        cnpj: form.cnpj,
+        inscricaoEstadual: form.inscricaoEstadual,
+        rntrc: form.rntrc,
+        // Endereço
+        cep: form.cep,
+        logradouro: form.logradouro,
+        numero: form.numero,
+        complemento: form.complemento,
+        bairro: form.bairro,
+        cidade: form.cidade,
+        uf: form.uf,
+        // Operacional
+        tipoVeiculo: form.tipoVeiculo,
+        tipoCarroceria: form.tipoCarroceria,
+        capacidadeCarga: form.capacidadeCarga,
+        raioOperacao: form.raioOperacao,
+        regioes: form.regioes,
+        consumoMedio: form.consumoMedio,
+        qtdEixos: form.qtdEixos,
+        numeroApolice: form.numeroApolice,
+        possuiRastreamento: form.possuiRastreamento,
+        possuiSeguro: form.possuiSeguro,
+        // Credenciais
+        email: form.email,
+        senha: form.senha,
+        // Termos
+        aceitaTermos: form.aceitaTermos,
+        aceitaPrivacidade: form.aceitaPrivacidade,
+        aceitaComunicacoes: form.aceitaComunicacoes,
+        aceitaAnalise: form.aceitaAnalise,
+      })
+
+      if (result.success) {
+        toast.success('Cadastro realizado com sucesso!')
+        // Limpar sessionStorage
+        sessionStorage.removeItem('carrier_data')
+        // Redirecionar para página de sucesso
+        router.push('/registro/sucesso')
+      } else {
+        toast.error(result.error || 'Erro ao realizar cadastro')
+      }
+    } catch (error) {
+      console.error('Erro no cadastro:', error)
+      toast.error('Erro inesperado. Tente novamente.')
+    } finally {
       setLoading(false)
-      router.push('/login')
-    }, 2000)
+    }
   }
 
   // ===== HELPER: Input with validation =====

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-display' });
@@ -25,6 +26,7 @@ export default function RootLayout({
       <body className={`${inter.className} ${manrope.variable}`}>
         {children}
         <Toaster />
+        <SonnerToaster position="top-center" richColors closeButton />
       </body>
     </html>
   );
