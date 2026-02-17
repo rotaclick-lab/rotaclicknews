@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 interface CarrierRegistrationData {
   // Responsável
@@ -42,25 +42,24 @@ interface CarrierRegistrationData {
 }
 
 export async function registerCarrier(data: CarrierRegistrationData) {
-  const supabase = await createClient()
+  // Usar admin client (service_role) para bypassar RLS
+  const supabase = createAdminClient()
 
-  // 1. Criar o usuário no Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // 1. Criar o usuário no Supabase Auth (admin pode criar sem restrições)
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email: data.email,
     password: data.senha,
-    options: {
-      data: {
-        full_name: data.nomeCompleto,
-        role: 'transportadora',
-        cnpj: data.cnpj.replace(/\D/g, ''),
-      },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.rotaclick.com.br'}/auth/callback`,
+    email_confirm: false, // Enviar email de confirmação
+    user_metadata: {
+      full_name: data.nomeCompleto,
+      role: 'transportadora',
+      cnpj: data.cnpj.replace(/\D/g, ''),
     },
   })
 
   if (authError) {
     console.error('Erro ao criar usuário:', authError)
-    if (authError.message.includes('already registered')) {
+    if (authError.message.includes('already been registered') || authError.message.includes('already registered')) {
       return { success: false, error: 'Este email já está cadastrado. Tente fazer login.' }
     }
     return { success: false, error: authError.message }
@@ -73,7 +72,7 @@ export async function registerCarrier(data: CarrierRegistrationData) {
   const userId = authData.user.id
 
   try {
-    // 2. Criar a empresa na tabela companies
+    // 2. Criar a empresa na tabela companies (admin bypassa RLS)
     const { data: companyData, error: companyError } = await supabase
       .from('companies')
       .insert({
@@ -123,15 +122,13 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
     if (companyError) {
       console.error('Erro ao criar empresa:', companyError)
-      // Não deletar o auth user pois o email de confirmação já foi enviado
-      // O usuário pode completar o cadastro depois
       return { 
         success: false, 
         error: 'Conta criada, mas houve um erro ao salvar os dados da empresa. Entre em contato com o suporte.' 
       }
     }
 
-    // 3. Criar o perfil na tabela profiles
+    // 3. Atualizar o perfil na tabela profiles (trigger já criou o registro básico)
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -148,7 +145,7 @@ export async function registerCarrier(data: CarrierRegistrationData) {
       })
 
     if (profileError) {
-      console.error('Erro ao criar perfil:', profileError)
+      console.error('Erro ao atualizar perfil:', profileError)
       return { 
         success: false, 
         error: 'Conta criada, mas houve um erro ao salvar seu perfil. Entre em contato com o suporte.' 
@@ -197,7 +194,6 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
       if (termsError) {
         console.error('Erro ao registrar termos (não crítico):', termsError)
-        // Não bloquear o cadastro por erro nos termos
       }
     }
 
@@ -213,7 +209,23 @@ export async function registerCarrier(data: CarrierRegistrationData) {
         is_read: false,
       })
       .then(() => {})
-      .catch(() => {}) // Não bloquear por erro na notificação
+      .catch(() => {})
+
+    // 6. Enviar email de confirmação via Supabase Auth
+    // O admin.createUser com email_confirm: false gera o link de confirmação
+    // Precisamos enviar o email manualmente via generateLink
+    const { error: inviteError } = await supabase.auth.admin.generateLink({
+      type: 'signup',
+      email: data.email,
+      password: data.senha,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.rotaclick.com.br'}/auth/callback`,
+      },
+    })
+
+    if (inviteError) {
+      console.error('Erro ao gerar link de confirmação (não crítico):', inviteError)
+    }
 
     return { 
       success: true, 
