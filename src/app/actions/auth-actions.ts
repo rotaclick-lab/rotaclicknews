@@ -70,6 +70,7 @@ export async function login(formData: FormData) {
 
   const identifier = ((formData.get('identifier') as string) || (formData.get('email') as string) || '').trim()
   const password = (formData.get('password') as string) || ''
+  const next = ((formData.get('next') as string) || '').trim()
 
   const resolvedEmail = await resolveLoginEmail(identifier)
 
@@ -89,11 +90,13 @@ export async function login(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  const safeRedirect = next.startsWith('/') ? next : '/dashboard'
+  redirect(safeRedirect)
 }
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()
+  const next = ((formData.get('next') as string) || '').trim()
 
   const data = {
     email: formData.get('email') as string,
@@ -115,7 +118,8 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  const safeRedirect = next.startsWith('/') ? next : '/dashboard'
+  redirect(safeRedirect)
 }
 
 export async function logout() {

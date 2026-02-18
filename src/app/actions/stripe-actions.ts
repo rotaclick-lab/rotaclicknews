@@ -14,14 +14,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function createCheckoutSession(
   offer: { carrier: string, price: number, id: string },
-  connectedAccountId?: string 
+  connectedAccountId?: string,
+  nextPath = '/cotacao?resumeCheckout=1'
 ) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-      return { success: false, error: 'Você precisa estar logado para finalizar o pagamento.' }
+      return {
+        success: false,
+        requiresAuth: true,
+        loginUrl: `/login?next=${encodeURIComponent(nextPath)}`,
+        error: 'Você precisa estar logado para finalizar o pagamento.',
+      }
+    }
+
+    if (!user.email) {
+      return { success: false, error: 'Não foi possível identificar o email da conta para pagamento.' }
     }
 
     // Definimos a comissão da plataforma (ex: 10%)
@@ -51,12 +61,20 @@ export async function createCheckoutSession(
         offer_id: offer.id,
         user_id: user.id,
         carrier_name: offer.carrier
+      },
+      payment_intent_data: {
+        metadata: {
+          offer_id: offer.id,
+          user_id: user.id,
+          carrier_name: offer.carrier,
+        },
       }
     }
 
     // Se houver uma conta conectada, configuramos o split de pagamento
     if (connectedAccountId) {
       sessionOptions.payment_intent_data = {
+        ...(sessionOptions.payment_intent_data || {}),
         application_fee_amount: applicationFeeAmount,
         transfer_data: {
           destination: connectedAccountId,
@@ -82,6 +100,7 @@ export async function createStripeAccountLink() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) throw new Error('Usuário não autenticado')
+    if (!user.email) throw new Error('Usuário sem email para criar conta Stripe')
 
     // 1. Criar uma conta Connect para a transportadora (tipo Express)
     const account = await stripe.accounts.create({

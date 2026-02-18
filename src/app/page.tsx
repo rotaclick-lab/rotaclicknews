@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
@@ -20,6 +21,8 @@ interface CargoItem {
   depth: number
 }
 
+const PENDING_CHECKOUT_KEY = 'rotaclick_pending_checkout_offer'
+
 interface QuoteResult {
   id: string
   carrier: string
@@ -29,6 +32,8 @@ interface QuoteResult {
 }
 
 export default function HomePage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
@@ -83,13 +88,42 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<QuoteResult | null>(null)
 
+  const savePendingCheckout = useCallback((offer: QuoteResult) => {
+    sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(offer))
+  }, [])
+
+  const clearPendingCheckout = useCallback(() => {
+    sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
+  }, [])
+
+  useEffect(() => {
+    if (searchParams.get('resumeCheckout') !== '1') return
+
+    const raw = sessionStorage.getItem(PENDING_CHECKOUT_KEY)
+    if (!raw) return
+
+    try {
+      const offer = JSON.parse(raw) as QuoteResult
+      if (!offer?.id) return
+
+      setResults([offer])
+      setSelectedOffer(offer)
+      setStep(4)
+      router.replace('/')
+    } catch {
+      sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
+    }
+  }, [router, searchParams])
+
   const addItem = () => {
     setItems([...items, { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 }])
   }
 
   const updateItem = (index: number, field: keyof CargoItem, value: number) => {
     const newItems = [...items]
-    newItems[index][field] = value
+    const targetItem = newItems[index]
+    if (!targetItem) return
+    targetItem[field] = value
     setItems(newItems)
   }
 
@@ -457,14 +491,22 @@ export default function HomePage() {
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
                         </p>
                       </div>
-                      <Button 
-                        size="lg" 
+                      <Button
+                        size="lg"
                         className="bg-orange-500 hover:bg-orange-600 text-white px-10 font-bold"
                         onClick={async () => {
                           if (!selectedOffer) return
                           setLoading(true)
-                          const result = await createCheckoutSession(selectedOffer)
+                          const result = await createCheckoutSession(selectedOffer, undefined, '/?resumeCheckout=1')
+
+                          if (result.requiresAuth && result.loginUrl) {
+                            savePendingCheckout(selectedOffer)
+                            window.location.href = result.loginUrl
+                            return
+                          }
+
                           if (result.success && result.url) {
+                            clearPendingCheckout()
                             window.location.href = result.url
                           } else {
                             toast.error(result.error || 'Erro ao processar pagamento')

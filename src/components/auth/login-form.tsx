@@ -11,7 +11,11 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
-export function LoginForm() {
+interface LoginFormProps {
+  next?: string
+}
+
+export function LoginForm({ next }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   
@@ -24,6 +28,9 @@ export function LoginForm() {
     const formData = new FormData()
     formData.append('identifier', data.identifier)
     formData.append('password', data.password)
+    if (next) {
+      formData.append('next', next)
+    }
     
     const result = await login(formData)
     
@@ -79,7 +86,10 @@ export function LoginForm() {
         </Link>
         <p className="text-muted-foreground">
           Não tem uma conta?{' '}
-          <Link href="/registro" className="text-orange-500 hover:text-orange-600 hover:underline font-semibold">
+          <Link
+            href={next ? `/registro?next=${encodeURIComponent(next)}` : '/registro'}
+            className="text-orange-500 hover:text-orange-600 hover:underline font-semibold"
+          >
             Cadastre-se
           </Link>
         </p>

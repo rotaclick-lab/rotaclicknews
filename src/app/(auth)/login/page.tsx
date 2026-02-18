@@ -9,7 +9,15 @@ export const metadata = {
   description: 'Faça login no RotaClick',
 }
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams?: {
+    next?: string
+  }
+}
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
+  const next = searchParams?.next
+
   return (
     <div className="space-y-4">
       <Link 
@@ -31,7 +39,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm {...(next ? { next } : {})} />
         </CardContent>
       </Card>
     </div>

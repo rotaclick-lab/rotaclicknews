@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 
 export default function RegistroSucessoPage() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || ''
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login'
   const [countdown, setCountdown] = useState(15)
 
   useEffect(() => {
@@ -12,14 +16,14 @@ export default function RegistroSucessoPage() {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          window.location.href = '/login'
+          window.location.href = loginHref
           return 0
         }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [loginHref])
 
   return (
     <div className="min-h-screen flex items-center justify-center font-display antialiased" style={{ background: 'linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)' }}>
@@ -72,7 +76,7 @@ export default function RegistroSucessoPage() {
 
           {/* Botão de ir para login */}
           <Link
-            href="/login"
+            href={loginHref}
             className="inline-flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-[#13b9a5] hover:bg-[#0fa899] text-white font-semibold text-lg transition-all shadow-lg shadow-[#13b9a5]/25"
           >
             <span className="material-icons-round">login</span>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { registerCarrier } from '@/app/actions/carrier-register-actions'
@@ -20,15 +20,15 @@ function validateCPF(cpf: string): boolean {
   if (clean.length !== 11) return false
   if (/^(\d)\1{10}$/.test(clean)) return false
   let sum = 0
-  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i)
+  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]!) * (10 - i)
   let rest = (sum * 10) % 11
   if (rest === 10) rest = 0
-  if (rest !== parseInt(clean[9])) return false
+  if (rest !== parseInt(clean[9]!)) return false
   sum = 0
-  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i)
+  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]!) * (11 - i)
   rest = (sum * 10) % 11
   if (rest === 10) rest = 0
-  return rest === parseInt(clean[10])
+  return rest === parseInt(clean[10]!)
 }
 
 function validateIE(ie: string, uf: string): boolean {
@@ -85,18 +85,20 @@ interface FormData {
 }
 
 interface FieldErrors {
-  cpf?: string
-  cep?: string
-  inscricaoEstadual?: string
-  email?: string
-  senha?: string
-  confirmarSenha?: string
+  cpf?: string | undefined
+  cep?: string | undefined
+  inscricaoEstadual?: string | undefined
+  email?: string | undefined
+  senha?: string | undefined
+  confirmarSenha?: string | undefined
 }
 
 const UF_OPTIONS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
 export default function RegistroPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || ''
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -339,7 +341,7 @@ export default function RegistroPage() {
         // Limpar sessionStorage
         sessionStorage.removeItem('carrier_data')
         // Redirecionar para página de sucesso
-        router.push('/registro/sucesso')
+        router.push(next ? `/registro/sucesso?next=${encodeURIComponent(next)}` : '/registro/sucesso')
       } else {
         toast.error(result.error || 'Erro ao realizar cadastro')
       }
