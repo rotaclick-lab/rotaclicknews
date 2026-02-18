@@ -78,6 +78,12 @@ export default function CotacaoPage() {
     return numberValue.toFixed(2)
   }
 
+  const parseCurrencyInput = (value: string) => {
+    const normalized = value.replace(/\./g, '').replace(',', '.').trim()
+    const parsed = Number(normalized)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
   const [items, setItems] = useState<CargoItem[]>([
     { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 },
   ])
@@ -149,7 +155,8 @@ export default function CotacaoPage() {
     // Simulação de chamada de API para obter fretes
     setTimeout(() => {
       const totals = calculateTotals()
-      const basePrice = totals.taxableWeight * 2.5 + (Number(cargo.invoiceValue) * 0.01)
+      const invoiceValue = parseCurrencyInput(cargo.invoiceValue)
+      const basePrice = totals.taxableWeight * 2.5 + (invoiceValue * 0.01)
       
       const mockResults: QuoteResult[] = [
         { id: '1', carrier: 'RotaClick Express', price: basePrice, deadline: '2 dias úteis', type: 'Caminhão Baú' },

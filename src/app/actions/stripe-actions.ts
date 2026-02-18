@@ -7,6 +7,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
 })
 
+function resolveAppBaseUrl() {
+  const rawBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL
+
+  if (!rawBaseUrl) {
+    throw new Error('NEXT_PUBLIC_APP_URL não configurada para o checkout Stripe.')
+  }
+
+  const normalizedBaseUrl = /^https?:\/\//i.test(rawBaseUrl)
+    ? rawBaseUrl
+    : `https://${rawBaseUrl}`
+
+  return new URL(normalizedBaseUrl).origin
+}
+
 /**
  * Cria uma sessão de checkout com suporte ao Stripe Connect (Split Payment)
  * @param offer Dados da oferta selecionada
@@ -18,6 +32,7 @@ export async function createCheckoutSession(
   nextPath = '/cotacao?resumeCheckout=1'
 ) {
   try {
+    const appBaseUrl = resolveAppBaseUrl()
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -54,8 +69,8 @@ export async function createCheckoutSession(
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/cotacao/sucesso?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cotacao`,
+      success_url: new URL('/cotacao/sucesso?session_id={CHECKOUT_SESSION_ID}', appBaseUrl).toString(),
+      cancel_url: new URL('/cotacao', appBaseUrl).toString(),
       customer_email: user.email,
       metadata: {
         offer_id: offer.id,
@@ -96,6 +111,7 @@ export async function createCheckoutSession(
  */
 export async function createStripeAccountLink() {
   try {
+    const appBaseUrl = resolveAppBaseUrl()
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -126,8 +142,8 @@ export async function createStripeAccountLink() {
     // 3. Criar o link de onboarding
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes/pagamento?error=retry`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/configuracoes/pagamento?success=true`,
+      refresh_url: new URL('/configuracoes/pagamento?error=retry', appBaseUrl).toString(),
+      return_url: new URL('/configuracoes/pagamento?success=true', appBaseUrl).toString(),
       type: 'account_onboarding',
     })
 
