@@ -8,10 +8,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 function resolveAppBaseUrl() {
-  const rawBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL
+  const rawBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL
 
   if (!rawBaseUrl) {
-    throw new Error('NEXT_PUBLIC_APP_URL não configurada para o checkout Stripe.')
+    throw new Error(
+      'URL base da aplicação não configurada para o checkout Stripe (NEXT_PUBLIC_APP_URL / NEXT_PUBLIC_SITE_URL).'
+    )
   }
 
   const normalizedBaseUrl = /^https?:\/\//i.test(rawBaseUrl)
