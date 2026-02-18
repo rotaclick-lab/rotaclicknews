@@ -23,7 +23,11 @@ export async function RoleGuard({ children, allowedRole }: RoleGuardProps) {
     .single()
 
   if (!profile || profile.role !== allowedRole) {
-    // Se não for a role permitida, redireciona para o dashboard padrão
+    if (profile?.role === 'cliente') {
+      redirect('/cliente')
+    }
+
+    // fallback para transportadora/admin
     redirect('/dashboard')
   }
 

@@ -65,6 +65,27 @@ async function resolveLoginEmail(identifier: string): Promise<string | null> {
   return null
 }
 
+async function resolveDefaultRedirectByRole(userId: string): Promise<string> {
+  const admin = createAdminClient()
+
+  const { data: profile, error } = await admin
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Erro ao resolver role para redirecionamento:', error)
+    return '/dashboard'
+  }
+
+  if (profile?.role === 'cliente') {
+    return '/cliente'
+  }
+
+  return '/dashboard'
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
@@ -89,8 +110,13 @@ export async function login(formData: FormData) {
     return { error: 'Credenciais inválidas. Verifique seu acesso e tente novamente.' }
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   revalidatePath('/', 'layout')
-  const safeRedirect = next.startsWith('/') ? next : '/dashboard'
+  const defaultRedirect = user ? await resolveDefaultRedirectByRole(user.id) : '/dashboard'
+  const safeRedirect = next.startsWith('/') ? next : defaultRedirect
   redirect(safeRedirect)
 }
 
