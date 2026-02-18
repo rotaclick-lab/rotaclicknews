@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Plus, MapPin, Truck, DollarSign, Trash2, Search, Filter, ArrowRight, AlertTriangle } from 'lucide-react'
+import { Plus, MapPin, Truck, DollarSign, Trash2, Search, Filter, ArrowRight, AlertTriangle, Upload, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,297 @@ interface FreightRoute {
   price_per_kg: number
   min_price: number
   deadline_days: number
+  source_file?: string | null
+  imported_at?: string | null
+  rate_card?: {
+    weight_0_30?: number
+    weight_31_50?: number
+    weight_51_70?: number
+    weight_71_100?: number
+    above_101_per_kg?: number
+    dispatch_fee?: number
+    gris_percent?: number
+    insurance_percent?: number
+    toll_per_100kg?: number
+    icms_percent?: number
+  } | null
+}
+
+function UploadReadOnlyTabelaFretePage() {
+  const supabase = createClient()
+  const [routes, setRoutes] = useState<FreightRoute[]>([])
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [importSummary, setImportSummary] = useState<{
+    importedCount: number
+    invalidCount: number
+    errors: Array<{ sourceRow: number; message: string }>
+  } | null>(null)
+
+  const totalImported = useMemo(() => routes.length, [routes])
+
+  const latestImportInfo = useMemo(() => {
+    if (routes.length === 0) return null
+
+    const withImportedAt = routes
+      .filter((route) => route.imported_at)
+      .sort((a, b) => new Date(b.imported_at as string).getTime() - new Date(a.imported_at as string).getTime())
+
+    return withImportedAt[0] ?? routes[0]
+  }, [routes])
+
+  useEffect(() => {
+    void fetchRoutes()
+  }, [])
+
+  const fetchRoutes = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('freight_routes')
+      .select('*')
+      .eq('carrier_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      toast.error('Erro ao carregar as rotas importadas')
+      return
+    }
+
+    setRoutes((data ?? []) as FreightRoute[])
+  }
+
+  const handleImport = async () => {
+    if (!selectedFile) {
+      toast.error('Selecione um arquivo .xlsx ou .csv para importar')
+      return
+    }
+
+    const shouldProceed = window.confirm(
+      `Confirma a importação do arquivo "${selectedFile.name}"? As informações válidas serão salvas no banco de dados.`
+    )
+
+    if (!shouldProceed) return
+
+    setIsUploading(true)
+    setImportSummary(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+
+      const response = await fetch('/api/freight-routes/import', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        toast.error(result.error ?? 'Não foi possível importar o arquivo.')
+        if (result.data) {
+          setImportSummary({
+            importedCount: Number(result.data.imported_count ?? 0),
+            invalidCount: Number(result.data.invalid_count ?? 0),
+            errors: (result.data.errors ?? []) as Array<{ sourceRow: number; message: string }>,
+          })
+        }
+        return
+      }
+
+      setImportSummary({
+        importedCount: Number(result.data.imported_count ?? 0),
+        invalidCount: Number(result.data.invalid_count ?? 0),
+        errors: (result.data.errors ?? []) as Array<{ sourceRow: number; message: string }>,
+      })
+
+      toast.success('Arquivo processado e tabela atualizada com sucesso!')
+      setSelectedFile(null)
+      await fetchRoutes()
+    } catch (error) {
+      console.error('Erro ao importar tabela:', error)
+      toast.error('Erro inesperado ao importar arquivo.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="container max-w-7xl py-10 space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-brand-800">Tabela de Fretes</h1>
+        <p className="text-muted-foreground">
+          Importe seu arquivo de tabela de frete e visualize somente os dados já salvos no banco.
+        </p>
+      </div>
+
+      <Card className="border-2 border-brand-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5 text-brand-500" /> Importar arquivo de frete
+          </CardTitle>
+          <CardDescription>
+            Formatos aceitos: .xlsx, .xls e .csv. Após confirmar, os dados válidos são gravados automaticamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="freight-file">Arquivo da tabela</Label>
+            <Input
+              id="freight-file"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              className="font-bold bg-brand-500 hover:bg-brand-600 text-white"
+              onClick={handleImport}
+              disabled={!selectedFile || isUploading}
+            >
+              {isUploading ? 'PROCESSANDO...' : 'IMPORTAR E SALVAR'}
+            </Button>
+
+            {selectedFile && (
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4" /> {selectedFile.name}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Rotas salvas no banco</p>
+            <p className="text-2xl font-bold text-brand-700">{totalImported}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Último arquivo importado</p>
+            <p className="text-sm font-semibold text-slate-800 truncate">{latestImportInfo?.source_file ?? '—'}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">Última importação</p>
+            <p className="text-sm font-semibold text-slate-800">
+              {latestImportInfo?.imported_at
+                ? new Date(latestImportInfo.imported_at).toLocaleString('pt-BR')
+                : '—'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {importSummary && (
+        <Card className="border border-brand-200 bg-brand-50">
+          <CardHeader>
+            <CardTitle>Resumo do processamento</CardTitle>
+            <CardDescription>
+              {importSummary.importedCount} linhas importadas • {importSummary.invalidCount} linhas inválidas
+            </CardDescription>
+          </CardHeader>
+          {importSummary.errors.length > 0 && (
+            <CardContent>
+              <div className="space-y-2">
+                {importSummary.errors.map((errorItem, index) => (
+                  <div
+                    key={`${errorItem.sourceRow}-${index}`}
+                    className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                  >
+                    Linha {errorItem.sourceRow}: {errorItem.message}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      <Card className="border-2 border-brand-100">
+        <CardHeader>
+          <CardTitle>Informações importadas (somente leitura)</CardTitle>
+          <CardDescription>
+            Esta visualização reflete exatamente as informações que já estão persistidas no banco de dados.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Prazo</TableHead>
+                  <TableHead>0-30kg</TableHead>
+                  <TableHead>31-50kg</TableHead>
+                  <TableHead>51-70kg</TableHead>
+                  <TableHead>71-100kg</TableHead>
+                  <TableHead>Acima 101kg</TableHead>
+                  <TableHead>Taxa</TableHead>
+                  <TableHead>GRIS</TableHead>
+                  <TableHead>Seguro</TableHead>
+                  <TableHead>Pedágio</TableHead>
+                  <TableHead>ICMS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {routes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={13} className="text-center py-10 text-muted-foreground italic">
+                      Nenhum registro importado ainda.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  routes.map((route) => (
+                    <TableRow key={route.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3 text-brand-500" />
+                          {route.origin_zip}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-3 w-3 text-muted-foreground" />
+                          {route.dest_zip}
+                        </div>
+                      </TableCell>
+                      <TableCell>{route.deadline_days}d</TableCell>
+                      <TableCell>R$ {(route.rate_card?.weight_0_30 ?? route.min_price ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>R$ {(route.rate_card?.weight_31_50 ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>R$ {(route.rate_card?.weight_51_70 ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>R$ {(route.rate_card?.weight_71_100 ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>R$ {(route.rate_card?.above_101_per_kg ?? route.price_per_kg ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>R$ {(route.rate_card?.dispatch_fee ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>{(route.rate_card?.gris_percent ?? 0).toFixed(2)}%</TableCell>
+                      <TableCell>{(route.rate_card?.insurance_percent ?? 0).toFixed(2)}%</TableCell>
+                      <TableCell>R$ {(route.rate_card?.toll_per_100kg ?? 0).toFixed(2)}</TableCell>
+                      <TableCell>{(route.rate_card?.icms_percent ?? 0).toFixed(2)}%</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export default function TabelaFretePage() {
+  return <UploadReadOnlyTabelaFretePage />
 }
 
 interface PricingAnalyzeResponse {
@@ -44,7 +335,7 @@ interface PricingAnalyzeResponse {
   suggestions: string[]
 }
 
-export default function TabelaFretePage() {
+export function LegacyTabelaFretePage() {
   const supabase = createClient()
   const [routes, setRoutes] = useState<FreightRoute[]>([])
   const [carrierId, setCarrierId] = useState('')
