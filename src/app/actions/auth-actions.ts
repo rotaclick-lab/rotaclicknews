@@ -5,6 +5,44 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function isValidCPF(value: string): boolean {
+  const cpf = value.replace(/\D/g, '')
+  if (cpf.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(cpf)) return false
+
+  let sum = 0
+  for (let i = 0; i < 9; i++) sum += Number(cpf[i]) * (10 - i)
+  let remainder = (sum * 10) % 11
+  if (remainder === 10) remainder = 0
+  if (remainder !== Number(cpf[9])) return false
+
+  sum = 0
+  for (let i = 0; i < 10; i++) sum += Number(cpf[i]) * (11 - i)
+  remainder = (sum * 10) % 11
+  if (remainder === 10) remainder = 0
+
+  return remainder === Number(cpf[10])
+}
+
+function isValidCNPJ(value: string): boolean {
+  const cnpj = value.replace(/\D/g, '')
+  if (cnpj.length !== 14) return false
+  if (/^(\d)\1{13}$/.test(cnpj)) return false
+
+  const calcDigit = (base: string, factors: number[]) => {
+    const total = base.split('').reduce((acc, digit, index) => acc + Number(digit) * factors[index], 0)
+    const remainder = total % 11
+    return remainder < 2 ? 0 : 11 - remainder
+  }
+
+  const digit1 = calcDigit(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
+  const digit2 = calcDigit(cnpj.slice(0, 12) + String(digit1), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
+
+  return cnpj.endsWith(`${digit1}${digit2}`)
+}
+
 async function resolveLoginEmail(identifier: string): Promise<string | null> {
   const normalized = identifier.trim()
 
@@ -174,12 +212,44 @@ export async function signupCustomer(formData: FormData) {
     return { error: 'Informe o nome para cadastro.' }
   }
 
-  if (personType === 'pf' && cpf.length !== 11) {
-    return { error: 'CPF inválido.' }
+  if (!email) {
+    return { error: 'Informe o e-mail para cadastro.' }
   }
 
-  if (personType === 'pj' && cnpj.length !== 14) {
-    return { error: 'CNPJ inválido.' }
+  if (!emailRegex.test(email)) {
+    return { error: 'E-mail inválido.' }
+  }
+
+  if (!phone) {
+    return { error: 'Informe o telefone para cadastro.' }
+  }
+
+  if (phone.length < 10 || phone.length > 11) {
+    return { error: 'Telefone inválido.' }
+  }
+
+  if (password.length < 8) {
+    return { error: 'A senha deve ter pelo menos 8 caracteres.' }
+  }
+
+  if (personType === 'pf') {
+    if (!cpf) {
+      return { error: 'CPF é obrigatório para pessoa física.' }
+    }
+
+    if (cpf.length !== 11 || !isValidCPF(cpf)) {
+      return { error: 'CPF inválido.' }
+    }
+  }
+
+  if (personType === 'pj') {
+    if (!cnpj) {
+      return { error: 'CNPJ é obrigatório para pessoa jurídica.' }
+    }
+
+    if (cnpj.length !== 14 || !isValidCNPJ(cnpj)) {
+      return { error: 'CNPJ inválido.' }
+    }
   }
 
   const address = {
