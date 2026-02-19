@@ -153,21 +153,48 @@ export default function HomePage() {
 
   const handleCalculate = async () => {
     setLoading(true)
-    setTimeout(() => {
+    try {
       const totals = calculateTotals()
       const invoiceValue = parseCurrencyInput(cargo.invoiceValue)
-      const basePrice = totals.taxableWeight * 2.5 + (invoiceValue * 0.01)
-      
-      const mockResults: QuoteResult[] = [
-        { id: '1', carrier: 'RotaClick Express', price: basePrice, deadline: '2 dias úteis', type: 'Caminhão Baú' },
-        { id: '2', carrier: 'Logística Brasil', price: basePrice * 0.8, deadline: '5 dias úteis', type: 'Carga Pesada' },
-        { id: '3', carrier: 'Flash Entregas', price: basePrice * 1.2, deadline: '1 dia útil', type: 'VUC / Utilitário' },
-      ]
-      
-      setResults(mockResults)
-      setLoading(false)
+
+      const response = await fetch('/api/quotes/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originCep: origin,
+          destinationCep: destination,
+          taxableWeight: totals.taxableWeight,
+          invoiceValue,
+        }),
+      })
+
+      const payload = (await response.json()) as {
+        success: boolean
+        error?: string
+        data?: QuoteResult[]
+      }
+
+      if (!response.ok || !payload.success) {
+        toast.error(payload.error || 'Não foi possível calcular as ofertas agora.')
+        return
+      }
+
+      const offers = payload.data ?? []
+      setResults(offers)
+      setSelectedOffer(null)
       setStep(4)
-    }, 1500)
+
+      if (offers.length === 0) {
+        toast.info('Nenhuma tabela de frete encontrada para este par de CEP.')
+      }
+    } catch (error) {
+      console.error('Erro ao calcular cotação:', error)
+      toast.error('Erro inesperado ao calcular cotação.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const totals = calculateTotals()
