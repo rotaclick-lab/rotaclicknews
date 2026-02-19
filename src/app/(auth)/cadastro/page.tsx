@@ -401,7 +401,7 @@ export default function CadastroUsuarioPage() {
             <Link className="text-brand-600 font-bold hover:text-brand-700 transition-colors" href="/login">
               Voltar para login
             </Link>
-            <Link className="text-orange-500 font-semibold hover:underline" href="/registro-transportadora">
+            <Link className="text-orange-500 font-semibold hover:underline" href="/transportadora">
               Sou transportadora
             </Link>
           </div>

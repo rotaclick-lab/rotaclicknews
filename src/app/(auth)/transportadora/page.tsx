@@ -12,10 +12,13 @@ import { validateCarrierCNPJ } from '@/app/actions/cnpj-actions'
 import { login } from '@/app/actions/auth-actions'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useSearchParams } from 'next/navigation'
 
 type Tab = 'login' | 'verificar'
 
 export default function TransportadoraPage() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || ''
   const [activeTab, setActiveTab] = useState<Tab>('verificar')
 
   // Login state
@@ -51,6 +54,9 @@ export default function TransportadoraPage() {
       const formData = new FormData()
       formData.append('identifier', loginIdentifier)
       formData.append('password', loginPassword)
+      if (next) {
+        formData.append('next', next)
+      }
       const result = await login(formData)
       if (result?.error) {
         toast.error(result.error)
@@ -282,7 +288,12 @@ export default function TransportadoraPage() {
                           )}
                         </div>
                         <Button
-                          onClick={() => window.location.href = '/transportadora/cadastro'}
+                          onClick={() => {
+                            const target = next
+                              ? `/transportadora/cadastro?next=${encodeURIComponent(next)}`
+                              : '/transportadora/cadastro'
+                            window.location.href = target
+                          }}
                           className="mt-3 w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-5"
                         >
                           CONTINUAR PARA O CADASTRO <ArrowRight className="ml-2 h-4 w-4" />

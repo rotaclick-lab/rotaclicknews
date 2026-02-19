@@ -1,15 +1,13 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+interface CadastroTransportadoraPageProps {
+  searchParams?: {
+    next?: string
+  }
+}
 
-export default function CadastroTransportadoraPage() {
-  const router = useRouter()
-
-  useEffect(() => {
-    router.replace('/registro')
-  }, [router])
-
-  return null
-
+export default function CadastroTransportadoraPage({ searchParams }: CadastroTransportadoraPageProps) {
+  const next = searchParams?.next
+  const target = next ? `/registro?next=${encodeURIComponent(next)}` : '/registro'
+  redirect(target)
 }

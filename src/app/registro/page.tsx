@@ -122,22 +122,38 @@ export default function RegistroPage() {
       const stored = sessionStorage.getItem('carrier_data')
       if (stored) {
         const data = JSON.parse(stored)
+        const address = data.endereco || {}
+        const razaoSocial =
+          data.razao ||
+          data.razao_social ||
+          data.fantasia ||
+          data.nome_fantasia ||
+          ''
+        const logradouro = data.logradouro || address.logradouro || ''
+        const numero = data.numero || address.numero || ''
+        const complemento = data.complemento || address.complemento || ''
+        const bairro = data.bairro || address.bairro || ''
+        const cidade = data.municipio || data.cidade || address.municipio || address.cidade || ''
+        const uf = data.uf || address.uf || ''
+        const cepRaw = data.cep || address.cep || ''
+        const telefone = data.telefone || ''
+
         setForm(prev => ({
           ...prev,
           cnpj: data.cnpj ? maskCNPJ(data.cnpj) : prev.cnpj,
-          razaoSocial: data.razao || prev.razaoSocial,
-          logradouro: data.logradouro || prev.logradouro,
-          numero: data.numero || prev.numero,
-          complemento: data.complemento || prev.complemento,
-          cidade: data.municipio || prev.cidade,
-          uf: data.uf || prev.uf,
-          cep: data.cep ? maskCEP(data.cep.replace(/\D/g, '')) : prev.cep,
-          bairro: data.bairro || prev.bairro,
+          razaoSocial: razaoSocial || prev.razaoSocial,
+          logradouro: logradouro || prev.logradouro,
+          numero: numero || prev.numero,
+          complemento: complemento || prev.complemento,
+          cidade: cidade || prev.cidade,
+          uf: uf || prev.uf,
+          cep: cepRaw ? maskCEP(String(cepRaw).replace(/\D/g, '')) : prev.cep,
+          bairro: bairro || prev.bairro,
           email: data.email || prev.email,
-          telefone: data.telefone ? maskPhone(data.telefone) : prev.telefone,
+          telefone: telefone ? maskPhone(String(telefone)) : prev.telefone,
         }))
         // Se tem CEP, marcar como válido
-        if (data.cep && data.cep.replace(/\D/g, '').length === 8) {
+        if (String(cepRaw).replace(/\D/g, '').length === 8) {
           setCepValid(true)
         }
       }

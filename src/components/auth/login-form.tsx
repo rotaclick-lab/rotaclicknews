@@ -95,7 +95,7 @@ export function LoginForm({ next }: LoginFormProps) {
         </p>
         <p className="text-muted-foreground">
           É transportadora?{' '}
-          <Link href="/registro-transportadora" className="text-brand-600 hover:text-brand-700 hover:underline font-semibold">
+          <Link href="/transportadora" className="text-brand-600 hover:text-brand-700 hover:underline font-semibold">
             Cadastre sua empresa
           </Link>
         </p>
