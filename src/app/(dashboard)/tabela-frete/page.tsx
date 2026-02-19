@@ -171,6 +171,10 @@ function UploadReadOnlyTabelaFretePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" asChild>
+              <a href="/api/freight-routes/import/template">BAIXAR MODELO EXCEL (.XLSX)</a>
+            </Button>
+
             <Button
               type="button"
               className="font-bold bg-brand-500 hover:bg-brand-600 text-white"
