@@ -148,6 +148,94 @@ export async function signup(formData: FormData) {
   redirect(safeRedirect)
 }
 
+export async function signupCustomer(formData: FormData) {
+  const supabase = await createClient()
+  const admin = createAdminClient()
+  const next = ((formData.get('next') as string) || '').trim()
+
+  const personType = ((formData.get('personType') as string) || 'pf').toLowerCase()
+  const fullName = ((formData.get('fullName') as string) || '').trim()
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
+  const password = (formData.get('password') as string) || ''
+  const phone = ((formData.get('phone') as string) || '').replace(/\D/g, '')
+  const cpf = ((formData.get('cpf') as string) || '').replace(/\D/g, '')
+  const cnpj = ((formData.get('cnpj') as string) || '').replace(/\D/g, '')
+  const acceptTerms = String(formData.get('acceptTerms') || '') === 'true'
+
+  if (!acceptTerms) {
+    return { error: 'Você precisa aceitar os termos para continuar.' }
+  }
+
+  if (!['pf', 'pj'].includes(personType)) {
+    return { error: 'Tipo de pessoa inválido.' }
+  }
+
+  if (!fullName) {
+    return { error: 'Informe o nome para cadastro.' }
+  }
+
+  if (personType === 'pf' && cpf.length !== 11) {
+    return { error: 'CPF inválido.' }
+  }
+
+  if (personType === 'pj' && cnpj.length !== 14) {
+    return { error: 'CNPJ inválido.' }
+  }
+
+  const address = {
+    cep: ((formData.get('cep') as string) || '').replace(/\D/g, ''),
+    street: ((formData.get('street') as string) || '').trim(),
+    number: ((formData.get('number') as string) || '').trim(),
+    complement: ((formData.get('complement') as string) || '').trim(),
+    neighborhood: ((formData.get('neighborhood') as string) || '').trim(),
+    city: ((formData.get('city') as string) || '').trim(),
+    state: (((formData.get('state') as string) || '').trim().toUpperCase() || '').slice(0, 2),
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+        phone,
+        role: 'cliente',
+        person_type: personType,
+        cpf: personType === 'pf' ? cpf : '',
+        cnpj: personType === 'pj' ? cnpj : '',
+        address,
+      },
+    },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  if (data.user?.id) {
+    const profilePayload = {
+      id: data.user.id,
+      name: fullName,
+      email,
+      phone,
+      role: 'cliente',
+      cpf: personType === 'pf' ? cpf : null,
+    }
+
+    const { error: profileError } = await admin
+      .from('profiles')
+      .upsert(profilePayload, { onConflict: 'id' })
+
+    if (profileError) {
+      console.error('Erro ao atualizar perfil de cliente:', profileError)
+    }
+  }
+
+  revalidatePath('/', 'layout')
+  const safeRedirect = next.startsWith('/') ? next : '/cliente'
+  redirect(safeRedirect)
+}
+
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()

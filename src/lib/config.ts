@@ -21,7 +21,7 @@ export const config = {
   auth: {
     callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
     loginUrl: '/login',
-    registerUrl: '/registro',
+    registerUrl: '/cadastro',
     dashboardUrl: '/dashboard',
     forgotPasswordUrl: '/esqueci-senha',
   },

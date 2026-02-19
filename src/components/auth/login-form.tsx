@@ -87,10 +87,16 @@ export function LoginForm({ next }: LoginFormProps) {
         <p className="text-muted-foreground">
           Não tem uma conta?{' '}
           <Link
-            href={next ? `/registro?next=${encodeURIComponent(next)}` : '/registro'}
+            href={next ? `/cadastro?next=${encodeURIComponent(next)}` : '/cadastro'}
             className="text-orange-500 hover:text-orange-600 hover:underline font-semibold"
           >
             Cadastre-se
+          </Link>
+        </p>
+        <p className="text-muted-foreground">
+          É transportadora?{' '}
+          <Link href="/registro-transportadora" className="text-brand-600 hover:text-brand-700 hover:underline font-semibold">
+            Cadastre sua empresa
           </Link>
         </p>
       </div>

@@ -14,7 +14,7 @@ export const APP_DESCRIPTION = 'Sistema de Gestão de Fretes para Transportadora
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
-  REGISTER: '/registro',
+  REGISTER: '/cadastro',
   TRANSPORTADORA: '/transportadora',
   DASHBOARD: '/dashboard',
   FREIGHTS: '/fretes',

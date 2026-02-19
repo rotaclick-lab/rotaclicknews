@@ -547,7 +547,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/transportadora" className="hover:text-brand-600 transition-colors">Área da Transportadora</Link>
-            <Link href="/registro" className="hover:text-brand-600 transition-colors">Cadastre-se</Link>
+            <Link href="/cadastro" className="hover:text-brand-600 transition-colors">Cadastre-se</Link>
           </div>
           <p className="text-center text-sm text-muted-foreground">
             © 2025 RotaClick. Todos os direitos reservados.
