@@ -148,8 +148,8 @@ export default function CadastroUsuarioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100 p-4 md:p-8 flex items-center justify-center">
-      <div className="w-full max-w-[900px] flex flex-col items-center">
+    <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10">
+      <div className="mx-auto w-full max-w-[900px] flex flex-col items-center">
         <div className="flex flex-col items-center mb-8 text-center">
           <div className="flex items-center gap-3 mb-6">
             <div className="size-10 bg-brand-500 rounded-lg flex items-center justify-center text-white">
@@ -161,7 +161,7 @@ export default function CadastroUsuarioPage() {
           <p className="text-[#4a5568] text-lg font-medium">Crie sua conta para acessar a plataforma de logística</p>
         </div>
 
-        <div className="w-full bg-white rounded-xl shadow-xl p-6 md:p-10 border border-teal-50">
+        <div className="w-full rounded-2xl border border-brand-100 bg-white/95 p-6 shadow-xl shadow-brand-200/30 backdrop-blur-sm md:p-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
@@ -173,7 +173,7 @@ export default function CadastroUsuarioPage() {
                     className={`h-12 rounded-lg border text-sm font-semibold transition-colors ${
                       form.personType === 'pf'
                         ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-[#dce5e4] text-[#4a5568] hover:bg-slate-50'
+                        : 'border-brand-100 text-[#4a5568] hover:bg-slate-50'
                     }`}
                   >
                     Pessoa Física (CPF)
@@ -184,7 +184,7 @@ export default function CadastroUsuarioPage() {
                     className={`h-12 rounded-lg border text-sm font-semibold transition-colors ${
                       form.personType === 'pj'
                         ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-[#dce5e4] text-[#4a5568] hover:bg-slate-50'
+                        : 'border-brand-100 text-[#4a5568] hover:bg-slate-50'
                     }`}
                   >
                     Pessoa Jurídica (CNPJ)
@@ -199,7 +199,7 @@ export default function CadastroUsuarioPage() {
                 <div className="relative">
                   <UserRound className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                   <Input
-                    className="w-full h-14 pl-12 pr-4 rounded-lg border border-[#dce5e4]"
+                    className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                     placeholder={form.personType === 'pf' ? 'Digite seu nome completo' : 'Digite a razão social'}
                     value={form.fullName}
                     onChange={(e) => setField('fullName', e.target.value)}
@@ -215,7 +215,7 @@ export default function CadastroUsuarioPage() {
                 <div className="relative">
                   <ShieldCheck className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                   <Input
-                    className="w-full h-14 pl-12 pr-4 rounded-lg border border-[#dce5e4]"
+                    className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                     placeholder={form.personType === 'pf' ? '000.000.000-00' : '00.000.000/0000-00'}
                     value={form.personType === 'pf' ? form.cpf : form.cnpj}
                     onChange={(e) =>
@@ -233,7 +233,7 @@ export default function CadastroUsuarioPage() {
                 <div className="relative">
                   <Phone className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                   <Input
-                    className="w-full h-14 pl-12 pr-4 rounded-lg border border-[#dce5e4]"
+                    className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                     placeholder="(00) 00000-0000"
                     value={form.phone}
                     onChange={(e) => setField('phone', maskPhone(e.target.value))}
@@ -247,7 +247,7 @@ export default function CadastroUsuarioPage() {
                 <div className="relative">
                   <Mail className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                   <Input
-                    className="w-full h-14 pl-12 pr-4 rounded-lg border border-[#dce5e4]"
+                    className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                     type="email"
                     placeholder="exemplo@email.com"
                     value={form.email}
@@ -260,7 +260,7 @@ export default function CadastroUsuarioPage() {
               <div className="flex flex-col gap-2">
                 <Label className="text-[#11211f] text-sm font-semibold ml-1">Senha</Label>
                 <Input
-                  className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                  className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                   type="password"
                   placeholder="••••••••"
                   value={form.password}
@@ -272,7 +272,7 @@ export default function CadastroUsuarioPage() {
               <div className="flex flex-col gap-2">
                 <Label className="text-[#11211f] text-sm font-semibold ml-1">Confirmar Senha</Label>
                 <Input
-                  className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                  className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                   type="password"
                   placeholder="••••••••"
                   value={form.confirmPassword}
@@ -282,7 +282,7 @@ export default function CadastroUsuarioPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-teal-50">
+            <div className="pt-4 border-t border-brand-100">
               <h3 className="text-[#11211f] text-lg font-bold mb-4">Endereço</h3>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -291,7 +291,7 @@ export default function CadastroUsuarioPage() {
                     <div className="relative">
                       <MapPin className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                       <Input
-                        className="w-full h-14 pl-12 pr-4 rounded-lg border border-[#dce5e4]"
+                        className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                         placeholder="00000-000"
                         value={form.cep}
                         onChange={(e) => setField('cep', maskCEP(e.target.value))}
@@ -302,7 +302,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2 md:col-span-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Logradouro</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="Rua, Avenida, etc."
                       value={form.street}
                       onChange={(e) => setField('street', e.target.value)}
@@ -315,7 +315,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Número</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="Nº"
                       value={form.number}
                       onChange={(e) => setField('number', e.target.value)}
@@ -325,7 +325,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Complemento</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="Apto, Bloco, etc."
                       value={form.complement}
                       onChange={(e) => setField('complement', e.target.value)}
@@ -334,7 +334,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Bairro</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="Bairro"
                       value={form.neighborhood}
                       onChange={(e) => setField('neighborhood', e.target.value)}
@@ -344,7 +344,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Cidade</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="Cidade"
                       value={form.city}
                       onChange={(e) => setField('city', e.target.value)}
@@ -357,7 +357,7 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">UF</Label>
                     <Input
-                      className="w-full h-14 px-4 rounded-lg border border-[#dce5e4]"
+                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
                       placeholder="UF"
                       maxLength={2}
                       value={form.state}
@@ -401,7 +401,7 @@ export default function CadastroUsuarioPage() {
             <Link className="text-brand-600 font-bold hover:text-brand-700 transition-colors" href="/login">
               Voltar para login
             </Link>
-            <Link className="text-orange-500 font-semibold hover:underline" href="/transportadora">
+            <Link className="text-brand-600 font-semibold hover:underline" href="/transportadora">
               Sou transportadora
             </Link>
           </div>

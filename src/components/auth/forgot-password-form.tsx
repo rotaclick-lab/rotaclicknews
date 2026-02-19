@@ -68,7 +68,7 @@ export function ForgotPasswordForm() {
           id="email"
           type="email"
           placeholder="seu@email.com"
-          className="focus-visible:ring-brand-500"
+          className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
           {...register('email')}
           disabled={isLoading}
         />
@@ -77,7 +77,7 @@ export function ForgotPasswordForm() {
         )}
       </div>
 
-      <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold" disabled={isLoading}>
+      <Button type="submit" className="h-12 w-full rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600" disabled={isLoading}>
         {isLoading ? 'Enviando...' : 'Enviar email de recuperação'}
       </Button>
 

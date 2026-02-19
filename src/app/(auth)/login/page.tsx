@@ -19,7 +19,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   const next = searchParams?.next
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-10">
       <div className="w-full space-y-4">
         <Link
           href="/"
@@ -29,7 +29,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           Voltar para o início
         </Link>
 
-        <Card className="border-brand-200 shadow-lg">
+        <Card className="rounded-2xl border-brand-100 bg-white/95 shadow-xl shadow-brand-200/30 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
               <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />

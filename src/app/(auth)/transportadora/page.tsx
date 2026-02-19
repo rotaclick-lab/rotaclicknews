@@ -136,8 +136,8 @@ export default function TransportadoraPage() {
   }, [activeTab, cnpj, cnpjLoading, lastValidatedCnpj])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-orange-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
+    <div className="mx-auto flex min-h-screen w-full max-w-lg items-center px-4 py-10">
+      <div className="w-full">
         {/* Logo e Título */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -151,7 +151,7 @@ export default function TransportadoraPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex rounded-xl bg-brand-50 p-1 mb-6 border border-brand-100">
+        <div className="mb-6 flex rounded-xl border border-brand-100 bg-white/80 p-1 backdrop-blur-sm">
           <button
             onClick={() => { setActiveTab('login'); setError(null); setCompanyData(null) }}
             className={cn(
@@ -177,7 +177,7 @@ export default function TransportadoraPage() {
         </div>
 
         {/* Tab Content */}
-        <Card className="border-2 border-brand-200 shadow-xl">
+        <Card className="rounded-2xl border-brand-100 bg-white/95 shadow-xl shadow-brand-200/30 backdrop-blur-sm">
           {/* LOGIN TAB */}
           {activeTab === 'login' && (
             <>
@@ -192,7 +192,7 @@ export default function TransportadoraPage() {
                     id="login-identifier"
                     type="text"
                     placeholder="seu@email.com ou 00.000.000/0000-00"
-                    className="focus-visible:ring-brand-500"
+                    className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     disabled={loginLoading}
@@ -201,7 +201,7 @@ export default function TransportadoraPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="login-password">Senha</Label>
-                    <Link href="/esqueci-senha" className="text-xs text-orange-500 hover:underline">
+                    <Link href="/esqueci-senha" className="text-xs text-brand-600 hover:text-brand-700 hover:underline">
                       Esqueci minha senha
                     </Link>
                   </div>
@@ -210,7 +210,7 @@ export default function TransportadoraPage() {
                       id="login-password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
-                      className="pr-10 focus-visible:ring-brand-500"
+                      className="h-12 rounded-lg border-brand-100 pr-10 focus-visible:ring-brand-500"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       disabled={loginLoading}
@@ -226,7 +226,7 @@ export default function TransportadoraPage() {
                   </div>
                 </div>
                 <Button
-                  className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-6"
+                  className="h-12 w-full rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600"
                   onClick={handleLogin}
                   disabled={loginLoading}
                 >
@@ -253,14 +253,14 @@ export default function TransportadoraPage() {
                       placeholder="00.000.000/0000-00"
                       value={cnpj}
                       onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
-                      className="text-lg py-6 font-mono focus-visible:ring-brand-500"
+                      className="h-12 rounded-lg border-brand-100 text-lg font-mono focus-visible:ring-brand-500"
                       disabled={cnpjLoading}
                       onKeyDown={(e) => e.key === 'Enter' && handleVerifyCNPJ()}
                     />
                     <Button
                       onClick={handleVerifyCNPJ}
                       disabled={cnpjLoading || cnpj.length < 18}
-                      className="px-6 py-6 font-bold bg-orange-500 hover:bg-orange-600 text-white"
+                      className="h-12 bg-brand-500 px-6 font-bold text-white hover:bg-brand-600"
                     >
                       {cnpjLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'VERIFICAR'}
                     </Button>

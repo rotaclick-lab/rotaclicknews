@@ -52,7 +52,7 @@ export function LoginForm({ next }: LoginFormProps) {
           id="identifier"
           type="text"
           placeholder="seu@email.com ou 000.000.000-00"
-          className="focus-visible:ring-brand-500"
+          className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
           {...register('identifier')}
           disabled={isLoading}
         />
@@ -67,7 +67,7 @@ export function LoginForm({ next }: LoginFormProps) {
           id="password"
           type="password"
           placeholder="••••••••"
-          className="focus-visible:ring-brand-500"
+          className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
           {...register('password')}
           disabled={isLoading}
         />
@@ -76,7 +76,7 @@ export function LoginForm({ next }: LoginFormProps) {
         )}
       </div>
 
-      <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold" disabled={isLoading}>
+      <Button type="submit" className="h-12 w-full rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600" disabled={isLoading}>
         {isLoading ? 'Entrando...' : 'Entrar'}
       </Button>
 
@@ -88,7 +88,7 @@ export function LoginForm({ next }: LoginFormProps) {
           Não tem uma conta?{' '}
           <Link
             href={next ? `/cadastro?next=${encodeURIComponent(next)}` : '/cadastro'}
-            className="text-orange-500 hover:text-orange-600 hover:underline font-semibold"
+            className="text-brand-600 hover:text-brand-700 hover:underline font-semibold"
           >
             Cadastre-se
           </Link>
