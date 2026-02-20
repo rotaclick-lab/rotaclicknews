@@ -188,7 +188,6 @@ export async function signup(formData: FormData) {
 
 export async function signupCustomer(formData: FormData) {
   const supabase = await createClient()
-  const admin = createAdminClient()
   const next = ((formData.get('next') as string) || '').trim()
 
   const personType = ((formData.get('personType') as string) || 'pf').toLowerCase()
@@ -198,6 +197,13 @@ export async function signupCustomer(formData: FormData) {
   const phone = ((formData.get('phone') as string) || '').replace(/\D/g, '')
   const cpf = ((formData.get('cpf') as string) || '').replace(/\D/g, '')
   const cnpj = ((formData.get('cnpj') as string) || '').replace(/\D/g, '')
+  const cep = ((formData.get('cep') as string) || '').replace(/\D/g, '')
+  const street = ((formData.get('street') as string) || '').trim()
+  const number = ((formData.get('number') as string) || '').trim()
+  const complement = ((formData.get('complement') as string) || '').trim()
+  const neighborhood = ((formData.get('neighborhood') as string) || '').trim()
+  const city = ((formData.get('city') as string) || '').trim()
+  const state = (((formData.get('state') as string) || '').trim().toUpperCase() || '').slice(0, 2)
   const acceptTerms = String(formData.get('acceptTerms') || '') === 'true'
 
   if (!acceptTerms) {
@@ -208,8 +214,8 @@ export async function signupCustomer(formData: FormData) {
     return { error: 'Tipo de pessoa inválido.' }
   }
 
-  if (!fullName) {
-    return { error: 'Informe o nome para cadastro.' }
+  if (fullName.length < 3) {
+    return { error: 'Informe o nome completo para cadastro.' }
   }
 
   if (!email) {
@@ -232,6 +238,30 @@ export async function signupCustomer(formData: FormData) {
     return { error: 'A senha deve ter pelo menos 8 caracteres.' }
   }
 
+  if (!cep || cep.length !== 8) {
+    return { error: 'CEP inválido.' }
+  }
+
+  if (!street) {
+    return { error: 'Informe o logradouro.' }
+  }
+
+  if (!number) {
+    return { error: 'Informe o número do endereço.' }
+  }
+
+  if (!neighborhood) {
+    return { error: 'Informe o bairro.' }
+  }
+
+  if (!city) {
+    return { error: 'Informe a cidade.' }
+  }
+
+  if (!state || !/^[A-Z]{2}$/.test(state)) {
+    return { error: 'UF inválida.' }
+  }
+
   if (personType === 'pf') {
     if (!cpf) {
       return { error: 'CPF é obrigatório para pessoa física.' }
@@ -252,14 +282,16 @@ export async function signupCustomer(formData: FormData) {
     }
   }
 
+  const admin = createAdminClient()
+
   const address = {
-    cep: ((formData.get('cep') as string) || '').replace(/\D/g, ''),
-    street: ((formData.get('street') as string) || '').trim(),
-    number: ((formData.get('number') as string) || '').trim(),
-    complement: ((formData.get('complement') as string) || '').trim(),
-    neighborhood: ((formData.get('neighborhood') as string) || '').trim(),
-    city: ((formData.get('city') as string) || '').trim(),
-    state: (((formData.get('state') as string) || '').trim().toUpperCase() || '').slice(0, 2),
+    cep,
+    street,
+    number,
+    complement,
+    neighborhood,
+    city,
+    state,
   }
 
   const { data, error } = await supabase.auth.signUp({

@@ -41,6 +41,28 @@ interface CarrierRegistrationData {
   aceitaAnalise: boolean
 }
 
+async function rollbackCarrierRegistration(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+  companyId?: string
+) {
+  if (companyId) {
+    const { error: cleanupCompanyError } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', companyId)
+
+    if (cleanupCompanyError) {
+      console.error('Falha ao remover empresa no rollback:', cleanupCompanyError)
+    }
+  }
+
+  const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId)
+  if (deleteUserError) {
+    console.error('Falha ao remover usuário no rollback:', deleteUserError)
+  }
+}
+
 export async function registerCarrier(data: CarrierRegistrationData) {
   // Usar admin client (service_role) para bypassar RLS
   const supabase = createAdminClient()
@@ -70,6 +92,7 @@ export async function registerCarrier(data: CarrierRegistrationData) {
   }
 
   const userId = authData.user.id
+  let createdCompanyId: string | undefined
 
   try {
     // 2. Criar a empresa na tabela companies (admin bypassa RLS)
@@ -122,11 +145,14 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
     if (companyError) {
       console.error('Erro ao criar empresa:', JSON.stringify(companyError))
+      await rollbackCarrierRegistration(supabase, userId)
       return { 
         success: false, 
         error: `Erro ao salvar empresa: ${companyError.message} (${companyError.code}: ${companyError.details || companyError.hint || 'sem detalhes'})` 
       }
     }
+
+    createdCompanyId = companyData.id
 
     // 3. Atualizar o perfil na tabela profiles (trigger já criou o registro básico)
     const { error: profileError } = await supabase
@@ -146,9 +172,10 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
     if (profileError) {
       console.error('Erro ao atualizar perfil:', profileError)
+      await rollbackCarrierRegistration(supabase, userId, createdCompanyId)
       return { 
         success: false, 
-        error: 'Conta criada, mas houve um erro ao salvar seu perfil. Entre em contato com o suporte.' 
+        error: 'Não foi possível concluir o cadastro. Tente novamente.' 
       }
     }
 
@@ -236,6 +263,7 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
   } catch (error: any) {
     console.error('Erro inesperado no cadastro:', error)
+    await rollbackCarrierRegistration(supabase, userId, createdCompanyId)
     return { 
       success: false, 
       error: 'Erro inesperado. Tente novamente ou entre em contato com o suporte.' 

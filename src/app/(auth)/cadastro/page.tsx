@@ -33,11 +33,17 @@ type RegisterFormState = {
 }
 
 type RegisterFormErrors = {
+  fullName?: string
   cpf?: string
   cnpj?: string
   phone?: string
   email?: string
   cep?: string
+  street?: string
+  number?: string
+  neighborhood?: string
+  city?: string
+  state?: string
 }
 
 const maskCPF = (value: string) =>
@@ -131,9 +137,25 @@ export default function CadastroUsuarioPage() {
   const [cepMessage, setCepMessage] = useState<string | null>(null)
   const lastCepLookup = useRef('')
   const cepRequestId = useRef(0)
+  const inlineErrorFields: Array<keyof RegisterFormErrors> = [
+    'fullName',
+    'cpf',
+    'cnpj',
+    'phone',
+    'email',
+    'cep',
+    'street',
+    'number',
+    'neighborhood',
+    'city',
+    'state',
+  ]
 
   const setField = <K extends keyof RegisterFormState>(field: K, value: RegisterFormState[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+    if (inlineErrorFields.includes(field as keyof RegisterFormErrors)) {
+      setErrors((prev) => ({ ...prev, [field as keyof RegisterFormErrors]: undefined }))
+    }
   }
 
   const setFieldError = (field: keyof RegisterFormErrors, message?: string) => {
@@ -327,11 +349,21 @@ export default function CadastroUsuarioPage() {
   const validateFormBeforeSubmit = () => {
     const nextErrors: RegisterFormErrors = {}
 
+    const trimmedFullName = form.fullName.trim()
     const cpfDigits = form.cpf.replace(/\D/g, '')
     const cnpjDigits = form.cnpj.replace(/\D/g, '')
     const phoneDigits = form.phone.replace(/\D/g, '')
     const trimmedEmail = form.email.trim()
     const cepDigits = form.cep.replace(/\D/g, '')
+    const trimmedStreet = form.street.trim()
+    const trimmedNumber = form.number.trim()
+    const trimmedNeighborhood = form.neighborhood.trim()
+    const trimmedCity = form.city.trim()
+    const normalizedState = form.state.trim().toUpperCase()
+
+    if (trimmedFullName.length < 3) {
+      nextErrors.fullName = 'Nome deve ter no mínimo 3 caracteres.'
+    }
 
     if (form.personType === 'pf') {
       if (!cpfDigits) {
@@ -365,6 +397,26 @@ export default function CadastroUsuarioPage() {
       nextErrors.cep = 'CEP é obrigatório.'
     } else if (cepDigits.length !== 8) {
       nextErrors.cep = 'CEP inválido.'
+    }
+
+    if (!trimmedStreet) {
+      nextErrors.street = 'Logradouro é obrigatório.'
+    }
+
+    if (!trimmedNumber) {
+      nextErrors.number = 'Número é obrigatório.'
+    }
+
+    if (!trimmedNeighborhood) {
+      nextErrors.neighborhood = 'Bairro é obrigatório.'
+    }
+
+    if (!trimmedCity) {
+      nextErrors.city = 'Cidade é obrigatória.'
+    }
+
+    if (!normalizedState || !/^[A-Z]{2}$/.test(normalizedState)) {
+      nextErrors.state = 'UF inválida.'
     }
 
     setErrors(nextErrors)
@@ -499,13 +551,16 @@ export default function CadastroUsuarioPage() {
                 <div className="relative">
                   <UserRound className="h-4 w-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
                   <Input
-                    className="w-full h-14 rounded-lg border border-brand-100 pl-12 pr-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                    className={`w-full h-14 rounded-lg border pl-12 pr-4 focus-visible:ring-2 ${getInputStateClass(
+                      errors.fullName
+                    )}`}
                     placeholder={form.personType === 'pf' ? 'Digite seu nome completo' : 'Digite a razão social'}
                     value={form.fullName}
                     onChange={(e) => setField('fullName', e.target.value)}
                     required
                   />
                 </div>
+                {errors.fullName && <p className="ml-1 text-sm text-red-500">{errors.fullName}</p>}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -615,12 +670,15 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2 md:col-span-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Logradouro</Label>
                     <Input
-                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className={`w-full h-14 rounded-lg border px-4 focus-visible:ring-2 ${getInputStateClass(
+                        errors.street
+                      )}`}
                       placeholder="Rua, Avenida, etc."
                       value={form.street}
                       onChange={(e) => setField('street', e.target.value)}
                       required
                     />
+                    {errors.street && <p className="ml-1 text-sm text-red-500">{errors.street}</p>}
                   </div>
                 </div>
 
@@ -628,12 +686,15 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Número</Label>
                     <Input
-                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className={`w-full h-14 rounded-lg border px-4 focus-visible:ring-2 ${getInputStateClass(
+                        errors.number
+                      )}`}
                       placeholder="Nº"
                       value={form.number}
                       onChange={(e) => setField('number', e.target.value)}
                       required
                     />
+                    {errors.number && <p className="ml-1 text-sm text-red-500">{errors.number}</p>}
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Complemento</Label>
@@ -647,22 +708,28 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Bairro</Label>
                     <Input
-                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className={`w-full h-14 rounded-lg border px-4 focus-visible:ring-2 ${getInputStateClass(
+                        errors.neighborhood
+                      )}`}
                       placeholder="Bairro"
                       value={form.neighborhood}
                       onChange={(e) => setField('neighborhood', e.target.value)}
                       required
                     />
+                    {errors.neighborhood && <p className="ml-1 text-sm text-red-500">{errors.neighborhood}</p>}
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">Cidade</Label>
                     <Input
-                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className={`w-full h-14 rounded-lg border px-4 focus-visible:ring-2 ${getInputStateClass(
+                        errors.city
+                      )}`}
                       placeholder="Cidade"
                       value={form.city}
                       onChange={(e) => setField('city', e.target.value)}
                       required
                     />
+                    {errors.city && <p className="ml-1 text-sm text-red-500">{errors.city}</p>}
                   </div>
                 </div>
 
@@ -670,13 +737,16 @@ export default function CadastroUsuarioPage() {
                   <div className="flex flex-col gap-2">
                     <Label className="text-[#11211f] text-sm font-semibold ml-1">UF</Label>
                     <Input
-                      className="w-full h-14 rounded-lg border border-brand-100 px-4 focus-visible:ring-2 focus-visible:ring-brand-500"
+                      className={`w-full h-14 rounded-lg border px-4 focus-visible:ring-2 ${getInputStateClass(
+                        errors.state
+                      )}`}
                       placeholder="UF"
                       maxLength={2}
                       value={form.state}
                       onChange={(e) => setField('state', e.target.value.toUpperCase())}
                       required
                     />
+                    {errors.state && <p className="ml-1 text-sm text-red-500">{errors.state}</p>}
                   </div>
                 </div>
               </div>
