@@ -52,6 +52,12 @@ export default function HomePage() {
 
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
+  const [originCity, setOriginCity] = useState<string | null>(null)
+  const [destinationCity, setDestinationCity] = useState<string | null>(null)
+  const [originCepLoading, setOriginCepLoading] = useState(false)
+  const [destinationCepLoading, setDestinationCepLoading] = useState(false)
+  const [originCepNotFound, setOriginCepNotFound] = useState(false)
+  const [destinationCepNotFound, setDestinationCepNotFound] = useState(false)
 
   const [cargo, setCargo] = useState({
     category: '',
@@ -130,6 +136,58 @@ export default function HomePage() {
       sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
     }
   }, [router, searchParams])
+
+  useEffect(() => {
+    const digits = origin.replace(/\D/g, '')
+    if (digits.length !== 8) {
+      setOriginCity(null)
+      setOriginCepNotFound(false)
+      return
+    }
+    let cancelled = false
+    setOriginCepLoading(true)
+    setOriginCity(null)
+    setOriginCepNotFound(false)
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return
+        if (!data.erro && data.localidade) {
+          setOriginCity(`${data.localidade}/${data.uf || ''}`)
+        } else {
+          setOriginCepNotFound(true)
+        }
+      })
+      .catch(() => { if (!cancelled) setOriginCepNotFound(true) })
+      .finally(() => { if (!cancelled) setOriginCepLoading(false) })
+    return () => { cancelled = true }
+  }, [origin])
+
+  useEffect(() => {
+    const digits = destination.replace(/\D/g, '')
+    if (digits.length !== 8) {
+      setDestinationCity(null)
+      setDestinationCepNotFound(false)
+      return
+    }
+    let cancelled = false
+    setDestinationCepLoading(true)
+    setDestinationCity(null)
+    setDestinationCepNotFound(false)
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return
+        if (!data.erro && data.localidade) {
+          setDestinationCity(`${data.localidade}/${data.uf || ''}`)
+        } else {
+          setDestinationCepNotFound(true)
+        }
+      })
+      .catch(() => { if (!cancelled) setDestinationCepNotFound(true) })
+      .finally(() => { if (!cancelled) setDestinationCepLoading(false) })
+    return () => { cancelled = true }
+  }, [destination])
 
   const addItem = () => {
     setItems([...items, { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 }])
@@ -343,6 +401,11 @@ export default function HomePage() {
                           value={origin} 
                           onChange={(e) => setOrigin(maskCEP(e.target.value))} 
                         />
+                        {origin.replace(/\D/g, '').length === 8 && (
+                          <p className="text-sm min-h-[1.25rem] text-foreground/80">
+                            {originCepLoading ? 'Buscando...' : originCity ?? (originCepNotFound ? 'CEP não encontrado' : null)}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>CEP de Destino</Label>
@@ -352,6 +415,11 @@ export default function HomePage() {
                           value={destination} 
                           onChange={(e) => setDestination(maskCEP(e.target.value))} 
                         />
+                        {destination.replace(/\D/g, '').length === 8 && (
+                          <p className="text-sm min-h-[1.25rem] text-foreground/80">
+                            {destinationCepLoading ? 'Buscando...' : destinationCity ?? (destinationCepNotFound ? 'CEP não encontrado' : null)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </CardContent>

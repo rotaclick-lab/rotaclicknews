@@ -45,6 +45,8 @@ export default function CotacaoPage() {
   const [destinationCity, setDestinationCity] = useState<string | null>(null)
   const [originCepLoading, setOriginCepLoading] = useState(false)
   const [destinationCepLoading, setDestinationCepLoading] = useState(false)
+  const [originCepNotFound, setOriginCepNotFound] = useState(false)
+  const [destinationCepNotFound, setDestinationCepNotFound] = useState(false)
 
   const [cargo, setCargo] = useState({
     category: '',
@@ -127,19 +129,27 @@ export default function CotacaoPage() {
     const digits = origin.replace(/\D/g, '')
     if (digits.length !== 8) {
       setOriginCity(null)
+      setOriginCepNotFound(false)
       return
     }
     let cancelled = false
     setOriginCepLoading(true)
     setOriginCity(null)
+    setOriginCepNotFound(false)
     fetch(`https://viacep.com.br/ws/${digits}/json/`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled && !data.erro && data.localidade) {
+        if (cancelled) return
+        if (!data.erro && data.localidade) {
           setOriginCity(`${data.localidade}/${data.uf || ''}`)
+          setOriginCepNotFound(false)
+        } else {
+          setOriginCepNotFound(true)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setOriginCepNotFound(true)
+      })
       .finally(() => {
         if (!cancelled) setOriginCepLoading(false)
       })
@@ -150,19 +160,27 @@ export default function CotacaoPage() {
     const digits = destination.replace(/\D/g, '')
     if (digits.length !== 8) {
       setDestinationCity(null)
+      setDestinationCepNotFound(false)
       return
     }
     let cancelled = false
     setDestinationCepLoading(true)
     setDestinationCity(null)
+    setDestinationCepNotFound(false)
     fetch(`https://viacep.com.br/ws/${digits}/json/`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled && !data.erro && data.localidade) {
+        if (cancelled) return
+        if (!data.erro && data.localidade) {
           setDestinationCity(`${data.localidade}/${data.uf || ''}`)
+          setDestinationCepNotFound(false)
+        } else {
+          setDestinationCepNotFound(true)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setDestinationCepNotFound(true)
+      })
       .finally(() => {
         if (!cancelled) setDestinationCepLoading(false)
       })
@@ -331,9 +349,9 @@ export default function CotacaoPage() {
                       value={origin} 
                       onChange={(e) => setOrigin(maskCEP(e.target.value))} 
                     />
-                    {(originCepLoading || originCity) && (
-                      <p className="text-sm text-muted-foreground">
-                        {originCepLoading ? 'Buscando...' : originCity}
+                    {origin.replace(/\D/g, '').length === 8 && (
+                      <p className="text-sm min-h-[1.25rem] text-foreground/80">
+                        {originCepLoading ? 'Buscando...' : originCity ?? (originCepNotFound ? 'CEP não encontrado' : null)}
                       </p>
                     )}
                   </div>
@@ -345,9 +363,9 @@ export default function CotacaoPage() {
                       value={destination} 
                       onChange={(e) => setDestination(maskCEP(e.target.value))} 
                     />
-                    {(destinationCepLoading || destinationCity) && (
-                      <p className="text-sm text-muted-foreground">
-                        {destinationCepLoading ? 'Buscando...' : destinationCity}
+                    {destination.replace(/\D/g, '').length === 8 && (
+                      <p className="text-sm min-h-[1.25rem] text-foreground/80">
+                        {destinationCepLoading ? 'Buscando...' : destinationCity ?? (destinationCepNotFound ? 'CEP não encontrado' : null)}
                       </p>
                     )}
                   </div>
