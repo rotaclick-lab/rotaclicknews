@@ -27,16 +27,28 @@ export function ResetPasswordForm() {
       const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
 
-      // Troca o code por sessão (fluxo PKCE do Supabase)
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
+      // Fluxo PKCE: troca o code por sessão
+      const searchParams = new URLSearchParams(window.location.search)
+      const code = searchParams.get('code')
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
           setHasValidSession(false)
           return
         }
-        // Remove o code da URL sem recarregar
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+
+      // Fluxo implícito: hash com access_token (ex: #access_token=...&refresh_token=...&type=recovery)
+      const hashParams = new URLSearchParams(window.location.hash?.replace('#', '') || '')
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      if (accessToken && refreshToken && hashParams.get('type') === 'recovery') {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        if (error) {
+          setHasValidSession(false)
+          return
+        }
         window.history.replaceState({}, '', window.location.pathname)
       }
 

@@ -2,6 +2,17 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  // Quando Supabase redireciona para a home com ?code= (fallback), encaminha para o callback
+  const { pathname, searchParams } = request.nextUrl
+  const code = searchParams.get('code')
+  if (pathname === '/' && code) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/callback'
+    url.searchParams.set('code', code)
+    url.searchParams.set('next', '/auth/reset-password')
+    return NextResponse.redirect(url)
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
