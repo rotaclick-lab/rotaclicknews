@@ -31,6 +31,19 @@ interface QuoteResult {
   type: string
 }
 
+const MOCK_PRESENTATION_KPIS = [
+  { label: 'Pontualidade média', value: '98,7%' },
+  { label: 'Entregas no mês', value: '1.240' },
+  { label: 'Satisfação (NPS)', value: '74' },
+]
+
+const MOCK_PRESENTATION_BENEFITS = [
+  'Coleta em até 2h',
+  'Rastreamento em tempo real',
+  'Comprovante digital de entrega',
+  'Atendimento 24/7',
+]
+
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -114,7 +127,7 @@ export default function HomePage() {
 
       setResults([offer])
       setSelectedOffer(offer)
-      setStep(4)
+      setStep(3)
       router.replace('/')
     } catch {
       sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
@@ -182,9 +195,16 @@ export default function HomePage() {
       }
 
       const offers = payload.data ?? []
-      setResults(offers)
-      setSelectedOffer(null)
-      setStep(4)
+      const lowestOffer =
+        offers.length > 0
+          ? offers.reduce((bestOffer, currentOffer) =>
+              currentOffer.price < bestOffer.price ? currentOffer : bestOffer
+            )
+          : null
+
+      setResults(lowestOffer ? [lowestOffer] : [])
+      setSelectedOffer(lowestOffer)
+      setStep(3)
 
       if (offers.length === 0) {
         toast.info('Nenhuma tabela de frete encontrada para este par de CEP.')
@@ -242,7 +262,7 @@ export default function HomePage() {
           {/* Progress Stepper */}
           <div className="flex justify-between mb-12 relative">
             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-muted -translate-y-1/2 z-0" />
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3].map((s) => (
               <div 
                 key={s} 
                 className={cn(
@@ -252,7 +272,7 @@ export default function HomePage() {
               >
                 {step > s ? <CheckCircle2 className="h-6 w-6" /> : s}
                 <span className="absolute -bottom-7 text-xs font-medium whitespace-nowrap text-muted-foreground">
-                  {s === 1 ? 'Contato' : s === 2 ? 'Rota' : s === 3 ? 'Carga' : 'Ofertas'}
+                  {s === 1 ? 'Contato' : s === 2 ? 'Rota e Carga' : 'Ofertas'}
                 </span>
               </div>
             ))}
@@ -297,51 +317,40 @@ export default function HomePage() {
               </Card>
             )}
 
-            {/* Step 2: Route */}
+            {/* Step 2: Route + Cargo */}
             {step === 2 && (
-              <Card className="animate-in fade-in slide-in-from-right-4 duration-500 border-brand-100">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-orange-500" />
-                    Origem e Destino
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label>CEP de Origem</Label>
-                      <Input 
-                        placeholder="00000-000" 
-                        className="focus-visible:ring-brand-500"
-                        value={origin} 
-                        onChange={(e) => setOrigin(maskCEP(e.target.value))} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CEP de Destino</Label>
-                      <Input 
-                        placeholder="00000-000" 
-                        className="focus-visible:ring-brand-500"
-                        value={destination} 
-                        onChange={(e) => setDestination(maskCEP(e.target.value))} 
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setStep(1)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
-                      <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-                    </Button>
-                    <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(3)} disabled={!origin || !destination}>
-                      Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 3: Cargo Details */}
-            {step === 3 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                <Card className="border-brand-100">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-orange-500" />
+                      Origem e Destino
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label>CEP de Origem</Label>
+                        <Input 
+                          placeholder="00000-000" 
+                          className="focus-visible:ring-brand-500"
+                          value={origin} 
+                          onChange={(e) => setOrigin(maskCEP(e.target.value))} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CEP de Destino</Label>
+                        <Input 
+                          placeholder="00000-000" 
+                          className="focus-visible:ring-brand-500"
+                          value={destination} 
+                          onChange={(e) => setDestination(maskCEP(e.target.value))} 
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="border-brand-100">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -441,10 +450,14 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(2)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                      <Button variant="outline" onClick={() => setStep(1)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
                         <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                       </Button>
-                      <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold" onClick={handleCalculate} disabled={loading || totals.taxableWeight === 0}>
+                      <Button
+                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold"
+                        onClick={handleCalculate}
+                        disabled={loading || !origin || !destination || totals.taxableWeight === 0}
+                      >
                         {loading ? 'Calculando...' : 'Ver Ofertas de Frete'} <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </div>
@@ -453,12 +466,23 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Step 4: Offers & Results */}
-            {step === 4 && (
+            {/* Step 3: Offers & Results */}
+            {step === 3 && (
               <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
-                  <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
+                  <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
+                  <Button variant="ghost" onClick={() => setStep(2)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {MOCK_PRESENTATION_KPIS.map((kpi) => (
+                    <Card key={kpi.label} className="border-brand-100 bg-brand-50/40">
+                      <CardContent className="p-4">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{kpi.label}</p>
+                        <p className="text-xl font-black text-brand-700">{kpi.value}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
                 
                 <div className="grid grid-cols-1 gap-4">
@@ -489,7 +513,7 @@ export default function HomePage() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-xl">{offer.carrier}</h3>
+                              <h3 className="font-bold text-xl">Proposta recomendada</h3>
                               <span className="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                                 {offer.type}
                               </span>
@@ -502,6 +526,19 @@ export default function HomePage() {
                                 <CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Seguro Incluso
                               </span>
                             </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {MOCK_PRESENTATION_BENEFITS.map((benefit) => (
+                                <span
+                                  key={benefit}
+                                  className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700"
+                                >
+                                  {benefit}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Dados demonstrativos (mock) para apresentação da ferramenta.
+                            </p>
                           </div>
                         </div>
                         
@@ -520,7 +557,7 @@ export default function HomePage() {
                   <div className="fixed bottom-0 left-0 w-full bg-background border-t border-brand-200 p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
                     <div className="max-w-[1000px] mx-auto flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Selecionado: <span className="font-bold text-foreground">{selectedOffer.carrier}</span></p>
+                        <p className="text-sm text-muted-foreground">Melhor proposta selecionada</p>
                         <p className="text-xl font-black text-orange-500">
                           {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
                         </p>
