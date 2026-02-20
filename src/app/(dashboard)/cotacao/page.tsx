@@ -41,6 +41,10 @@ export default function CotacaoPage() {
 
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
+  const [originCity, setOriginCity] = useState<string | null>(null)
+  const [destinationCity, setDestinationCity] = useState<string | null>(null)
+  const [originCepLoading, setOriginCepLoading] = useState(false)
+  const [destinationCepLoading, setDestinationCepLoading] = useState(false)
 
   const [cargo, setCargo] = useState({
     category: '',
@@ -118,6 +122,52 @@ export default function CotacaoPage() {
       sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
     }
   }, [router, searchParams])
+
+  useEffect(() => {
+    const digits = origin.replace(/\D/g, '')
+    if (digits.length !== 8) {
+      setOriginCity(null)
+      return
+    }
+    let cancelled = false
+    setOriginCepLoading(true)
+    setOriginCity(null)
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && !data.erro && data.localidade) {
+          setOriginCity(`${data.localidade}/${data.uf || ''}`)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setOriginCepLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [origin])
+
+  useEffect(() => {
+    const digits = destination.replace(/\D/g, '')
+    if (digits.length !== 8) {
+      setDestinationCity(null)
+      return
+    }
+    let cancelled = false
+    setDestinationCepLoading(true)
+    setDestinationCity(null)
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && !data.erro && data.localidade) {
+          setDestinationCity(`${data.localidade}/${data.uf || ''}`)
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setDestinationCepLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [destination])
 
   const addItem = () => {
     setItems([...items, { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 }])
@@ -281,6 +331,11 @@ export default function CotacaoPage() {
                       value={origin} 
                       onChange={(e) => setOrigin(maskCEP(e.target.value))} 
                     />
+                    {(originCepLoading || originCity) && (
+                      <p className="text-sm text-muted-foreground">
+                        {originCepLoading ? 'Buscando...' : originCity}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>CEP de Destino</Label>
@@ -290,6 +345,11 @@ export default function CotacaoPage() {
                       value={destination} 
                       onChange={(e) => setDestination(maskCEP(e.target.value))} 
                     />
+                    {(destinationCepLoading || destinationCity) && (
+                      <p className="text-sm text-muted-foreground">
+                        {destinationCepLoading ? 'Buscando...' : destinationCity}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-between pt-4">

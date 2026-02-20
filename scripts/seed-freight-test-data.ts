@@ -37,9 +37,9 @@ const EMPRESAS = [
   { nome: 'Trans Nacional Frete', cnpj: '10101010000110', email: 'contato@transnacional-test.com' },
 ]
 
-// Par de CEPs para teste (Guarulhos -> Recife - do exemplo da tabela)
-const ORIGEM_CEP = '07115-070'
-const DESTINO_CEP = '15500-700'
+// Par de CEPs para teste (Guarulhos -> região 15550)
+const ORIGEM_CEP = '07115-700'
+const DESTINO_CEP = '15550-700'
 
 async function main() {
   console.log('🚀 Criando 10 empresas fictícias e rotas de frete para teste...\n')
@@ -140,7 +140,7 @@ async function main() {
   console.log(`\n✅ Seed concluído! ${created} rotas criadas, ${skipped} puladas.`)
   console.log(`\n📋 Teste a cotação com:`)
   console.log(`   Origem: ${ORIGEM_CEP} (Guarulhos)`)
-  console.log(`   Destino: ${DESTINO_CEP} (Recife)`)
+  console.log(`   Destino: ${DESTINO_CEP}`)
   console.log(`   Peso: qualquer valor > 0`)
 }
 

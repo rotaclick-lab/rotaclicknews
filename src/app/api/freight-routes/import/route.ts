@@ -70,6 +70,14 @@ function parseInteger(value: unknown): number | null {
   return Number.isFinite(intVal) ? intVal : null
 }
 
+/** Normaliza CEP para formato XXXXX-XXX (8 dígitos) para compatibilidade com a cotação */
+function normalizeCep(value: string): string {
+  let digits = value.replace(/\D/g, '')
+  if (digits.length === 7) digits = '0' + digits
+  if (digits.length !== 8) return value.trim()
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
+
 function findHeaderRow(rows: unknown[][]) {
   for (let i = 0; i < rows.length; i += 1) {
     const row = rows[i] ?? []
@@ -264,8 +272,8 @@ export async function POST(request: Request) {
 
     const payload = parsedRows.map((row) => ({
       carrier_id: user.id,
-      origin_zip: row.origin,
-      dest_zip: row.destination,
+      origin_zip: normalizeCep(row.origin),
+      dest_zip: normalizeCep(row.destination),
       price_per_kg: row.above101PerKg,
       min_price: row.weight0to30,
       deadline_days: row.deadlineDays,

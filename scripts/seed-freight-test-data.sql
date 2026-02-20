@@ -3,8 +3,8 @@
 -- Execute no Supabase SQL Editor (Dashboard > SQL Editor)
 -- ============================================================
 -- Teste a cotação após rodar com:
---   Origem: 07115-070 (Guarulhos)
---   Destino: 15500-700 (Recife)
+--   Origem: 07115-700 (Guarulhos)
+--   Destino: 15550-700
 -- ============================================================
 
 -- Habilitar extensão para hash de senha
@@ -111,10 +111,10 @@ BEGIN
       min_price,
       deadline_days,
       rate_card
-    ) VALUES (
+    )     VALUES (
       user_id,
-      '07115-070',
-      '15500-700',
+      '07115-700',
+      '15550-700',
       1.1 + (i - 1) * 0.05,
       preco_base,
       4 + ((i - 1) % 3),
@@ -132,11 +132,11 @@ BEGIN
       )
     );
 
-    RAISE NOTICE 'Criado: % - 07115-070 -> 15500-700', empresas[i][1];
+    RAISE NOTICE 'Criado: % - 07115-700 -> 15550-700', empresas[i][1];
   END LOOP;
 
   RAISE NOTICE 'Seed concluido! 10 empresas e rotas criadas.';
-  RAISE NOTICE 'Teste a cotacao: Origem 07115-070, Destino 15500-700';
+  RAISE NOTICE 'Teste a cotacao: Origem 07115-700, Destino 15550-700';
 EXCEPTION
   WHEN unique_violation THEN
     RAISE NOTICE 'Alguns registros ja existem. Execute o script de limpeza antes ou use o seed TypeScript.';
