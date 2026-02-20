@@ -41,6 +41,51 @@ interface CarrierRegistrationData {
   aceitaAnalise: boolean
 }
 
+const VEHICLE_TYPES = [
+  'Caminhão Toco',
+  'Caminhão Truck',
+  'Caminhão Bitruck',
+  'Carreta',
+  'Bitrem',
+  'Rodotrem',
+  'Van',
+  'VUC',
+  'Utilitário',
+] as const
+
+const BODY_TYPES = [
+  'Baú',
+  'Sider',
+  'Graneleiro',
+  'Refrigerado',
+  'Tanque',
+  'Cegonha',
+  'Prancha',
+  'Basculante',
+  'Container',
+  'Aberta',
+] as const
+
+const OPERATION_RANGES = ['Municipal', 'Estadual', 'Regional', 'Nacional'] as const
+
+function normalizeOptionalEnum(
+  value: string,
+  allowedValues: readonly string[],
+  fieldLabel: string
+) {
+  const normalized = (value || '').trim()
+
+  if (!normalized) {
+    return { value: null as string | null }
+  }
+
+  if (!allowedValues.includes(normalized)) {
+    return { value: null as string | null, error: `${fieldLabel} inválido.` }
+  }
+
+  return { value: normalized }
+}
+
 async function rollbackCarrierRegistration(
   supabase: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -64,6 +109,21 @@ async function rollbackCarrierRegistration(
 }
 
 export async function registerCarrier(data: CarrierRegistrationData) {
+  const vehicleType = normalizeOptionalEnum(data.tipoVeiculo, VEHICLE_TYPES, 'Tipo de veículo')
+  if (vehicleType.error) {
+    return { success: false, error: vehicleType.error }
+  }
+
+  const bodyType = normalizeOptionalEnum(data.tipoCarroceria, BODY_TYPES, 'Tipo de carroceria')
+  if (bodyType.error) {
+    return { success: false, error: bodyType.error }
+  }
+
+  const operationRange = normalizeOptionalEnum(data.raioOperacao, OPERATION_RANGES, 'Raio de operação')
+  if (operationRange.error) {
+    return { success: false, error: operationRange.error }
+  }
+
   // Usar admin client (service_role) para bypassar RLS
   const supabase = createAdminClient()
 
@@ -128,10 +188,10 @@ export async function registerCarrier(data: CarrierRegistrationData) {
           uf: data.uf,
           cep: data.cep.replace(/\D/g, ''),
         },
-        tipo_veiculo_principal: data.tipoVeiculo,
-        tipo_carroceria_principal: data.tipoCarroceria,
+        tipo_veiculo_principal: vehicleType.value,
+        tipo_carroceria_principal: bodyType.value,
         capacidade_carga_toneladas: data.capacidadeCarga ? parseInt(data.capacidadeCarga) : null,
-        raio_atuacao: data.raioOperacao || null,
+        raio_atuacao: operationRange.value,
         regioes_atendimento: data.regioes,
         consumo_medio_diesel: data.consumoMedio ? parseFloat(data.consumoMedio) : null,
         numero_eixos: data.qtdEixos ? parseInt(data.qtdEixos) : null,

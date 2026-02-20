@@ -78,6 +78,7 @@ interface FormData {
   email: string
   senha: string
   confirmarSenha: string
+  apoliceSeguroFile: File | null
   aceitaTermos: boolean
   aceitaPrivacidade: boolean
   aceitaComunicacoes: boolean
@@ -113,6 +114,7 @@ export default function RegistroPage() {
     regioes: [], consumoMedio: '', qtdEixos: '', numeroApolice: '',
     possuiRastreamento: true, possuiSeguro: false,
     email: '', senha: '', confirmarSenha: '',
+    apoliceSeguroFile: null,
     aceitaTermos: false, aceitaPrivacidade: false, aceitaComunicacoes: false, aceitaAnalise: false,
   })
 
@@ -173,6 +175,27 @@ export default function RegistroPage() {
         ? prev.regioes.filter(r => r !== regiao)
         : [...prev.regioes, regiao]
     }))
+  }
+
+  const handleApoliceFileChange = (file: File | null) => {
+    if (!file) {
+      set('apoliceSeguroFile', null)
+      return
+    }
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Formato inválido. Envie PDF, PNG ou JPG.')
+      return
+    }
+
+    const maxSizeBytes = 10 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      toast.error('Arquivo muito grande. Tamanho máximo: 10MB.')
+      return
+    }
+
+    set('apoliceSeguroFile', file)
   }
 
   // ===== REAL-TIME CPF VALIDATION =====
@@ -288,7 +311,7 @@ export default function RegistroPage() {
 
   const handleNextStep1 = () => {
     if (validateStep1()) {
-      setStep(2)
+      setStep(3)
     }
   }
 
@@ -417,10 +440,6 @@ export default function RegistroPage() {
             <div className="flex-1 h-[64px] flex items-center justify-center gap-3 bg-[#13b9a5] text-white rounded-lg shadow-lg shadow-[#13b9a5]/20 cursor-default">
               <span className="material-icons-round">person</span>
               <span className="font-bold">Dados Pessoais</span>
-            </div>
-            <div className="flex-1 h-[64px] flex items-center justify-center gap-3 bg-slate-200/50 text-slate-500 rounded-lg cursor-not-allowed">
-              <span className="material-icons-round">settings</span>
-              <span className="font-bold">Dados Operacionais</span>
             </div>
             <div className="flex-1 h-[64px] flex items-center justify-center gap-3 bg-slate-200/50 text-slate-500 rounded-lg cursor-not-allowed">
               <span className="material-icons-round">vpn_key</span>
@@ -890,7 +909,7 @@ export default function RegistroPage() {
     )
   }
 
-  // ===== STEP 3 =====
+  // ===== STEP 2 =====
   return (
     <div className="bg-[#f6f8f8] text-slate-900 min-h-screen flex flex-col font-display">
       {/* Header Navigation */}
@@ -917,14 +936,7 @@ export default function RegistroPage() {
                 </div>
                 <span className="text-xs font-bold text-slate-600">Dados Pessoais</span>
               </div>
-              {/* Step 2 Done */}
-              <div className="relative z-10 flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-[#13b9a5] text-white flex items-center justify-center ring-4 ring-[#f6f8f8]">
-                  <span className="material-icons-round text-xl">check</span>
-                </div>
-                <span className="text-xs font-bold text-slate-600">Dados Operacionais</span>
-              </div>
-              {/* Step 3 Active */}
+              {/* Step 2 Active */}
               <div className="relative z-10 flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-[#13b9a5] text-white flex items-center justify-center ring-4 ring-[#f6f8f8] shadow-lg shadow-[#13b9a5]/30">
                   <span className="material-icons-round text-xl">shield</span>
@@ -1010,6 +1022,31 @@ export default function RegistroPage() {
                 </div>
               </section>
 
+              {/* Section 2: Anexo da Apólice */}
+              <section className="mb-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-1 h-6 bg-[#13b9a5] rounded-full"></div>
+                  <h2 className="text-xl font-bold text-slate-800">Apólice de Seguro</h2>
+                </div>
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold text-slate-700">
+                    Anexar apólice (opcional)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-[#13b9a5] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#10a794]"
+                    onChange={(e) => handleApoliceFileChange(e.target.files?.[0] ?? null)}
+                  />
+                  <p className="text-xs text-slate-500">Formatos permitidos: PDF, PNG e JPG (máximo 10MB).</p>
+                  {form.apoliceSeguroFile && (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                      Arquivo selecionado: {form.apoliceSeguroFile.name}
+                    </div>
+                  )}
+                </div>
+              </section>
+
               {/* Section 2: Termos */}
               <section>
                 <div className="flex items-center gap-3 mb-6">
@@ -1076,7 +1113,7 @@ export default function RegistroPage() {
             {/* Action Footer inside card */}
             <div className="bg-slate-50 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
               <button
-                onClick={() => setStep(2)}
+                onClick={() => setStep(1)}
                 className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold text-slate-500 hover:bg-slate-200 transition-all w-full md:w-auto"
               >
                 <span className="material-icons-round">arrow_back</span>
