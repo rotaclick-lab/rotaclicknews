@@ -31,19 +31,6 @@ interface QuoteResult {
   type: string
 }
 
-const MOCK_PRESENTATION_KPIS = [
-  { label: 'Pontualidade média', value: '98,7%' },
-  { label: 'Entregas no mês', value: '1.240' },
-  { label: 'Satisfação (NPS)', value: '74' },
-]
-
-const MOCK_PRESENTATION_BENEFITS = [
-  'Coleta em até 2h',
-  'Rastreamento em tempo real',
-  'Comprovante digital de entrega',
-  'Atendimento 24/7',
-]
-
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -473,17 +460,6 @@ export default function HomePage() {
                   <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
                   <Button variant="ghost" onClick={() => setStep(2)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {MOCK_PRESENTATION_KPIS.map((kpi) => (
-                    <Card key={kpi.label} className="border-brand-100 bg-brand-50/40">
-                      <CardContent className="p-4">
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{kpi.label}</p>
-                        <p className="text-xl font-black text-brand-700">{kpi.value}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
                 
                 <div className="grid grid-cols-1 gap-4">
                   {results.map((offer) => (
@@ -526,19 +502,6 @@ export default function HomePage() {
                                 <CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Seguro Incluso
                               </span>
                             </div>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {MOCK_PRESENTATION_BENEFITS.map((benefit) => (
-                                <span
-                                  key={benefit}
-                                  className="rounded-full bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700"
-                                >
-                                  {benefit}
-                                </span>
-                              ))}
-                            </div>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Dados demonstrativos (mock) para apresentação da ferramenta.
-                            </p>
                           </div>
                         </div>
                         
