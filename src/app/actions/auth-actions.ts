@@ -145,6 +145,21 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
+    const normalizedMessage = (error.message || '').toLowerCase()
+    const errorCode = (error as { code?: string }).code || ''
+    const isEmailNotConfirmed =
+      errorCode === 'email_not_confirmed' ||
+      normalizedMessage.includes('email not confirmed') ||
+      normalizedMessage.includes('email_not_confirmed') ||
+      normalizedMessage.includes('confirm')
+
+    if (isEmailNotConfirmed) {
+      return {
+        error:
+          'Seu cadastro ainda não foi confirmado. Verifique seu e-mail e clique no link de confirmação enviado pela RotaClick. Se não encontrar, confira a caixa de spam.',
+      }
+    }
+
     return { error: 'Credenciais inválidas. Verifique seu acesso e tente novamente.' }
   }
 
@@ -353,8 +368,9 @@ export async function forgotPassword(formData: FormData) {
 
   const email = formData.get('email') as string
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
+    redirectTo: `${baseUrl}/auth/callback?next=/auth/reset-password`,
   })
 
   if (error) {

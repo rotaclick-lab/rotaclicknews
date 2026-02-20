@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next')
   const origin = requestUrl.origin
 
   if (code) {
@@ -11,6 +12,7 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  // Redireciona para o dashboard após autenticação
-  return NextResponse.redirect(`${origin}/dashboard`)
+  // Redireciona para 'next' (ex: recuperação de senha) ou dashboard
+  const redirectTo = next?.startsWith('/') ? `${origin}${next}` : `${origin}/dashboard`
+  return NextResponse.redirect(redirectTo)
 }
