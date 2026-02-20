@@ -250,7 +250,10 @@ export default function CotacaoPage() {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => router.push('/dashboard')} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                  </Button>
                   <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
                     Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -419,8 +422,13 @@ export default function CotacaoPage() {
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
-                <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
+                <div className="flex items-center gap-4">
+                  <Button variant="outline" onClick={() => setStep(3)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                  </Button>
+                  <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
+                </div>
+                <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm">Alterar Dados</Button>
               </div>
               
               <div className="grid grid-cols-1 gap-4">
