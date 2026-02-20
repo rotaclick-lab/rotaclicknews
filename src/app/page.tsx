@@ -31,9 +31,18 @@ interface QuoteResult {
   type: string
 }
 
+const DEMO_OFFER: QuoteResult = {
+  id: 'demo-offer-001',
+  carrier: 'Transportadora Demo',
+  price: 157.5,
+  deadline: '2 dias uteis',
+  type: 'Simulacao',
+}
+
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isDemoMode = searchParams.get('demo') === '1'
   const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
@@ -93,6 +102,7 @@ export default function HomePage() {
   const [results, setResults] = useState<QuoteResult[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<QuoteResult | null>(null)
+  const [demoPaymentDone, setDemoPaymentDone] = useState(false)
 
   const savePendingCheckout = useCallback((offer: QuoteResult) => {
     sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(offer))
@@ -152,6 +162,15 @@ export default function HomePage() {
   }
 
   const handleCalculate = async () => {
+    if (isDemoMode) {
+      setResults([DEMO_OFFER])
+      setSelectedOffer(DEMO_OFFER)
+      setStep(3)
+      setDemoPaymentDone(false)
+      toast.success('Simulacao de frete carregada para apresentacao.')
+      return
+    }
+
     setLoading(true)
     try {
       const totals = calculateTotals()
@@ -458,8 +477,31 @@ export default function HomePage() {
               <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
-                  <Button variant="ghost" onClick={() => setStep(2)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50">Alterar Dados</Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setStep(2)
+                      if (isDemoMode) {
+                        setDemoPaymentDone(false)
+                      }
+                    }}
+                    className="text-brand-600 hover:text-brand-700 hover:bg-brand-50"
+                  >
+                    Alterar Dados
+                  </Button>
                 </div>
+
+                {isDemoMode && (
+                  <Card className={cn('border', demoPaymentDone ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50')}>
+                    <CardContent className="p-4">
+                      <p className={cn('text-sm font-medium', demoPaymentDone ? 'text-green-800' : 'text-amber-800')}>
+                        {demoPaymentDone
+                          ? 'Modo demonstracao: contratacao finalizada e pagamento aprovado (simulado).'
+                          : 'Modo demonstracao ativo: frete e pagamento serao simulados para apresentacao ao cliente.'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 <div className="grid grid-cols-1 gap-4">
                   {results.map((offer) => (
@@ -530,6 +572,16 @@ export default function HomePage() {
                         className="bg-orange-500 hover:bg-orange-600 text-white px-10 font-bold"
                         onClick={async () => {
                           if (!selectedOffer) return
+
+                          if (isDemoMode) {
+                            setLoading(true)
+                            await new Promise((resolve) => setTimeout(resolve, 900))
+                            setLoading(false)
+                            setDemoPaymentDone(true)
+                            toast.success('Pagamento aprovado em modo demonstracao.')
+                            return
+                          }
+
                           setLoading(true)
                           const result = await createCheckoutSession(selectedOffer, undefined, '/?resumeCheckout=1')
 
@@ -549,7 +601,7 @@ export default function HomePage() {
                         }}
                         disabled={loading}
                       >
-                        <CreditCard className="mr-2 h-5 w-5" /> {loading ? 'Processando...' : 'PAGAR E FINALIZAR AGORA'}
+                        <CreditCard className="mr-2 h-5 w-5" /> {loading ? 'Processando...' : isDemoMode ? 'SIMULAR PAGAMENTO' : 'PAGAR E FINALIZAR AGORA'}
                       </Button>
                     </div>
                   </div>
