@@ -21,6 +21,7 @@
 - [ ] Site URL: `https://rotaclick.com.br`
 - [ ] Redirect URLs configuradas:
   - [ ] `https://rotaclick.com.br/auth/callback`
+  - [ ] `https://rotaclick.com.br/auth/reset-password`
   - [ ] `https://rotaclick.com.br/login`
   - [ ] `https://rotaclick.com.br/dashboard`
 - [ ] Email templates atualizados com URL produção
