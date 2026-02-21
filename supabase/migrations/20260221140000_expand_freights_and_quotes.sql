@@ -16,7 +16,6 @@ ALTER TABLE public.freights ADD COLUMN IF NOT EXISTS route_id UUID REFERENCES pu
 
 CREATE INDEX IF NOT EXISTS idx_freights_payment_status ON public.freights(payment_status);
 CREATE INDEX IF NOT EXISTS idx_freights_carrier_id ON public.freights(carrier_id);
-CREATE INDEX IF NOT EXISTS idx_freights_user_id ON public.freights(user_id);
 CREATE INDEX IF NOT EXISTS idx_freights_created_at ON public.freights(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_freights_stripe_session ON public.freights(stripe_session_id);
 
