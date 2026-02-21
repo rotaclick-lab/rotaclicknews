@@ -84,16 +84,18 @@ export default function AdminRntrcPage() {
 }
 
 async function RntrcHistory() {
-  const { createAdminClient } = await import('@/lib/supabase/admin')
-  const admin = createAdminClient()
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
 
-  const { data: runs } = await admin
-    .from('antt_ingestion_runs')
-    .select('created_at, status, records_imported, source_url, error_message')
-    .order('created_at', { ascending: false })
-    .limit(20)
+    const { data: runs } = await admin
+      .from('antt_ingestion_runs')
+      .select('created_at, status, records_imported, source_url, error_message')
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .catch(() => ({ data: [] }))
 
-  return (
+    return (
     <Card className="border-slate-200">
       <CardHeader>
         <CardTitle>Histórico de ingestões</CardTitle>
@@ -137,5 +139,21 @@ async function RntrcHistory() {
         )}
       </CardContent>
     </Card>
-  )
+    )
+  } catch (e) {
+    console.error('RntrcHistory error:', e)
+    return (
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle>Histórico de ingestões</CardTitle>
+          <CardDescription>Não foi possível carregar o histórico</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Verifique se SUPABASE_SERVICE_ROLE_KEY está configurada.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
 }

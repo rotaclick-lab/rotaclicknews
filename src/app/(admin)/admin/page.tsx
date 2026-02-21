@@ -7,36 +7,48 @@ import { Button } from '@/components/ui/button'
 export const dynamic = 'force-dynamic'
 
 async function getAdminStats() {
-  const admin = createAdminClient()
+  try {
+    const admin = createAdminClient()
 
-  const [
-    { count: usersCount },
-    { count: companiesCount },
-    { count: carriersCount },
-    { count: freightsCount },
-    { count: rntrcCount },
-    { data: lastIngestion },
-  ] = await Promise.all([
-    admin.from('profiles').select('*', { count: 'exact', head: true }),
-    admin.from('companies').select('*', { count: 'exact', head: true }),
-    admin.from('carriers').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-    admin.from('freights').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-    admin.from('rntrc_cache').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-    admin
-      .from('antt_ingestion_runs')
-      .select('created_at, status, records_imported')
-      .order('created_at', { ascending: false })
-      .limit(5)
-      .catch(() => ({ data: [] })),
-  ])
+    const [
+      { count: usersCount },
+      { count: companiesCount },
+      { count: carriersCount },
+      { count: freightsCount },
+      { count: rntrcCount },
+      { data: lastIngestion },
+    ] = await Promise.all([
+      admin.from('profiles').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+      admin.from('companies').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+      admin.from('carriers').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+      admin.from('freights').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+      admin.from('rntrc_cache').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+      admin
+        .from('antt_ingestion_runs')
+        .select('created_at, status, records_imported')
+        .order('created_at', { ascending: false })
+        .limit(5)
+        .catch(() => ({ data: [] })),
+    ])
 
-  return {
-    users: usersCount ?? 0,
-    companies: companiesCount ?? 0,
-    carriers: carriersCount ?? 0,
-    freights: freightsCount ?? 0,
-    rntrcCache: rntrcCount ?? 0,
-    lastIngestions: lastIngestion?.data ?? [],
+    return {
+      users: usersCount ?? 0,
+      companies: companiesCount ?? 0,
+      carriers: carriersCount ?? 0,
+      freights: freightsCount ?? 0,
+      rntrcCache: rntrcCount ?? 0,
+      lastIngestions: lastIngestion?.data ?? [],
+    }
+  } catch (e) {
+    console.error('getAdminStats error:', e)
+    return {
+      users: 0,
+      companies: 0,
+      carriers: 0,
+      freights: 0,
+      rntrcCache: 0,
+      lastIngestions: [],
+    }
   }
 }
 

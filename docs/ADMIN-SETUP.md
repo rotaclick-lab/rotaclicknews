@@ -1,5 +1,13 @@
 # Configuração do Painel Admin
 
+## 0. Variável de ambiente (produção)
+
+**Obrigatório para o admin funcionar em produção (Vercel):**
+
+- `SUPABASE_SERVICE_ROLE_KEY` – chave service_role do Supabase (Settings > API)
+
+Sem essa variável, o painel admin retornará erro ao carregar.
+
 ## 1. Executar migrations
 
 ```bash
