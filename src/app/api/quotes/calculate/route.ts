@@ -138,7 +138,7 @@ export async function POST(request: Request) {
     const { data: companies } = companyIds.length
       ? await admin
           .from('companies')
-          .select('id, name, nome_fantasia, razao_social')
+          .select('id, name, nome_fantasia, razao_social, logo_url')
           .in('id', companyIds)
       : { data: [] as Array<Record<string, unknown>> }
 
@@ -157,6 +157,7 @@ export async function POST(request: Request) {
         return {
           id: route.id,
           carrier: carrierName,
+          logoUrl: company?.logo_url ?? null,
           price: calculateFreightTotal(route, taxableWeight, invoiceValue),
           deadline: route.deadline_days ? `${route.deadline_days} dias úteis` : 'Prazo sob consulta',
           type: 'Tabela Importada',

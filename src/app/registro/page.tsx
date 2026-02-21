@@ -54,6 +54,7 @@ interface FormData {
   telefone: string
   razaoSocial: string
   cnpj: string
+  logoFile: File | null
   inscricaoEstadual: string
   rntrc: string
   cep: string
@@ -108,7 +109,7 @@ export default function RegistroPage() {
   const [cepValid, setCepValid] = useState<boolean | null>(null)
   const [form, setForm] = useState<FormData>({
     nomeCompleto: '', cpf: '', telefone: '',
-    razaoSocial: '', cnpj: '', inscricaoEstadual: '', rntrc: '',
+    razaoSocial: '', cnpj: '', logoFile: null, inscricaoEstadual: '', rntrc: '',
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '',
     tipoVeiculo: '', tipoCarroceria: '', capacidadeCarga: '', raioOperacao: '',
     regioes: [], consumoMedio: '', qtdEixos: '', numeroApolice: '',
@@ -336,6 +337,16 @@ export default function RegistroPage() {
 
     setLoading(true)
     try {
+      let logoBase64: string | undefined
+      if (form.logoFile) {
+        const reader = new FileReader()
+        logoBase64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(form.logoFile!)
+        })
+      }
+
       const result = await registerCarrier({
         // Responsável
         nomeCompleto: form.nomeCompleto,
@@ -344,6 +355,7 @@ export default function RegistroPage() {
         // Empresa
         razaoSocial: form.razaoSocial,
         cnpj: form.cnpj,
+        logoBase64,
         inscricaoEstadual: form.inscricaoEstadual,
         rntrc: form.rntrc,
         // Endereço
@@ -553,6 +565,40 @@ export default function RegistroPage() {
                       value={form.rntrc}
                       onChange={e => set('rntrc', e.target.value)}
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">Logotipo da transportadora</label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                          {form.logoFile ? (
+                            <img src={URL.createObjectURL(form.logoFile)} alt="Logo" className="w-full h-full object-contain p-1" />
+                          ) : (
+                            <span className="material-icons-round text-slate-400 text-3xl">image</span>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={e => {
+                            const f = e.target.files?.[0]
+                            if (f && f.size <= 2 * 1024 * 1024) setForm(prev => ({ ...prev, logoFile: f }))
+                            else if (f) toast.error('O logo deve ter no máximo 2MB')
+                          }}
+                        />
+                        <span className="text-sm text-slate-600">Clique para enviar. JPG, PNG ou WebP. Máx. 2MB.</span>
+                      </label>
+                      {form.logoFile && (
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, logoFile: null }))}
+                          className="text-sm text-red-600 hover:underline"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>

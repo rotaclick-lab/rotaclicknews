@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
@@ -22,6 +23,7 @@ interface CargoItem {
 interface QuoteResult {
   id: string
   carrier: string
+  logoUrl?: string | null
   price: number
   deadline: string
   type: string
@@ -527,13 +529,14 @@ export default function CotacaoPage() {
                     <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                       <div className="flex items-center gap-6">
                         <div className={cn(
-                          "w-16 h-16 rounded-2xl flex items-center justify-center transition-colors",
-                          selectedOffer?.id === offer.id ? "bg-brand-500 text-white" : "bg-brand-50 text-brand-600"
+                          "w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-colors shrink-0",
+                          selectedOffer?.id === offer.id ? "bg-brand-500 text-white ring-2 ring-brand-500" : "bg-brand-50 text-brand-600 border border-brand-100"
                         )}>
-                          <Truck className={cn(
-                            "h-8 w-8",
-                            offer.type.includes('Pesada') ? "h-10 w-10" : "h-8 w-8"
-                          )} />
+                          {offer.logoUrl ? (
+                            <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1" />
+                          ) : (
+                            <Truck className={cn("h-8 w-8", offer.type.includes('Pesada') ? "h-10 w-10" : "h-8 w-8")} />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">

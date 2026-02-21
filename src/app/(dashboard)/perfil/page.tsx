@@ -44,6 +44,7 @@ export default function PerfilPage() {
     nomeFantasia: '',
     cnpj: '',
     inscricaoEstadual: '',
+    logoUrl: '' as string | null,
     cep: '',
     logradouro: '',
     numero: '',
@@ -52,6 +53,7 @@ export default function PerfilPage() {
     cidade: '',
     estado: '',
   })
+  const companyLogoRef = useRef<HTMLInputElement>(null)
 
   // Configurações
   const [config, setConfig] = useState({
@@ -122,11 +124,13 @@ export default function PerfilPage() {
 
             if (company) {
               const endereco = company.endereco_completo || company.address || {}
-              setEmpresa({
+              setEmpresa(prev => ({
+                ...prev,
                 razaoSocial: company.razao_social || company.name || '',
                 nomeFantasia: company.nome_fantasia || '',
                 cnpj: formatCNPJ(company.cnpj || company.document || ''),
                 inscricaoEstadual: company.inscricao_estadual || '',
+                logoUrl: company.logo_url || null,
                 cep: formatCEP(company.postal_code || endereco.cep || ''),
                 logradouro: endereco.logradouro || '',
                 numero: endereco.numero || '',
@@ -134,7 +138,7 @@ export default function PerfilPage() {
                 bairro: endereco.bairro || '',
                 cidade: company.city || endereco.cidade || '',
                 estado: company.state || endereco.uf || '',
-              })
+              }))
             }
           }
         }
@@ -361,6 +365,47 @@ export default function PerfilPage() {
     }
   }
 
+  const handleCompanyLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !companyId) return
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('O logo deve ter no máximo 2MB')
+      return
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast.error('Formato inválido. Use JPG, PNG ou WebP')
+      return
+    }
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${companyId}/logo.${fileExt}`
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(fileName, file, { upsert: true })
+
+      if (uploadError) {
+        console.error('Erro no upload do logo:', uploadError)
+        toast.error('Não foi possível enviar o logo. Verifique as permissões.')
+        return
+      }
+
+      const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(fileName)
+
+      await supabase
+        .from('companies')
+        .update({ logo_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', companyId)
+
+      setEmpresa(prev => ({ ...prev, logoUrl: urlData.publicUrl }))
+      toast.success('Logo atualizado com sucesso!')
+    } catch {
+      toast.error('Erro ao atualizar logo')
+    }
+  }
+
   const handleCEPChange = async (value: string) => {
     const masked = maskCEP(value)
     setEmpresa(prev => ({ ...prev, cep: masked }))
@@ -390,10 +435,31 @@ export default function PerfilPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="h-12 w-12 rounded-full border-4 border-brand-200 border-t-brand-500 animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground">Carregando perfil...</p>
+      <div className="min-h-screen pb-20 animate-in fade-in duration-300">
+        <div className="max-w-5xl mx-auto">
+          {/* Skeleton Header */}
+          <div className="relative mb-8">
+            <div className="h-40 rounded-2xl bg-gradient-to-r from-brand-100 to-brand-50 animate-pulse" />
+            <div className="absolute -bottom-12 left-8 flex items-end gap-4">
+              <div className="w-28 h-28 rounded-2xl border-4 border-white bg-muted animate-pulse" />
+              <div className="mb-2 space-y-2">
+                <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+                <div className="h-4 w-32 bg-muted/70 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+          <div className="h-8" />
+          {/* Skeleton Tabs */}
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 w-28 bg-muted rounded-lg animate-pulse" />
+            ))}
+          </div>
+          {/* Skeleton Cards */}
+          <div className="space-y-6">
+            <div className="h-64 rounded-xl border border-brand-100 bg-white animate-pulse" />
+            <div className="h-48 rounded-xl border border-brand-100 bg-white animate-pulse" />
+          </div>
         </div>
       </div>
     )
@@ -403,29 +469,32 @@ export default function PerfilPage() {
     <div className="min-h-screen pb-20">
       <div className="max-w-5xl mx-auto">
         {/* Header do Perfil */}
-        <div className="relative mb-8">
+        <div className="relative mb-10">
           {/* Banner */}
-          <div className="h-40 rounded-2xl bg-gradient-to-r from-brand-500 via-brand-400 to-orange-400 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtNGgydjRoNHYyaC00djRoLTJ2LTR6bTAtMzBoLTJ2LTRoMnYtNGgydjRoNHYyaC00djRoLTJ2LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+          <div className="h-36 md:h-44 rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 relative overflow-hidden shadow-lg">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wOCI+PHBhdGggZD0iTTM2IDM0aC0ydi00aDJ2LTRoMnY0aDR2MmgtNHY0aC0ydi00em0wLTMwaC0ydi00aDJ2LTRoMnY0aDR2MmgtNHY0aC0ydi00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-60" />
+            <div className="absolute bottom-4 left-8 right-8">
+              <p className="text-white/90 text-sm font-medium">Meu Perfil</p>
+            </div>
           </div>
 
-          {/* Avatar */}
-          <div className="absolute -bottom-12 left-8 flex items-end gap-4">
+          {/* Avatar + Nome */}
+          <div className="absolute -bottom-14 left-6 md:left-8 flex items-end gap-5">
             <div className="relative group">
-              <div className="w-28 h-28 rounded-2xl border-4 border-white bg-white shadow-lg overflow-hidden">
+              <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white shadow-xl overflow-hidden ring-2 ring-brand-100">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-brand-100 flex items-center justify-center">
-                    <User className="h-12 w-12 text-brand-400" />
+                  <div className="w-full h-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center">
+                    <User className="h-10 w-10 md:h-12 md:w-12 text-brand-500" />
                   </div>
                 )}
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center cursor-pointer"
+                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center cursor-pointer"
               >
-                <Camera className="h-8 w-8 text-white" />
+                <Camera className="h-7 w-7 md:h-8 md:w-8 text-white" />
               </button>
               <input
                 ref={fileInputRef}
@@ -435,18 +504,21 @@ export default function PerfilPage() {
                 className="hidden"
               />
             </div>
-            <div className="mb-2">
-              <h2 className="text-xl font-bold text-brand-800">{perfil.nomeCompleto || 'Sem nome'}</h2>
-              <p className="text-sm text-muted-foreground">{empresa.nomeFantasia || empresa.razaoSocial || 'Empresa não vinculada'}</p>
+            <div className="mb-1 pb-1">
+              <h1 className="text-xl md:text-2xl font-bold text-brand-900 tracking-tight">
+                {perfil.nomeCompleto || 'Sem nome'}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {empresa.nomeFantasia || empresa.razaoSocial || 'Empresa não vinculada'}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Espaço para o avatar */}
-        <div className="h-8" />
+        <div className="h-16" />
 
         {/* Tabs de Seção */}
-        <div className="flex gap-2 mb-6 border-b border-brand-100 pb-1">
+        <div className="flex gap-1 p-1 mb-8 rounded-xl bg-muted/50 border border-brand-100/80 w-fit">
           {sections.map((section) => {
             const Icon = section.icon
             return (
@@ -454,10 +526,10 @@ export default function PerfilPage() {
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all border-b-2',
+                  'flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
                   activeSection === section.id
-                    ? 'text-brand-700 border-brand-500 bg-brand-50'
-                    : 'text-muted-foreground border-transparent hover:text-brand-600 hover:bg-brand-50/50'
+                    ? 'text-brand-700 bg-white shadow-sm border border-brand-100'
+                    : 'text-muted-foreground hover:text-brand-600 hover:bg-white/60'
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -469,8 +541,8 @@ export default function PerfilPage() {
 
         {/* Seção: Meu Perfil */}
         {activeSection === 'perfil' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <Card className="border-brand-100">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <User className="h-5 w-5 text-brand-500" />
@@ -532,7 +604,7 @@ export default function PerfilPage() {
             </Card>
 
             {/* Alterar Senha */}
-            <Card className="border-brand-100">
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <Lock className="h-5 w-5 text-orange-500" />
@@ -609,8 +681,23 @@ export default function PerfilPage() {
 
         {/* Seção: Empresa */}
         {activeSection === 'empresa' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <Card className="border-brand-100">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {!companyId ? (
+              <Card className="border-brand-100 shadow-sm border-dashed">
+                <CardContent className="py-16 text-center">
+                  <Building2 className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-brand-800 mb-2">Empresa não vinculada</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                    Seu perfil ainda não está vinculado a uma empresa. Entre em contato com o suporte para concluir o cadastro da transportadora.
+                  </p>
+                  <Button variant="outline" className="border-brand-200 text-brand-700" asChild>
+                    <a href="mailto:suporte@rotaclick.com.br">Falar com suporte</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+            <>
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <Building2 className="h-5 w-5 text-brand-500" />
@@ -618,7 +705,36 @@ export default function PerfilPage() {
                 </CardTitle>
                 <CardDescription>Informações da transportadora</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-6">
+                  <div className="relative group">
+                    <div className="w-24 h-24 rounded-xl border-2 border-brand-100 bg-brand-50/50 overflow-hidden flex items-center justify-center">
+                      {empresa.logoUrl ? (
+                        <img src={empresa.logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+                      ) : (
+                        <Building2 className="h-10 w-10 text-brand-400" />
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => companyLogoRef.current?.click()}
+                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center cursor-pointer"
+                    >
+                      <Camera className="h-8 w-8 text-white" />
+                    </button>
+                    <input
+                      ref={companyLogoRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleCompanyLogoChange}
+                      className="hidden"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-brand-800">Logotipo da transportadora</p>
+                    <p className="text-sm text-muted-foreground">Clique para enviar. JPG, PNG ou WebP. Máx. 2MB.</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2 md:col-span-2">
                     <Label>Razão Social</Label>
@@ -648,7 +764,7 @@ export default function PerfilPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-brand-100">
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <MapPin className="h-5 w-5 text-orange-500" />
@@ -734,13 +850,15 @@ export default function PerfilPage() {
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </div>
+            </>
+            )}
           </div>
         )}
 
         {/* Seção: Configurações */}
         {activeSection === 'configuracoes' && (
-          <div className="space-y-6 animate-in fade-in duration-300" id="configuracoes">
-            <Card className="border-brand-100">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300" id="configuracoes">
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <Bell className="h-5 w-5 text-brand-500" />
@@ -792,7 +910,7 @@ export default function PerfilPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-brand-100">
+            <Card className="border-brand-100 shadow-sm hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-brand-800">
                   <Palette className="h-5 w-5 text-orange-500" />

@@ -10,6 +10,7 @@ interface CarrierRegistrationData {
   // Empresa
   razaoSocial: string
   cnpj: string
+  logoBase64?: string
   inscricaoEstadual: string
   rntrc: string
   // Endereço
@@ -213,6 +214,33 @@ export async function registerCarrier(data: CarrierRegistrationData) {
     }
 
     createdCompanyId = companyData.id
+
+    // 2.1 Upload do logo (se fornecido)
+    if (data.logoBase64) {
+      try {
+        const base64Data = data.logoBase64.replace(/^data:image\/\w+;base64,/, '')
+        const buffer = Buffer.from(base64Data, 'base64')
+        const ext = data.logoBase64.includes('image/png') ? 'png' : data.logoBase64.includes('image/webp') ? 'webp' : 'jpg'
+        const fileName = `${companyData.id}/logo.${ext}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('company-logos')
+          .upload(fileName, buffer, {
+            upsert: true,
+            contentType: `image/${ext}`,
+          })
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('company-logos').getPublicUrl(fileName)
+          await supabase
+            .from('companies')
+            .update({ logo_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+            .eq('id', companyData.id)
+        }
+      } catch (logoErr) {
+        console.error('Erro ao fazer upload do logo (não crítico):', logoErr)
+      }
+    }
 
     // 3. Atualizar o perfil na tabela profiles (trigger já criou o registro básico)
     const { error: profileError } = await supabase
