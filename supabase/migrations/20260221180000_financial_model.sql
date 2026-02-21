@@ -28,4 +28,3 @@ ALTER TABLE freights
 -- 4. Indexes for financial queries
 CREATE INDEX IF NOT EXISTS idx_freights_repasse_status ON freights(repasse_status);
 CREATE INDEX IF NOT EXISTS idx_freights_repasse_due_date ON freights(repasse_due_date);
-CREATE INDEX IF NOT EXISTS idx_freights_carrier_id ON freights(carrier_id);
