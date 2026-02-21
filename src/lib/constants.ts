@@ -13,6 +13,9 @@ import {
   Shield,
   Settings,
   Bell,
+  Megaphone,
+  Paintbrush,
+  ScrollText,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -89,8 +92,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: 'Empresas', href: '/admin/empresas', icon: Building2, description: 'Gestão de empresas' },
   { title: 'Transportadoras', href: '/admin/transportadoras', icon: Truck, description: 'Carriers e rotas' },
   { title: 'Tabelas de Frete', href: '/admin/tabela-frete', icon: DollarSign, description: 'Rotas por transportador' },
+  { title: 'Campanhas', href: '/admin/campanhas', icon: Megaphone, description: 'Banners e destaques na home' },
+  { title: 'Personalização', href: '/admin/personalizacao', icon: Paintbrush, description: 'Cores, logo e textos' },
   { title: 'RNTRC', href: '/admin/rntrc', icon: Upload, description: 'Upload CSV ANTT' },
   { title: 'Auditoria', href: '/admin/auditoria', icon: Shield, description: 'Logs de auditoria' },
+  { title: 'Logs Completos', href: '/admin/logs-completos', icon: ScrollText, description: 'Todos os logs da plataforma' },
   { title: 'Configurações', href: '/admin/configuracoes', icon: Settings, description: 'Parâmetros gerais' },
 ]
 

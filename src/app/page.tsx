@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -38,6 +38,18 @@ const DEMO_OFFER: QuoteResult = {
   price: 157.5,
   deadline: '2 dias uteis',
   type: 'Simulacao',
+}
+
+type CampaignBanner = {
+  id: string
+  title: string
+  description: string | null
+  type: string
+  image_url: string | null
+  link_url: string | null
+  link_label: string | null
+  bg_color: string | null
+  text_color: string | null
 }
 
 export default function HomePage() {
@@ -105,6 +117,14 @@ export default function HomePage() {
   const [items, setItems] = useState<CargoItem[]>([
     { quantity: 1, weight: 0, height: 0, width: 0, depth: 0 },
   ])
+  const [campaigns, setCampaigns] = useState<CampaignBanner[]>([])
+
+  useEffect(() => {
+    fetch('/api/campaigns')
+      .then((r) => r.json())
+      .then((payload) => { if (payload.success) setCampaigns(payload.data ?? []) })
+      .catch(() => {})
+  }, [])
 
   const [results, setResults] = useState<QuoteResult[]>([])
   const [loading, setLoading] = useState(false)

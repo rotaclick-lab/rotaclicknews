@@ -5,6 +5,29 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+async function writeAuditLog(
+  userId: string | null,
+  action: string,
+  resourceType: string,
+  resourceId: string | null,
+  description: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    const admin = createAdminClient()
+    await admin.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      description,
+      metadata: metadata ?? null,
+    })
+  } catch {
+    // audit log failure must not break main flow
+  }
+}
+
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function isValidCPF(value: string): boolean {
@@ -23,7 +46,7 @@ function isValidCPF(value: string): boolean {
   remainder = (sum * 10) % 11
   if (remainder === 10) remainder = 0
 
-  return remainder === Number(cpf[10])
+  return remainder === Number(cpf[10] ?? '0')
 }
 
 function isValidCNPJ(value: string): boolean {
@@ -160,6 +183,7 @@ export async function login(formData: FormData) {
       }
     }
 
+    await writeAuditLog(null, 'LOGIN_FAILED', 'auth', null, `Tentativa de login falhou para: ${resolvedEmail}`, { email: resolvedEmail })
     return { error: 'Credenciais inválidas. Verifique seu acesso e tente novamente.' }
   }
 
@@ -167,6 +191,9 @@ export async function login(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (user) {
+    await writeAuditLog(user.id, 'LOGIN', 'auth', user.id, `Login realizado: ${user.email}`)
+  }
   revalidatePath('/', 'layout')
   const defaultRedirect = user ? await resolveDefaultRedirectByRole(user.id) : '/dashboard'
   const safeRedirect = next.startsWith('/') ? next : defaultRedirect
@@ -355,6 +382,10 @@ export async function signupCustomer(formData: FormData) {
 
 export async function logout() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    await writeAuditLog(user.id, 'LOGOUT', 'auth', user.id, `Logout: ${user.email}`)
+  }
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
   redirect('/login')
