@@ -24,19 +24,21 @@ CREATE INDEX IF NOT EXISTS idx_freights_stripe_session ON public.freights(stripe
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.quotes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  origin_zip TEXT NOT NULL,
-  dest_zip TEXT NOT NULL,
-  taxable_weight NUMERIC(10,2),
-  invoice_value NUMERIC(12,2),
-  results_count INTEGER DEFAULT 0,
-  selected_carrier_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  selected_carrier_name TEXT,
-  selected_price NUMERIC(12,2),
-  converted_to_freight BOOLEAN DEFAULT false,
-  freight_id UUID REFERENCES public.freights(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
+
+-- Add columns idempotently (safe if table already exists)
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS origin_zip TEXT;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS dest_zip TEXT;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS taxable_weight NUMERIC(10,2);
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS invoice_value NUMERIC(12,2);
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS results_count INTEGER DEFAULT 0;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS selected_carrier_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS selected_carrier_name TEXT;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS selected_price NUMERIC(12,2);
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS converted_to_freight BOOLEAN DEFAULT false;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS freight_id UUID REFERENCES public.freights(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_quotes_user_id ON public.quotes(user_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_carrier_id ON public.quotes(selected_carrier_id);
