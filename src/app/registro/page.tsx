@@ -90,6 +90,7 @@ interface FieldErrors {
   cpf?: string | undefined
   cep?: string | undefined
   inscricaoEstadual?: string | undefined
+  rntrc?: string | undefined
   email?: string | undefined
   senha?: string | undefined
   confirmarSenha?: string | undefined
@@ -347,6 +348,32 @@ export default function RegistroPage() {
         })
       }
 
+      // Validar RNTRC antes de enviar
+      if (!form.rntrc || form.rntrc.replace(/\D/g,'').length < 8) {
+        toast.error('RNTRC é obrigatório e deve ter no mínimo 8 dígitos')
+        setLoading(false)
+        return
+      }
+
+      // Validar apólice de seguro obrigatória
+      if (!form.apoliceSeguroFile) {
+        toast.error('A apólice de seguro é obrigatória para o cadastro')
+        setLoading(false)
+        return
+      }
+
+      let insuranceFileBase64: string | undefined
+      let insuranceFileName: string | undefined
+      if (form.apoliceSeguroFile) {
+        const reader2 = new FileReader()
+        insuranceFileBase64 = await new Promise<string>((resolve, reject) => {
+          reader2.onload = () => resolve(reader2.result as string)
+          reader2.onerror = reject
+          reader2.readAsDataURL(form.apoliceSeguroFile!)
+        })
+        insuranceFileName = form.apoliceSeguroFile.name
+      }
+
       const result = await registerCarrier({
         // Responsável
         nomeCompleto: form.nomeCompleto,
@@ -355,7 +382,7 @@ export default function RegistroPage() {
         // Empresa
         razaoSocial: form.razaoSocial,
         cnpj: form.cnpj,
-        logoBase64,
+        ...(logoBase64 ? { logoBase64 } : {}),
         inscricaoEstadual: form.inscricaoEstadual,
         rntrc: form.rntrc,
         // Endereço
@@ -375,6 +402,8 @@ export default function RegistroPage() {
         consumoMedio: form.consumoMedio,
         qtdEixos: form.qtdEixos,
         numeroApolice: form.numeroApolice,
+        ...(insuranceFileBase64 ? { insuranceFileBase64 } : {}),
+        ...(insuranceFileName ? { insuranceFileName } : {}),
         possuiRastreamento: form.possuiRastreamento,
         possuiSeguro: form.possuiSeguro,
         // Credenciais
@@ -388,7 +417,7 @@ export default function RegistroPage() {
       })
 
       if (result.success) {
-        toast.success('Cadastro realizado com sucesso!')
+        toast.success('Cadastro enviado para análise! Aguarde a aprovação da RotaClick.')
         // Limpar sessionStorage
         sessionStorage.removeItem('carrier_data')
         // Redirecionar para página de sucesso
@@ -558,13 +587,19 @@ export default function RegistroPage() {
                     {form.inscricaoEstadual.replace(/\D/g, '').length >= 7 && !errors.inscricaoEstadual && successIndicator(true)}
                   </div>
                   <div className="col-span-2 md:col-span-1">
-                    <label className="block text-[18px] font-medium text-slate-700 mb-2">RNTRC</label>
+                    <label className="block text-[18px] font-medium text-slate-700 mb-2">
+                      RNTRC <span className="text-red-500">*</span>
+                      <span className="ml-2 text-xs font-normal text-slate-500">(obrigatório para operar)</span>
+                    </label>
                     <input
                       className={inputClass()}
-                      placeholder="Registro na ANTT"
+                      placeholder="Registro na ANTT (mín. 8 dígitos)"
                       value={form.rntrc}
-                      onChange={e => set('rntrc', e.target.value)}
+                      onChange={e => set('rntrc', e.target.value.replace(/\D/g, ''))}
+                      maxLength={12}
                     />
+                    {errorMessage('rntrc')}
+                    {form.rntrc.replace(/\D/g,'').length >= 8 && successIndicator(true)}
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Logotipo da transportadora</label>

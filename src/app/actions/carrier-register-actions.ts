@@ -30,6 +30,8 @@ interface CarrierRegistrationData {
   consumoMedio: string
   qtdEixos: string
   numeroApolice: string
+  insuranceFileBase64: string | undefined
+  insuranceFileName: string | undefined
   possuiRastreamento: boolean
   possuiSeguro: boolean
   // Credenciais
@@ -125,6 +127,12 @@ export async function registerCarrier(data: CarrierRegistrationData) {
     return { success: false, error: operationRange.error }
   }
 
+  // Validar RNTRC obrigatório
+  const rntrcClean = (data.rntrc || '').replace(/\D/g, '')
+  if (!rntrcClean || rntrcClean.length < 8) {
+    return { success: false, error: 'RNTRC é obrigatório e deve ter no mínimo 8 dígitos. Sem RNTRC válido não é possível operar como transportadora.' }
+  }
+
   // Usar admin client (service_role) para bypassar RLS
   const supabase = createAdminClient()
 
@@ -199,7 +207,9 @@ export async function registerCarrier(data: CarrierRegistrationData) {
         possui_rastreamento: data.possuiRastreamento,
         possui_seguro_carga: data.possuiSeguro,
         numero_apolice_seguro: data.numeroApolice || null,
-        is_active: true,
+        is_active: false,
+        approval_status: 'pending',
+        rntrc_number: rntrcClean,
       })
       .select('id')
       .single()
@@ -215,7 +225,26 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
     createdCompanyId = companyData.id
 
-    // 2.1 Upload do logo (se fornecido)
+    // 2.1 Upload da apólice de seguro (se fornecida)
+    if (data.insuranceFileBase64 && data.insuranceFileName) {
+      try {
+        const base64Data = data.insuranceFileBase64.replace(/^data:[^;]+;base64,/, '')
+        const buffer = Buffer.from(base64Data, 'base64')
+        const ext = data.insuranceFileName.split('.').pop()?.toLowerCase() ?? 'pdf'
+        const fileName = `${companyData.id}/apolice-seguro.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('carrier-documents')
+          .upload(fileName, buffer, { upsert: true, contentType: ext === 'pdf' ? 'application/pdf' : `image/${ext}` })
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('carrier-documents').getPublicUrl(fileName)
+          await supabase.from('companies').update({ insurance_file_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq('id', companyData.id)
+        }
+      } catch (insErr) {
+        console.error('Erro ao fazer upload da apólice (não crítico):', insErr)
+      }
+    }
+
+    // 2.2 Upload do logo (se fornecido)
     if (data.logoBase64) {
       try {
         const base64Data = data.logoBase64.replace(/^data:image\/\w+;base64,/, '')
@@ -313,18 +342,16 @@ export async function registerCarrier(data: CarrierRegistrationData) {
     }
 
     // 5. Criar notificação de boas-vindas
-    await supabase
+    void supabase
       .from('notifications')
       .insert({
         user_id: userId,
         company_id: companyData.id,
         title: 'Bem-vindo ao RotaClick!',
-        message: `Olá ${data.nomeCompleto}, sua conta foi criada com sucesso. Configure sua tabela de frete para começar a receber cotações.`,
+        message: `Olá ${data.nomeCompleto}, seu cadastro foi recebido e está em análise. Em breve nossa equipe verificará sua RNTRC e apólice de seguro e você será notificado por email.`,
         type: 'system',
         is_read: false,
       })
-      .then(() => {})
-      .catch(() => {})
 
     // 6. Enviar email de confirmação via Supabase Auth
     // O admin.createUser com email_confirm: false gera o link de confirmação
@@ -344,7 +371,8 @@ export async function registerCarrier(data: CarrierRegistrationData) {
 
     return { 
       success: true, 
-      message: 'Cadastro realizado com sucesso! Verifique seu email para confirmar sua conta.',
+      message: 'Cadastro enviado para análise! Nossa equipe verificará seus documentos e você receberá um email com o resultado.',
+      pendingApproval: true,
       userId,
       companyId: companyData.id,
     }

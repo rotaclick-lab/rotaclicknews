@@ -449,3 +449,110 @@ export async function listAdminCarriersForSelect() {
     }
   })
 }
+
+// --- CARRIER APPROVAL FLOW ---
+
+export async function listPendingCarriers(params: { status?: string } = {}) {
+  const { admin } = await requireAdmin()
+  const status = params.status ?? 'pending'
+
+  const { data: companies, error } = await admin
+    .from('companies')
+    .select('id, razao_social, nome_fantasia, name, cnpj, rntrc, rntrc_number, insurance_file_url, approval_status, rejection_reason, created_at, email')
+    .eq('approval_status', status)
+    .order('created_at', { ascending: true })
+
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const, data: companies ?? [] }
+}
+
+export async function approveCarrier(companyId: string) {
+  const { admin, user } = await requireAdmin()
+
+  const { error } = await admin
+    .from('companies')
+    .update({
+      is_active: true,
+      approval_status: 'approved',
+      approved_at: new Date().toISOString(),
+      approved_by: user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', companyId)
+
+  if (error) return { success: false as const, error: error.message }
+
+  // Notificar o usuário da transportadora
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, name')
+    .eq('company_id', companyId)
+    .eq('role', 'transportadora')
+    .single()
+
+  if (profile) {
+    void admin.from('notifications').insert({
+      user_id: profile.id,
+      company_id: companyId,
+      title: 'Cadastro aprovado!',
+      message: `Parabéns ${profile.name ?? ''}! Seu cadastro foi aprovado pela RotaClick. Nossa equipe irá incluir sua tabela de frete em breve e você começará a receber cotações.`,
+      type: 'system',
+      is_read: false,
+    })
+  }
+
+  void admin.from('audit_logs').insert({
+    action: 'carrier_approved',
+    entity_type: 'company',
+    entity_id: companyId,
+    performed_by: user.id,
+    details: { approved_at: new Date().toISOString() },
+  })
+
+  return { success: true as const }
+}
+
+export async function rejectCarrier(companyId: string, reason: string) {
+  const { admin, user } = await requireAdmin()
+
+  const { error } = await admin
+    .from('companies')
+    .update({
+      is_active: false,
+      approval_status: 'rejected',
+      rejection_reason: reason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', companyId)
+
+  if (error) return { success: false as const, error: error.message }
+
+  // Notificar o usuário da transportadora
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, name')
+    .eq('company_id', companyId)
+    .eq('role', 'transportadora')
+    .single()
+
+  if (profile) {
+    void admin.from('notifications').insert({
+      user_id: profile.id,
+      company_id: companyId,
+      title: 'Cadastro não aprovado',
+      message: `Olá ${profile.name ?? ''}. Infelizmente seu cadastro não foi aprovado. Motivo: ${reason}. Entre em contato com suporte@rotaclick.com.br para mais informações.`,
+      type: 'system',
+      is_read: false,
+    })
+  }
+
+  void admin.from('audit_logs').insert({
+    action: 'carrier_rejected',
+    entity_type: 'company',
+    entity_id: companyId,
+    performed_by: user.id,
+    details: { reason, rejected_at: new Date().toISOString() },
+  })
+
+  return { success: true as const }
+}
