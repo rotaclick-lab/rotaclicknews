@@ -88,6 +88,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: 'Usuários', href: '/admin/usuarios', icon: Users, description: 'Gestão de usuários' },
   { title: 'Empresas', href: '/admin/empresas', icon: Building2, description: 'Gestão de empresas' },
   { title: 'Transportadoras', href: '/admin/transportadoras', icon: Truck, description: 'Carriers e rotas' },
+  { title: 'Tabelas de Frete', href: '/admin/tabela-frete', icon: DollarSign, description: 'Rotas por transportador' },
   { title: 'RNTRC', href: '/admin/rntrc', icon: Upload, description: 'Upload CSV ANTT' },
   { title: 'Auditoria', href: '/admin/auditoria', icon: Shield, description: 'Logs de auditoria' },
   { title: 'Configurações', href: '/admin/configuracoes', icon: Settings, description: 'Parâmetros gerais' },

@@ -112,6 +112,7 @@ export async function POST(request: Request) {
       .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
       .in('origin_zip', originVariants)
       .in('dest_zip', destinationVariants)
+      .or('is_active.is.null,is_active.eq.true')
 
     if (routesError) {
       console.error('Erro ao consultar freight_routes:', routesError)
