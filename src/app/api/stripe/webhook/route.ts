@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { upsertFreightFromCheckout } from '@/app/actions/quotes-actions'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -130,12 +131,27 @@ export async function POST(request: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        const freightId = session.metadata?.offer_id
+        const offerId = session.metadata?.offer_id ?? ''
+        const userId = session.metadata?.user_id ?? ''
+        const carrierName = session.metadata?.carrier_name ?? 'Transportadora'
         const paymentIntentId =
-          typeof session.payment_intent === 'string' ? session.payment_intent : null
+          typeof session.payment_intent === 'string' ? session.payment_intent : undefined
+        const price = (session.amount_total ?? 0) / 100
 
-        if (freightId) {
-          await updateFreightPaymentSnapshot(freightId, {
+        if (offerId && userId) {
+          await upsertFreightFromCheckout({
+            sessionId: session.id,
+            offerId,
+            userId,
+            carrierName,
+            price,
+            paymentStatus: 'paid',
+            ...(paymentIntentId ? { paymentIntentId } : {}),
+          })
+        }
+
+        if (offerId) {
+          await updateFreightPaymentSnapshot(offerId, {
             payment_status: 'paid',
             stripe_last_event_id: event.id,
             stripe_last_event_type: event.type,
@@ -149,12 +165,27 @@ export async function POST(request: Request) {
 
       case 'checkout.session.expired': {
         const session = event.data.object as Stripe.Checkout.Session
-        const freightId = session.metadata?.offer_id
+        const offerId = session.metadata?.offer_id ?? ''
+        const userId = session.metadata?.user_id ?? ''
+        const carrierName = session.metadata?.carrier_name ?? 'Transportadora'
         const paymentIntentId =
-          typeof session.payment_intent === 'string' ? session.payment_intent : null
+          typeof session.payment_intent === 'string' ? session.payment_intent : undefined
+        const price = (session.amount_total ?? 0) / 100
 
-        if (freightId) {
-          await updateFreightPaymentSnapshot(freightId, {
+        if (offerId && userId) {
+          await upsertFreightFromCheckout({
+            sessionId: session.id,
+            offerId,
+            userId,
+            carrierName,
+            price,
+            paymentStatus: 'expired',
+            ...(paymentIntentId ? { paymentIntentId } : {}),
+          })
+        }
+
+        if (offerId) {
+          await updateFreightPaymentSnapshot(offerId, {
             payment_status: 'expired',
             stripe_last_event_id: event.id,
             stripe_last_event_type: event.type,

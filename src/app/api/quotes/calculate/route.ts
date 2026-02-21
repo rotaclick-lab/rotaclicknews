@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimit } from '@/app/api/rate-limit'
 
 type QuoteRequestBody = {
   originCep: string
@@ -86,6 +87,9 @@ function calculateFreightTotal(route: FreightRouteRow, taxableWeight: number, in
 }
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request as any, 30)
+  if (limited) return limited
+
   try {
     const body = (await request.json()) as QuoteRequestBody
 
@@ -107,7 +111,8 @@ export async function POST(request: Request) {
     const originVariants = Array.from(new Set([originDigits, maskCep(originDigits)]))
     const destinationVariants = Array.from(new Set([destinationDigits, maskCep(destinationDigits)]))
 
-    const { data: routes, error: routesError } = await admin
+    // Busca exata primeiro
+    let { data: routes, error: routesError } = await admin
       .from('freight_routes')
       .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
       .in('origin_zip', originVariants)
@@ -117,6 +122,20 @@ export async function POST(request: Request) {
     if (routesError) {
       console.error('Erro ao consultar freight_routes:', routesError)
       return NextResponse.json({ success: false, error: 'Erro ao consultar tabela de frete.' }, { status: 500 })
+    }
+
+    // Fallback: busca por prefixo de 5 dígitos se não encontrou resultado exato
+    if (!routes || routes.length === 0) {
+      const originPrefix = originDigits.slice(0, 5)
+      const destPrefix = destinationDigits.slice(0, 5)
+      const { data: prefixRoutes } = await admin
+        .from('freight_routes')
+        .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
+        .like('origin_zip', `${originPrefix}%`)
+        .like('dest_zip', `${destPrefix}%`)
+        .or('is_active.is.null,is_active.eq.true')
+        .limit(50)
+      routes = prefixRoutes ?? []
     }
 
     const validRoutes = (routes ?? []) as FreightRouteRow[]

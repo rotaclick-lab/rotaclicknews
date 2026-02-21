@@ -6,12 +6,20 @@ import { ProfileSettings } from '@/components/configuracoes/profile-settings'
 import { CompanySettings } from '@/components/configuracoes/company-settings'
 import { NotificationSettings } from '@/components/configuracoes/notification-settings'
 import { SecuritySettings } from '@/components/configuracoes/security-settings'
+import { StripeConnectSettings } from '@/components/configuracoes/stripe-connect-settings'
 import { getUserProfile, getCompanySettings, getNotificationSettings } from '@/app/actions/settings-actions'
-import { User, Building2, Bell, Shield } from 'lucide-react'
+import { User, Building2, Bell, Shield, CreditCard } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ConfiguracoesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('stripe_connect_id, stripe_onboarding_complete').eq('id', user.id).single()
+    : { data: null }
+
   return (
     <div className="space-y-6">
       <div>
@@ -22,7 +30,7 @@ export default async function ConfiguracoesPage() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[750px]">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Perfil</span>
@@ -30,6 +38,10 @@ export default async function ConfiguracoesPage() {
           <TabsTrigger value="company" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Empresa</span>
+          </TabsTrigger>
+          <TabsTrigger value="pagamento" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            <span className="hidden sm:inline">Pagamento</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
@@ -51,6 +63,13 @@ export default async function ConfiguracoesPage() {
           <Suspense fallback={<SettingsSkeleton />}>
             <CompanySettingsContent />
           </Suspense>
+        </TabsContent>
+
+        <TabsContent value="pagamento" className="space-y-4">
+          <StripeConnectSettings
+            stripeConnectId={profile?.stripe_connect_id ?? null}
+            stripeOnboardingComplete={profile?.stripe_onboarding_complete ?? false}
+          />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-4">

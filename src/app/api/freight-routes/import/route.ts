@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/app/api/rate-limit'
 
 type ParsedFreightRow = {
   sourceRow: number
@@ -210,6 +211,9 @@ function parseSheetRows(rows: unknown[][]) {
 }
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request as any, 10)
+  if (limited) return limited
+
   try {
     const supabase = await createClient()
     const {

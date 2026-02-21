@@ -4,6 +4,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthRecoveryHandler } from '@/components/auth/auth-recovery-handler';
+import { ThemeProvider } from '@/components/providers/theme-provider';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-display' });
@@ -23,11 +25,27 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+async function getPlatformTheme(): Promise<Record<string, string>> {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_settings')
+      .select('key, value')
+      .in('key', ['primary_color', 'secondary_color'])
+    if (!data) return {}
+    return Object.fromEntries(data.map((r: any) => [r.key, r.value]))
+  } catch {
+    return {}
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const themeSettings = await getPlatformTheme()
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
@@ -40,10 +58,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className={`${inter.className} ${manrope.variable}`}>
-        <AuthRecoveryHandler />
-        {children}
-        <Toaster />
-        <SonnerToaster position="top-center" richColors closeButton />
+        <ThemeProvider settings={themeSettings}>
+          <AuthRecoveryHandler />
+          {children}
+          <Toaster />
+          <SonnerToaster position="top-center" richColors closeButton />
+        </ThemeProvider>
       </body>
     </html>
   );

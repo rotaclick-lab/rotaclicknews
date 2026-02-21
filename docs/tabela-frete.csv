@@ -1,0 +1,9 @@
+﻿;;;;;;;;;300;<<<< Pode Mudar o peso .;;;;
+;;;;;;;;;;;;;;
+EXEMPLO (TRANSPORTADO QUE PREENCHE ESSES DADOS;;Origem;Destino;Prazo Entrega (Dias uteis);0 a 30 kg;31 a 50 kg;51 a 70 kg;71 a 100 kg;Acima de 101 Kg - R$/KG;Taxa Despacho;GRIS (%);SEGURO (%);Pedágio (R$ 100kg ou Fração);ICMS
+Modelo 1;;07115-070;15500-700;5; R$ 25,50 ; R$ 45,50 ; R$ 83,00 ; R$ 112,50 ; R$ 1,12 ;22,5;0,5;0,3;2,5;7
+Modelo 2;;Guarulhos/SP;Recife/PE;5; R$ 25,50 ; R$ 45,50 ; R$ 83,00 ; R$ 112,50 ; R$ 1,12 ;22,5;0,5;0,3;2,5;7
+;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;
+;;;Calculo Frete;;0 a 30 kg;31 a 50 kg;51 a 70 kg;71 a 100 kg;Acima de 101 Kg - R$/KG;;;;;
+ Pode alterar o valor da NF>>>>>>;;;Valor NF; R$ 1.000,00 ; R$ 62,90 ; R$ 79,10 ; R$ 124,73 ; R$ 156,45 ; R$ 396,77 ;;;;;

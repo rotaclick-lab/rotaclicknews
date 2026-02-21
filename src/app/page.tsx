@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -332,6 +332,26 @@ export default function HomePage() {
 
       {/* Hero + Cotação */}
       <main className="flex-1">
+        {/* Campanhas */}
+        {campaigns.length > 0 && (
+          <div className="w-full max-w-[1000px] mx-auto px-4 pt-4 space-y-2">
+            {campaigns.filter(c => c.type === 'banner' || c.type === 'promo').map((c) => (
+              <div key={c.id} className="w-full rounded-xl overflow-hidden" style={{ backgroundColor: c.bg_color ?? '#2BBCB3' }}>
+                <div className="flex items-center justify-between gap-4 px-6 py-3">
+                  <div>
+                    <p className="font-bold text-sm" style={{ color: c.text_color ?? '#fff' }}>{c.title}</p>
+                    {c.description && <p className="text-xs opacity-80" style={{ color: c.text_color ?? '#fff' }}>{c.description}</p>}
+                  </div>
+                  {c.link_url && (
+                    <a href={c.link_url} className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30" style={{ color: c.text_color ?? '#fff' }}>
+                      {c.link_label ?? 'Saiba mais'}
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Título */}
         <div className="text-center pt-10 pb-4 px-6">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-brand-800">
