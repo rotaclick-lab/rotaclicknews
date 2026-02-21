@@ -100,11 +100,16 @@ export function AdminFreightRoutesList({
     const carrier_id = (form.elements.namedItem('carrier_id') as HTMLSelectElement)?.value
     const origin_zip = (form.elements.namedItem('origin_zip') as HTMLInputElement)?.value
     const dest_zip = (form.elements.namedItem('dest_zip') as HTMLInputElement)?.value
-    const price_per_kg = (form.elements.namedItem('price_per_kg') as HTMLInputElement)?.value
-    const min_price = (form.elements.namedItem('min_price') as HTMLInputElement)?.value
+    const cost_price_per_kg = (form.elements.namedItem('cost_price_per_kg') as HTMLInputElement)?.value
+    const margin_percent = (form.elements.namedItem('margin_percent') as HTMLInputElement)?.value
+    const cost_min_price = (form.elements.namedItem('cost_min_price') as HTMLInputElement)?.value
     const deadline_days = (form.elements.namedItem('deadline_days') as HTMLInputElement)?.value
     if (!carrier_id || !origin_zip || !dest_zip) {
       toast.error('Preencha transportadora, origem e destino')
+      return
+    }
+    if (!cost_price_per_kg || Number(cost_price_per_kg) <= 0) {
+      toast.error('Informe o custo por kg (preço do transportador)')
       return
     }
     setLoading(true)
@@ -112,13 +117,15 @@ export function AdminFreightRoutesList({
       carrier_id,
       origin_zip,
       dest_zip,
-      price_per_kg: Number(price_per_kg) || 0,
-      min_price: Number(min_price) || 0,
+      cost_price_per_kg: Number(cost_price_per_kg),
+      margin_percent: Number(margin_percent) || 0,
+      min_price: Number(cost_min_price) || 0,
+      cost_min_price: Number(cost_min_price) || 0,
       deadline_days: Number(deadline_days) || 1,
     })
     setLoading(false)
     if (res.success) {
-      toast.success('Rota criada')
+      toast.success('Rota criada com margem aplicada!')
       setCreateOpen(false)
       router.refresh()
     } else toast.error(res.error)
@@ -211,8 +218,10 @@ export function AdminFreightRoutesList({
             <TableHead>Transportadora</TableHead>
             <TableHead>Origem</TableHead>
             <TableHead>Destino</TableHead>
-            <TableHead>R$/kg</TableHead>
-            <TableHead>Mínimo</TableHead>
+            <TableHead>Custo/kg</TableHead>
+            <TableHead>Publicado/kg</TableHead>
+            <TableHead>Margem</TableHead>
+            <TableHead>Mínimo pub.</TableHead>
             <TableHead>Prazo (dias)</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-[120px]">Ações</TableHead>
@@ -224,7 +233,9 @@ export function AdminFreightRoutesList({
               <TableCell className="font-medium">{r.carrierName || '-'}</TableCell>
               <TableCell className="font-mono text-sm">{formatCep(r.origin_zip)}</TableCell>
               <TableCell className="font-mono text-sm">{formatCep(r.dest_zip)}</TableCell>
-              <TableCell>{Number(r.price_per_kg).toFixed(2)}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{(r as any).cost_price_per_kg != null ? `R$ ${Number((r as any).cost_price_per_kg).toFixed(4)}` : '—'}</TableCell>
+              <TableCell className="font-medium text-brand-700">R$ {Number(r.price_per_kg).toFixed(4)}</TableCell>
+              <TableCell>{(r as any).margin_percent != null ? <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">{Number((r as any).margin_percent).toFixed(1)}%</span> : '—'}</TableCell>
               <TableCell>R$ {Number(r.min_price).toFixed(2)}</TableCell>
               <TableCell>{r.deadline_days}</TableCell>
               <TableCell>
@@ -334,15 +345,22 @@ export function AdminFreightRoutesList({
               <Label>CEP Destino *</Label>
               <Input name="dest_zip" placeholder="00000-000" required />
             </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              <strong>Custo</strong> = preço do transportador. <strong>Margem</strong> = % que a RotaClick adiciona. O cliente vê o preço publicado (custo + margem).
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label>R$/kg</Label>
-                <Input name="price_per_kg" type="number" step="0.01" defaultValue="0" />
+                <Label>Custo R$/kg (transportador) *</Label>
+                <Input name="cost_price_per_kg" type="number" step="0.0001" min="0" defaultValue="0" required />
               </div>
               <div>
-                <Label>Valor mínimo (R$)</Label>
-                <Input name="min_price" type="number" step="0.01" defaultValue="0" />
+                <Label>Margem RotaClick (%)</Label>
+                <Input name="margin_percent" type="number" step="0.1" min="0" max="200" defaultValue="20" />
               </div>
+            </div>
+            <div>
+              <Label>Custo mínimo (R$) — do transportador</Label>
+              <Input name="cost_min_price" type="number" step="0.01" defaultValue="0" />
             </div>
             <div>
               <Label>Prazo (dias úteis)</Label>
@@ -353,7 +371,7 @@ export function AdminFreightRoutesList({
                 Cancelar
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Criando...' : 'Criar'}
+                {loading ? 'Criando...' : 'Criar rota'}
               </Button>
             </DialogFooter>
           </form>

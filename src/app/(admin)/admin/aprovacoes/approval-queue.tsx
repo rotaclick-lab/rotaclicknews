@@ -33,12 +33,16 @@ export function ApprovalQueue({ carriers, status }: ApprovalQueueProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [rejectModal, setRejectModal] = useState<{ id: string; name: string } | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [approveModal, setApproveModal] = useState<{ id: string; name: string } | null>(null)
+  const [paymentTerm, setPaymentTerm] = useState<7 | 21 | 28>(7)
 
-  const handleApprove = async (companyId: string) => {
-    setLoading(companyId)
-    const result = await approveCarrier(companyId)
+  const handleApprove = async () => {
+    if (!approveModal) return
+    setLoading(approveModal.id)
+    const result = await approveCarrier(approveModal.id, paymentTerm)
     if (result.success) {
-      toast.success('Transportadora aprovada com sucesso!')
+      toast.success(`Transportadora aprovada! Prazo de repasse: ${paymentTerm} dias.`)
+      setApproveModal(null)
       router.refresh()
     } else {
       toast.error(result.error ?? 'Erro ao aprovar')
@@ -145,7 +149,7 @@ export function ApprovalQueue({ carriers, status }: ApprovalQueueProps) {
               {status === 'pending' && (
                 <div className="flex gap-3 pt-1">
                   <Button
-                    onClick={() => handleApprove(c.id)}
+                    onClick={() => { setApproveModal({ id: c.id, name: displayName }); setPaymentTerm(7) }}
                     disabled={isLoading}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     size="sm"
@@ -169,6 +173,46 @@ export function ApprovalQueue({ carriers, status }: ApprovalQueueProps) {
           )
         })}
       </div>
+
+      {/* Modal de aprovação */}
+      {approveModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-900">Aprovar transportadora</h3>
+            <p className="text-sm text-muted-foreground">
+              Defina o prazo de repasse para <strong>{approveModal.name}</strong>. Após o cliente pagar, a RotaClick repassa em:
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {([7, 21, 28] as const).map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => setPaymentTerm(days)}
+                  className={`border-2 rounded-xl py-3 text-center font-bold transition-all ${
+                    paymentTerm === days
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="text-2xl">{days}</div>
+                  <div className="text-xs font-normal">dias</div>
+                </button>
+              ))}
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+              O transportador receberá o repasse {paymentTerm} dias após cada frete pago pelo cliente.
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setApproveModal(null)} disabled={loading === approveModal.id}>
+                Cancelar
+              </Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleApprove} disabled={loading === approveModal.id}>
+                {loading === approveModal.id ? 'Aprovando...' : `Aprovar (${paymentTerm}d)`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de rejeição */}
       {rejectModal && (

@@ -362,8 +362,10 @@ export async function createAdminFreightRoute(data: {
   carrier_id: string
   origin_zip: string
   dest_zip: string
-  price_per_kg: number
+  cost_price_per_kg: number
+  margin_percent: number
   min_price: number
+  cost_min_price?: number
   deadline_days?: number
 }) {
   const { admin } = await requireAdmin()
@@ -372,12 +374,20 @@ export async function createAdminFreightRoute(data: {
   if (!userId) return { success: false, error: 'Transportadora não encontrada' }
   const origin = String(data.origin_zip).replace(/\D/g, '').slice(0, 8)
   const dest = String(data.dest_zip).replace(/\D/g, '').slice(0, 8)
+  const margin = Number(data.margin_percent) || 0
+  const costPricePerKg = Number(data.cost_price_per_kg) || 0
+  const publishedPricePerKg = costPricePerKg * (1 + margin / 100)
+  const costMinPrice = Number(data.cost_min_price) || Number(data.min_price) || 0
+  const publishedMinPrice = costMinPrice * (1 + margin / 100)
   const { error } = await admin.from('freight_routes').insert({
     carrier_id: userId,
     origin_zip: origin,
     dest_zip: dest,
-    price_per_kg: Number(data.price_per_kg) || 0,
-    min_price: Number(data.min_price) || 0,
+    cost_price_per_kg: costPricePerKg,
+    margin_percent: margin,
+    cost_min_price: costMinPrice,
+    price_per_kg: publishedPricePerKg,
+    min_price: publishedMinPrice,
     deadline_days: Number(data.deadline_days) || 1,
     is_active: true,
   })
@@ -466,7 +476,7 @@ export async function listPendingCarriers(params: { status?: string } = {}) {
   return { success: true as const, data: companies ?? [] }
 }
 
-export async function approveCarrier(companyId: string) {
+export async function approveCarrier(companyId: string, paymentTermDays: 7 | 21 | 28 = 7) {
   const { admin, user } = await requireAdmin()
 
   const { error } = await admin
@@ -476,6 +486,7 @@ export async function approveCarrier(companyId: string) {
       approval_status: 'approved',
       approved_at: new Date().toISOString(),
       approved_by: user.id,
+      payment_term_days: paymentTermDays,
       updated_at: new Date().toISOString(),
     })
     .eq('id', companyId)
@@ -555,4 +566,83 @@ export async function rejectCarrier(companyId: string, reason: string) {
   })
 
   return { success: true as const }
+}
+
+// --- FINANCIAL / REPASSE ---
+
+export async function listAdminRepasses(params: { status?: string; carrierId?: string } = {}) {
+  const { admin } = await requireAdmin()
+
+  let query = admin
+    .from('freights')
+    .select('id, carrier_id, price, cost_price, carrier_amount, rotaclick_amount, payment_term_days, repasse_due_date, repasse_status, repasse_paid_at, created_at, origin_zip, dest_zip, client_name, payment_status')
+    .eq('payment_status', 'paid')
+    .order('repasse_due_date', { ascending: true })
+
+  if (params.status) query = query.eq('repasse_status', params.status)
+  if (params.carrierId) query = query.eq('carrier_id', params.carrierId)
+
+  const { data, error } = await query
+  if (error) return { success: false as const, error: error.message }
+
+  // Enrich with carrier name
+  const carrierIds = [...new Set((data ?? []).map((f) => f.carrier_id).filter(Boolean))]
+  const { data: profiles } = carrierIds.length
+    ? await admin.from('profiles').select('id, company_id').in('id', carrierIds)
+    : { data: [] }
+  const companyIds = [...new Set((profiles ?? []).map((p) => p.company_id).filter(Boolean))]
+  const { data: companies } = companyIds.length
+    ? await admin.from('companies').select('id, nome_fantasia, razao_social, name, payment_term_days').in('id', companyIds)
+    : { data: [] }
+  const companyById = new Map((companies ?? []).map((c) => [c.id, c]))
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]))
+
+  const enriched = (data ?? []).map((f) => {
+    const profile = profileById.get(f.carrier_id)
+    const company = profile?.company_id ? companyById.get(profile.company_id) : null
+    return { ...f, carrierName: company?.nome_fantasia || company?.razao_social || company?.name || '—' }
+  })
+
+  return { success: true as const, data: enriched }
+}
+
+export async function markRepasePaid(freightId: string) {
+  const { admin, user } = await requireAdmin()
+  const { error } = await admin
+    .from('freights')
+    .update({
+      repasse_status: 'paid',
+      repasse_paid_at: new Date().toISOString(),
+      repasse_paid_by: user.id,
+    })
+    .eq('id', freightId)
+  if (error) return { success: false as const, error: error.message }
+  void admin.from('audit_logs').insert({
+    action: 'repasse_paid',
+    entity_type: 'freight',
+    entity_id: freightId,
+    performed_by: user.id,
+    details: { paid_at: new Date().toISOString() },
+  })
+  return { success: true as const }
+}
+
+export async function getCarrierFinancialSummary(carrierId: string) {
+  const { admin } = await requireAdmin()
+  const { data, error } = await admin
+    .from('freights')
+    .select('price, carrier_amount, rotaclick_amount, repasse_status, repasse_due_date, created_at')
+    .eq('carrier_id', carrierId)
+    .eq('payment_status', 'paid')
+  if (error) return { success: false as const, error: error.message }
+  const rows = data ?? []
+  const totalRevenue = rows.reduce((s, r) => s + (Number(r.price) || 0), 0)
+  const totalCarrierAmount = rows.reduce((s, r) => s + (Number(r.carrier_amount) || 0), 0)
+  const totalRotaclick = rows.reduce((s, r) => s + (Number(r.rotaclick_amount) || 0), 0)
+  const pending = rows.filter((r) => r.repasse_status === 'pending')
+  const paid = rows.filter((r) => r.repasse_status === 'paid')
+  return {
+    success: true as const,
+    data: { totalRevenue, totalCarrierAmount, totalRotaclick, pendingCount: pending.length, paidCount: paid.length, freights: rows },
+  }
 }
