@@ -17,7 +17,7 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ profile }: ProfileSettingsProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [fullName, setFullName] = useState(profile.full_name || '')
+  const [fullName, setFullName] = useState(profile.full_name || profile.name || '')
   const [phone, setPhone] = useState(profile.phone || '')
 
   const handleSubmit = async (e: React.FormEvent) => {

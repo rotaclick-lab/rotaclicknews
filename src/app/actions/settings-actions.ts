@@ -21,6 +21,7 @@ export async function updateUserProfile(formData: UserProfileFormData) {
       .from('profiles')
       .update({
         full_name: validatedData.full_name,
+        name: validatedData.full_name,
         phone: validatedData.phone,
         avatar_url: validatedData.avatar_url,
         updated_at: new Date().toISOString(),

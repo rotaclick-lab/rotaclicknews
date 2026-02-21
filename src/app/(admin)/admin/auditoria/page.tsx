@@ -25,13 +25,18 @@ async function requireAdmin() {
 export default async function AdminAuditoriaPage() {
   await requireAdmin()
 
-  const admin = createAdminClient()
-  const { data: logs } = await admin
-    .from('audit_logs')
-    .select('id, user_id, action, resource_type, resource_id, metadata, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50)
-    .catch(() => ({ data: [] }))
+  let logs: Array<{ id: string; user_id: string | null; action: string; resource_type: string; resource_id: string | null; metadata: unknown; created_at: string }> = []
+  try {
+    const admin = createAdminClient()
+    const res = await admin
+      .from('audit_logs')
+      .select('id, user_id, action, resource_type, resource_id, metadata, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (!res.error) logs = res.data ?? []
+  } catch {
+    logs = []
+  }
 
   return (
     <div className="space-y-6">
