@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { Download } from 'lucide-react'
 
 export function RntrcUploadForm() {
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [fetchLoading, setFetchLoading] = useState(false)
   const [result, setResult] = useState<{
     success: boolean
     recordsImported: number
@@ -57,6 +61,7 @@ export function RntrcUploadForm() {
 
       if (data.success) {
         toast.success(`${data.recordsImported} registros importados com sucesso!`)
+        router.refresh()
       } else {
         toast.error(`Falha na importação. ${data.errors?.length || 0} erros.`)
       }
@@ -66,6 +71,35 @@ export function RntrcUploadForm() {
       setResult({ success: false, recordsImported: 0, errors: [msg] })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleFetchFromAntt = async () => {
+    setFetchLoading(true)
+    setResult(null)
+
+    try {
+      const res = await fetch('/api/admin/rntrc/fetch-from-antt', { method: 'POST' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao buscar da ANTT')
+      }
+
+      setResult(data)
+
+      if (data.success) {
+        toast.success(`${data.recordsImported} registros importados da ANTT!`)
+        router.refresh()
+      } else {
+        toast.error(`Falha na importação. ${data.errors?.[0] || 'Erro desconhecido'}`)
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro inesperado'
+      toast.error(msg)
+      setResult({ success: false, recordsImported: 0, errors: [msg] })
+    } finally {
+      setFetchLoading(false)
     }
   }
 
@@ -86,9 +120,19 @@ export function RntrcUploadForm() {
         )}
       </div>
 
-      <Button onClick={handleUpload} disabled={!file || loading}>
-        {loading ? 'Processando...' : 'Enviar e processar'}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={handleUpload} disabled={!file || loading}>
+          {loading ? 'Processando...' : 'Enviar e processar'}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleFetchFromAntt}
+          disabled={fetchLoading}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {fetchLoading ? 'Baixando da ANTT...' : 'Baixar da ANTT via API'}
+        </Button>
+      </div>
 
       {result && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">

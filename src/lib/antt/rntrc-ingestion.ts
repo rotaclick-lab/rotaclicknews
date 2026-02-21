@@ -1,5 +1,76 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const CKAN_API_BASE = 'https://dados.antt.gov.br/api/3/action'
+
+/** Busca URL do CSV RNTRC na API CKAN da ANTT */
+async function fetchCsvUrlFromCkan(): Promise<string | null> {
+  // Tentar package_search por rntrc/transportadores
+  const searchRes = await fetch(
+    `${CKAN_API_BASE}/package_search?q=rntrc+transportadores&rows=10`
+  )
+  const searchJson = await searchRes.json()
+
+  if (!searchJson.success || !searchJson.result?.results?.length) {
+    // Fallback: datasets conhecidos (rntrc-veiculos = RNTRC Dados de Veículos)
+    const knownIds = ['rntrc-veiculos', 'rntrc-transportadores', 'transporte-rodoviario-de-cargas']
+    for (const id of knownIds) {
+      const showRes = await fetch(`${CKAN_API_BASE}/package_show?id=${id}`)
+      const showJson = await showRes.json()
+      if (showJson.success && showJson.result?.resources?.length) {
+        const csv = showJson.result.resources.find(
+          (r: { format?: string }) => (r.format || '').toUpperCase() === 'CSV'
+        )
+        if (csv?.url) return csv.url
+      }
+    }
+    return null
+  }
+
+  for (const pkg of searchJson.result.results) {
+    const resources = pkg.resources || []
+    const csv = resources.find(
+      (r: { format?: string }) => (r.format || '').toUpperCase() === 'CSV'
+    )
+    if (csv?.url) return csv.url
+  }
+
+  return null
+}
+
+/** Baixa CSV da ANTT via API CKAN e faz ingestão */
+export async function ingestRntrcFromCkanApi(): Promise<{
+  success: boolean
+  recordsImported: number
+  errors: string[]
+  source?: string
+}> {
+  try {
+    const csvUrl = await fetchCsvUrlFromCkan()
+    if (!csvUrl) {
+      return {
+        success: false,
+        recordsImported: 0,
+        errors: ['Nenhum recurso CSV encontrado na API CKAN da ANTT'],
+      }
+    }
+
+    const res = await fetch(csvUrl)
+    if (!res.ok) {
+      return {
+        success: false,
+        recordsImported: 0,
+        errors: [`Falha ao baixar CSV: ${res.status} ${res.statusText}`],
+      }
+    }
+
+    const csvText = await res.text()
+    return ingestRntrcFromCsv(csvText, `ckan_api_${new Date().toISOString().slice(0, 10)}`)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { success: false, recordsImported: 0, errors: [msg] }
+  }
+}
+
 export interface RntrcCacheRow {
   rntrc: string
   cpf_cnpj: string | null
