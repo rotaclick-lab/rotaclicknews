@@ -608,6 +608,14 @@ export async function listAdminRepasses(params: { status?: string; carrierId?: s
 
 export async function markRepasePaid(freightId: string) {
   const { admin, user } = await requireAdmin()
+
+  // Fetch freight details before updating
+  const { data: freight } = await admin
+    .from('freights')
+    .select('carrier_id, carrier_amount, carrier_name, origin_zip, dest_zip')
+    .eq('id', freightId)
+    .single()
+
   const { error } = await admin
     .from('freights')
     .update({
@@ -617,12 +625,39 @@ export async function markRepasePaid(freightId: string) {
     })
     .eq('id', freightId)
   if (error) return { success: false as const, error: error.message }
+
+  // Notify carrier via internal notification
+  if (freight?.carrier_id) {
+    const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+    const fmtCep = (z: string | null) => z ? `${z.slice(0,5)}-${z.slice(5)}` : ''
+    const route = freight.origin_zip && freight.dest_zip
+      ? ` (${fmtCep(freight.origin_zip)} → ${fmtCep(freight.dest_zip)})`
+      : ''
+    const amount = fmt(Number(freight.carrier_amount) || 0)
+
+    // Fetch company_id for the notification
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('company_id')
+      .eq('id', freight.carrier_id)
+      .maybeSingle()
+
+    void admin.from('notifications').insert({
+      user_id: freight.carrier_id,
+      company_id: profile?.company_id ?? null,
+      title: 'Repasse realizado!',
+      message: `A RotaClick realizou o repasse de ${amount}${route}. O valor já está disponível para saque.`,
+      type: 'system',
+      is_read: false,
+    })
+  }
+
   void admin.from('audit_logs').insert({
     action: 'repasse_paid',
     entity_type: 'freight',
     entity_id: freightId,
     performed_by: user.id,
-    details: { paid_at: new Date().toISOString() },
+    details: { paid_at: new Date().toISOString(), carrier_amount: freight?.carrier_amount },
   })
   return { success: true as const }
 }

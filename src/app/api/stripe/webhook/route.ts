@@ -134,6 +134,7 @@ export async function POST(request: Request) {
         const offerId = session.metadata?.offer_id ?? ''
         const userId = session.metadata?.user_id ?? ''
         const carrierName = session.metadata?.carrier_name ?? 'Transportadora'
+        const carrierId = session.metadata?.carrier_id ?? undefined
         const paymentIntentId =
           typeof session.payment_intent === 'string' ? session.payment_intent : undefined
         const price = (session.amount_total ?? 0) / 100
@@ -144,6 +145,8 @@ export async function POST(request: Request) {
             offerId,
             userId,
             carrierName,
+            ...(carrierId ? { carrierId } : {}),
+            routeId: offerId,
             price,
             paymentStatus: 'paid',
             ...(paymentIntentId ? { paymentIntentId } : {}),
@@ -168,6 +171,7 @@ export async function POST(request: Request) {
         const offerId = session.metadata?.offer_id ?? ''
         const userId = session.metadata?.user_id ?? ''
         const carrierName = session.metadata?.carrier_name ?? 'Transportadora'
+        const carrierId = session.metadata?.carrier_id ?? undefined
         const paymentIntentId =
           typeof session.payment_intent === 'string' ? session.payment_intent : undefined
         const price = (session.amount_total ?? 0) / 100
@@ -178,6 +182,8 @@ export async function POST(request: Request) {
             offerId,
             userId,
             carrierName,
+            ...(carrierId ? { carrierId } : {}),
+            routeId: offerId,
             price,
             paymentStatus: 'expired',
             ...(paymentIntentId ? { paymentIntentId } : {}),

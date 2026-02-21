@@ -32,10 +32,12 @@ export async function upsertFreightFromCheckout(data: {
   sessionId: string
   offerId: string
   userId: string
+  carrierId?: string | undefined
   carrierName: string
   price: number
   paymentStatus: 'paid' | 'failed' | 'expired'
   paymentIntentId?: string | undefined
+  routeId?: string | undefined
 }) {
   try {
     const admin = createAdminClient()
@@ -54,34 +56,89 @@ export async function upsertFreightFromCheckout(data: {
       return { success: true, freightId: existing.id }
     }
 
+    // Calcular carrier_amount e rotaclick_amount a partir da margem da rota
+    let carrierAmount: number = data.price
+    let rotaclickAmount: number = 0
+    let marginPercent: number = 0
+    let paymentTermDays: number = 7
+    let repaseDueDate: string | null = null
+
+    if (data.routeId) {
+      const { data: route } = await admin
+        .from('freight_routes')
+        .select('margin_percent, cost_price_per_kg, carrier_id')
+        .eq('id', data.routeId)
+        .maybeSingle()
+
+      if (route?.margin_percent) {
+        marginPercent = Number(route.margin_percent)
+        // carrier_amount = price / (1 + margin/100)
+        carrierAmount = data.price / (1 + marginPercent / 100)
+        rotaclickAmount = data.price - carrierAmount
+      }
+
+      // Buscar prazo de pagamento da empresa da transportadora
+      const carrierId = data.carrierId ?? route?.carrier_id
+      if (carrierId) {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('company_id')
+          .eq('id', carrierId)
+          .maybeSingle()
+        if (profile?.company_id) {
+          const { data: company } = await admin
+            .from('companies')
+            .select('payment_term_days')
+            .eq('id', profile.company_id)
+            .maybeSingle()
+          if (company?.payment_term_days) {
+            paymentTermDays = Number(company.payment_term_days)
+          }
+        }
+      }
+    }
+
+    if (data.paymentStatus === 'paid') {
+      const due = new Date()
+      due.setDate(due.getDate() + paymentTermDays)
+      repaseDueDate = due.toISOString().split('T')[0] ?? null
+    }
+
     const { data: freight, error } = await admin.from('freights').insert({
       user_id: data.userId,
       stripe_session_id: data.sessionId,
       stripe_payment_intent_id: data.paymentIntentId ?? null,
+      carrier_id: data.carrierId ?? null,
       carrier_name: data.carrierName,
       price: data.price,
+      carrier_amount: Math.round(carrierAmount * 100) / 100,
+      rotaclick_amount: Math.round(rotaclickAmount * 100) / 100,
+      margin_percent: marginPercent,
+      payment_term_days: paymentTermDays,
+      repasse_due_date: repaseDueDate,
+      repasse_status: data.paymentStatus === 'paid' ? 'pending' : 'pending',
       payment_status: data.paymentStatus,
-      route_id: data.offerId,
+      route_id: data.routeId ?? data.offerId,
       status: data.paymentStatus === 'paid' ? 'pending' : 'cancelled',
     }).select().single()
 
     if (error) return { success: false, freightId: null }
 
     // Marcar cotação como convertida
-    await admin.from('quotes')
+    void admin.from('quotes')
       .update({ converted_to_freight: true, freight_id: freight.id })
       .eq('user_id', data.userId)
       .eq('converted_to_freight', false)
       .order('created_at', { ascending: false })
       .limit(1)
 
-    await admin.from('audit_logs').insert({
+    void admin.from('audit_logs').insert({
       user_id: data.userId,
       action: 'PAYMENT',
       resource_type: 'freights',
       resource_id: freight.id,
-      description: `Frete pago: ${data.carrierName} — R$ ${data.price.toFixed(2)}`,
-      metadata: { session_id: data.sessionId, payment_status: data.paymentStatus },
+      description: `Frete pago: ${data.carrierName} — R$ ${data.price.toFixed(2)} (repasse: R$ ${carrierAmount.toFixed(2)} em ${paymentTermDays}d)`,
+      metadata: { session_id: data.sessionId, payment_status: data.paymentStatus, carrier_amount: carrierAmount, rotaclick_amount: rotaclickAmount },
     })
 
     return { success: true, freightId: freight.id }

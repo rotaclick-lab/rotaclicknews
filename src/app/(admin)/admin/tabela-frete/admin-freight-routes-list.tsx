@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Plus, Pencil, Trash2, Power, PowerOff } from 'lucide-react'
+import { Plus, Pencil, Trash2, Power, PowerOff, Upload, FileSpreadsheet } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { useRef } from 'react'
 import {
   createAdminFreightRoute,
   updateAdminFreightRoute,
@@ -86,6 +87,38 @@ export function AdminFreightRoutesList({
   const [deleteRoute, setDeleteRoute] = useState<Route | null>(null)
   const [loading, setLoading] = useState(false)
   const [createCarrierId, setCreateCarrierId] = useState(selectedCarrierId || '')
+  const [importOpen, setImportOpen] = useState(false)
+  const [importCarrierId, setImportCarrierId] = useState(selectedCarrierId || '')
+  const [importMargin, setImportMargin] = useState('20')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleBulkImport = async () => {
+    if (!importCarrierId) { toast.error('Selecione uma transportadora'); return }
+    if (!importFile) { toast.error('Selecione um arquivo Excel'); return }
+    setImporting(true)
+    const fd = new FormData()
+    fd.append('file', importFile)
+    fd.append('carrier_id', importCarrierId)
+    fd.append('margin_percent', importMargin)
+    try {
+      const res = await fetch('/api/admin/freight-routes/import', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (json.success) {
+        toast.success(`${json.data.imported_count} rotas importadas com margem de ${importMargin}%!`)
+        if (json.data.errors?.length > 0) toast.warning(`${json.data.errors.length} linha(s) com erro ignoradas`)
+        setImportOpen(false)
+        setImportFile(null)
+        router.refresh()
+      } else {
+        toast.error(json.error || 'Erro ao importar')
+      }
+    } catch {
+      toast.error('Erro inesperado ao importar')
+    }
+    setImporting(false)
+  }
 
   const handleCarrierFilter = (carrierId: string) => {
     const params = new URLSearchParams()
@@ -209,6 +242,15 @@ export function AdminFreightRoutesList({
             <Plus className="h-4 w-4 mr-2" />
             Nova rota
           </Button>
+          <Button
+            onClick={() => { setImportOpen(true); setImportCarrierId(selectedCarrierId || '') }}
+            size="sm"
+            variant="outline"
+            className="border-brand-300 text-brand-700 hover:bg-brand-50"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Importar Excel
+          </Button>
         </div>
       </div>
 
@@ -313,6 +355,83 @@ export function AdminFreightRoutesList({
           </div>
         </div>
       )}
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-brand-600" />
+              Importar tabela de frete em lote
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              A margem será aplicada automaticamente sobre todos os preços do arquivo. O cliente verá o preço com margem; o transportador recebe o custo original.
+            </div>
+            <div>
+              <Label>Transportadora *</Label>
+              <select
+                className="w-full h-10 rounded-md border px-3 mt-1"
+                value={importCarrierId}
+                onChange={e => setImportCarrierId(e.target.value)}
+              >
+                <option value="">Selecione...</option>
+                {carriers.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Margem RotaClick (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="200"
+                step="0.1"
+                value={importMargin}
+                onChange={e => setImportMargin(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>Arquivo Excel (.xlsx / .xls)</Label>
+              <div
+                className="mt-1 border-2 border-dashed border-slate-200 rounded-lg p-6 text-center cursor-pointer hover:border-brand-400 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {importFile ? (
+                  <div className="flex items-center justify-center gap-2 text-sm text-brand-700 font-medium">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    {importFile.name}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    <Upload className="h-6 w-6 mx-auto mb-1 text-slate-300" />
+                    Clique para selecionar o arquivo
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={e => setImportFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportOpen(false); setImportFile(null) }} disabled={importing}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBulkImport} disabled={importing || !importFile || !importCarrierId}>
+              <Upload className="h-4 w-4 mr-2" />
+              {importing ? 'Importando...' : `Importar com ${importMargin}% margem`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
