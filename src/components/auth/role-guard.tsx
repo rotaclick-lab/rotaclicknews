@@ -26,8 +26,11 @@ export async function RoleGuard({ children, allowedRole }: RoleGuardProps) {
     if (profile?.role === 'cliente') {
       redirect('/cliente')
     }
+    if (profile?.role === 'admin') {
+      redirect('/admin')
+    }
 
-    // fallback para transportadora/admin
+    // fallback para transportadora
     redirect('/dashboard')
   }
 

@@ -5,6 +5,14 @@ import {
   Eye,
   History,
   Route,
+  Users,
+  Building2,
+  Truck,
+  FileText,
+  Upload,
+  Shield,
+  Settings,
+  Bell,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -22,6 +30,7 @@ export const ROUTES = {
   FINANCIAL: '/financeiro',
   FREIGHT_TABLE: '/tabela-frete',
   PROFILE: '/perfil',
+  ADMIN: '/admin',
 } as const
 
 export const MAX_FREIGHT_WEIGHT = 30000 // kg
@@ -72,6 +81,16 @@ export const NAV_ITEMS: NavItem[] = [
     icon: DollarSign,
     description: 'Controle financeiro'
   },
+]
+
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  { title: 'Dashboard', href: '/admin', icon: LayoutDashboard, description: 'Visão geral' },
+  { title: 'Usuários', href: '/admin/usuarios', icon: Users, description: 'Gestão de usuários' },
+  { title: 'Empresas', href: '/admin/empresas', icon: Building2, description: 'Gestão de empresas' },
+  { title: 'Transportadoras', href: '/admin/transportadoras', icon: Truck, description: 'Carriers e rotas' },
+  { title: 'RNTRC', href: '/admin/rntrc', icon: Upload, description: 'Upload CSV ANTT' },
+  { title: 'Auditoria', href: '/admin/auditoria', icon: Shield, description: 'Logs de auditoria' },
+  { title: 'Configurações', href: '/admin/configuracoes', icon: Settings, description: 'Parâmetros gerais' },
 ]
 
 // Freight Status

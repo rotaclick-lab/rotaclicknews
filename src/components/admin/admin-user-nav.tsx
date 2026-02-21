@@ -1,6 +1,6 @@
 'use client'
 
-import { LogOut, Settings, User as UserIcon, Shield } from 'lucide-react'
+import { LogOut, LayoutDashboard, User as UserIcon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,35 +9,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/auth/auth-provider'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
-export function UserNav() {
+export function AdminUserNav() {
   const [isLoading, setIsLoading] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
   const { user, signOut } = useAuth()
 
-  useEffect(() => {
-    if (!user) return
-    const supabase = createClient()
-    supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => setIsAdmin(data?.role === 'admin'))
-  }, [user])
-
-  const handleSignOut = async () => {
-    setIsLoading(true)
-    await signOut()
-  }
-
-  // Pegar iniciais do nome ou email
   const getInitials = () => {
     if (user?.user_metadata?.full_name) {
       return user.user_metadata.full_name
@@ -50,16 +31,15 @@ export function UserNav() {
     if (user?.email) {
       return user.email[0].toUpperCase()
     }
-    return 'T'
+    return 'A'
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-          <Avatar className="h-9 w-9 border-2 border-brand-200">
-            <AvatarImage src="" alt="Avatar" />
-            <AvatarFallback className="bg-brand-500 text-white font-bold text-sm">
+          <Avatar className="h-9 w-9 border-2 border-indigo-200">
+            <AvatarFallback className="bg-indigo-600 text-white font-bold text-sm">
               {getInitials()}
             </AvatarFallback>
           </Avatar>
@@ -69,22 +49,14 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user?.user_metadata?.full_name || 'Minha Conta'}
+              {user?.user_metadata?.full_name || 'Administrador'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email || 'Transportadora'}
+              {user?.email || 'Admin'}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {isAdmin && (
-          <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href="/admin" className="flex items-center">
-              <Shield className="mr-2 h-4 w-4" />
-              <span>Painel Admin</span>
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link href="/perfil" className="flex items-center">
             <UserIcon className="mr-2 h-4 w-4" />
@@ -92,15 +64,18 @@ export function UserNav() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href="/perfil#configuracoes" className="flex items-center">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Configurações</span>
+          <Link href="/dashboard" className="flex items-center">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Ir para Dashboard</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-red-600 cursor-pointer"
-          onClick={handleSignOut}
+          onClick={async () => {
+            setIsLoading(true)
+            await signOut()
+          }}
           disabled={isLoading}
         >
           <LogOut className="mr-2 h-4 w-4" />
