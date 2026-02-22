@@ -111,6 +111,8 @@ export async function POST(request: Request) {
     const originVariants = Array.from(new Set([originDigits, maskCep(originDigits)]))
     const destinationVariants = Array.from(new Set([destinationDigits, maskCep(destinationDigits)]))
 
+    console.log('Debug - Cotação:', { originDigits, destinationDigits, originVariants, destinationVariants })
+
     // Busca exata primeiro
     let { data: routes, error: routesError } = await admin
       .from('freight_routes')
@@ -118,6 +120,8 @@ export async function POST(request: Request) {
       .in('origin_zip', originVariants)
       .in('dest_zip', destinationVariants)
       .or('is_active.is.null,is_active.eq.true')
+
+    console.log('Debug - Rotas encontradas (busca exata):', routes?.length || 0, routesError)
 
     if (routesError) {
       console.error('Erro ao consultar freight_routes:', routesError)
@@ -128,6 +132,7 @@ export async function POST(request: Request) {
     if (!routes || routes.length === 0) {
       const originPrefix = originDigits.slice(0, 5)
       const destPrefix = destinationDigits.slice(0, 5)
+      console.log('Debug - Buscando por prefixo:', { originPrefix, destPrefix })
       const { data: prefixRoutes } = await admin
         .from('freight_routes')
         .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
@@ -136,6 +141,7 @@ export async function POST(request: Request) {
         .or('is_active.is.null,is_active.eq.true')
         .limit(50)
       routes = prefixRoutes ?? []
+      console.log('Debug - Rotas encontradas (prefixo):', routes?.length || 0)
     }
 
     const validRoutes = (routes ?? []) as FreightRouteRow[]
