@@ -444,21 +444,22 @@ export async function listAdminUsersForCarrierCreation() {
 
 export async function listAdminCarriersForSelect() {
   const { admin } = await requireAdmin()
-  const { data: carriers } = await admin.from('carriers').select('id, user_id, rntrc, company_name').order('company_name')
-  const userIds = [...new Set((carriers ?? []).map((c) => c.user_id).filter(Boolean))]
-  const { data: profiles } = userIds.length ? await admin.from('profiles').select('id, company_id').in('id', userIds) : { data: [] }
+  // Buscar todos os perfis com role 'transportadora'
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, company_id')
+    .eq('role', 'transportadora')
+    .order('created_at', { ascending: false })
+  
   const companyIds = [...new Set((profiles ?? []).map((p) => p.company_id).filter(Boolean))]
-  const { data: companies } = companyIds.length ? await admin.from('companies').select('id, nome_fantasia, razao_social, name').in('id', companyIds) : { data: [] }
-  const companyById = new Map((companies ?? []).map((c) => [c.id, c]))
-  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]))
-  return (carriers ?? []).map((c) => {
-    const profile = profileById.get(c.user_id)
-    const company = profile?.company_id ? companyById.get(profile.company_id) : null
-    return {
-      id: c.id,
-      label: company?.nome_fantasia || company?.razao_social || company?.name || c.company_name || c.rntrc || c.id,
-    }
-  })
+  const { data: companies } = companyIds.length 
+    ? await admin.from('companies').select('id, nome_fantasia, razao_social, name').in('id', companyIds)
+    : { data: [] }
+  
+  return (companies ?? []).map((c) => ({
+    id: c.id,
+    label: c.nome_fantasia || c.razao_social || c.name || c.id,
+  }))
 }
 
 // --- CARRIER APPROVAL FLOW ---

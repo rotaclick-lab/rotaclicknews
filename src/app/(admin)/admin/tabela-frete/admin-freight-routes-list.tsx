@@ -94,6 +94,11 @@ export function AdminFreightRoutesList({
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Map carrier_id to company_id for import button
+  const carrierIdToCompanyId = new Map(
+    routes.map(r => [r.carrier_id, carriers.find(c => c.id === selectedCarrierId)?.id || ''])
+  )
+
   const handleBulkImport = async () => {
     if (!importCarrierId) { toast.error('Selecione uma transportadora'); return }
     if (!importFile) { toast.error('Selecione um arquivo Excel'); return }
@@ -303,6 +308,20 @@ export function AdminFreightRoutesList({
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditRoute(r)}>
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-blue-600" 
+                    onClick={() => { 
+                      setImportOpen(true); 
+                      // Find the company_id for this carrier
+                      const routeCompanyId = carriers.find(c => c.id === selectedCarrierId)?.id || ''
+                      setImportCarrierId(routeCompanyId); 
+                    }}
+                    title="Importar tabela de frete"
+                  >
+                    <Upload className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => setDeleteRoute(r)}>
                     <Trash2 className="h-4 w-4" />
