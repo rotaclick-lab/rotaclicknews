@@ -130,6 +130,7 @@ export function AdminFreightRoutesList({
   }
 
   const handleCarrierFilter = (carrierId: string) => {
+    console.log('handleCarrierFilter called with:', carrierId)
     const params = new URLSearchParams()
     if (carrierId) params.set('carrier', carrierId)
     params.set('page', '1')
@@ -233,7 +234,10 @@ export function AdminFreightRoutesList({
         <div className="flex gap-2 items-center">
           <Select
             value={selectedCarrierId || 'all'}
-            onValueChange={(v) => handleCarrierFilter(v === 'all' ? '' : v)}
+            onValueChange={(v) => {
+              console.log('Select onValueChange:', v)
+              handleCarrierFilter(v === 'all' ? '' : v)
+            }}
           >
             <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Todas transportadoras" />
