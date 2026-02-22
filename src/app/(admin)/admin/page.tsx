@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Building2, Truck, FileText, Upload, DollarSign, Route, ShieldCheck, Settings, Eye } from 'lucide-react'
+import { Users, Building2, Truck, FileText, Upload, DollarSign, Route, ShieldCheck, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -18,28 +18,28 @@ async function getAdminStats() {
   try {
     const admin = createAdminClient()
 
-    const [
-      { count: usersCount },
-      { count: companiesCount },
-      { count: carriersCount },
-      { count: freightsCount },
-      { count: rntrcCount },
-      { count: routesCount },
-      ingestionResult,
-    ] = await Promise.all([
-      admin.from('profiles').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin.from('companies').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin.from('carriers').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin.from('freights').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin.from('rntrc_cache').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin.from('freight_routes').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-      admin
-        .from('antt_ingestion_runs')
-        .select('created_at, status, records_imported, source_url, error_message')
-        .order('created_at', { ascending: false })
-        .limit(5)
-        .catch(() => ({ data: [] as IngestionRun[] })),
-    ])
+    const safeCount = async (query: Promise<{ count: number | null }>) => {
+      try { const r = await query; return r.count ?? 0 } catch { return 0 }
+    }
+
+    const [usersCount, companiesCount, carriersCount, freightsCount, rntrcCount, routesCount, ingestionResult] =
+      await Promise.all([
+        safeCount(admin.from('profiles').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('companies').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('carriers').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('freights').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('rntrc_cache').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('freight_routes').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        (async () => {
+          try {
+            return await admin
+              .from('antt_ingestion_runs')
+              .select('created_at, status, records_imported, source_url, error_message')
+              .order('created_at', { ascending: false })
+              .limit(5)
+          } catch { return { data: [] as IngestionRun[] } }
+        })(),
+      ])
 
     return {
       users: usersCount ?? 0,
