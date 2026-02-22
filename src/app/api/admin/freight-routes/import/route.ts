@@ -59,8 +59,8 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+  const { data: adminProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (adminProfile?.role !== 'admin') return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
 
   const formData = await request.formData()
   const file = formData.get('file')
@@ -70,10 +70,10 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
   if (!carrierId) return NextResponse.json({ error: 'Selecione uma transportadora' }, { status: 400 })
 
-  // Resolve carrier user_id from carriers table
+  // Resolve carrier user_id from profiles table
   const admin = createAdminClient()
-  const { data: carrier } = await admin.from('carriers').select('user_id').eq('id', carrierId).single()
-  if (!carrier?.user_id) return NextResponse.json({ error: 'Transportadora não encontrada' }, { status: 404 })
+  const { data: carrierProfile } = await admin.from('profiles').select('id').eq('company_id', carrierId).eq('role', 'transportadora').limit(1).single()
+  if (!carrierProfile?.id) return NextResponse.json({ error: 'Transportadora não encontrada' }, { status: 404 })
 
   const arrayBuffer = await file.arrayBuffer()
   const workbook = XLSX.read(arrayBuffer, { type: 'array', raw: false, cellDates: false })
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     const publishedMin = costMin * (1 + marginPercent / 100)
 
     payload.push({
-      carrier_id: carrier.user_id,
+      carrier_id: carrierProfile.id,
       origin_zip: normalizeCep(origin),
       dest_zip: normalizeCep(destination),
       cost_price_per_kg: costPerKg,
