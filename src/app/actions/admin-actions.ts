@@ -322,6 +322,8 @@ export async function listAdminFreightRoutes(params: { carrierId?: string; page?
   const page = params.page ?? 1
   const perPage = params.perPage ?? 50
 
+  console.log('listAdminFreightRoutes params:', params)
+
   let query = admin
     .from('freight_routes')
     .select('id, carrier_id, origin_zip, dest_zip, origin_zip_end, dest_zip_end, price_per_kg, min_price, deadline_days, is_active, created_at', {
@@ -329,9 +331,14 @@ export async function listAdminFreightRoutes(params: { carrierId?: string; page?
     })
 
   if (params.carrierId) {
+    console.log('Filtrando por carrierId (company):', params.carrierId)
     // carrierId é o ID da company, precisamos encontrar o user_id associado
-    const { data: profile } = await admin.from('profiles').select('id').eq('company_id', params.carrierId).eq('role', 'transportadora').limit(1).single()
-    if (profile?.id) query = query.eq('carrier_id', profile.id)
+    const { data: profile, error: profileError } = await admin.from('profiles').select('id').eq('company_id', params.carrierId).eq('role', 'transportadora').limit(1).single()
+    console.log('Profile encontrado:', profile, 'Erro:', profileError)
+    if (profile?.id) {
+      query = query.eq('carrier_id', profile.id)
+      console.log('Aplicando filtro carrier_id:', profile.id)
+    }
   }
 
   const { data, count, error } = await query
