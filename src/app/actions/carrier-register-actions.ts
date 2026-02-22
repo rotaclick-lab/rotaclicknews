@@ -112,6 +112,15 @@ async function rollbackCarrierRegistration(
 }
 
 export async function registerCarrier(data: CarrierRegistrationData) {
+  try {
+    return await _registerCarrierImpl(data)
+  } catch (err: any) {
+    console.error('[registerCarrier] UNHANDLED ERROR:', err?.message ?? err)
+    return { success: false, error: `Erro interno: ${err?.message ?? 'desconhecido'}` }
+  }
+}
+
+async function _registerCarrierImpl(data: CarrierRegistrationData) {
   const vehicleType = normalizeOptionalEnum(data.tipoVeiculo, VEHICLE_TYPES, 'Tipo de veículo')
   if (vehicleType.error) {
     return { success: false, error: vehicleType.error }
