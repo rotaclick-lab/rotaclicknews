@@ -86,9 +86,12 @@ export function AdminFreightRoutesList({
   const [editRoute, setEditRoute] = useState<Route | null>(null)
   const [deleteRoute, setDeleteRoute] = useState<Route | null>(null)
   const [loading, setLoading] = useState(false)
-  const [createCarrierId, setCreateCarrierId] = useState(selectedCarrierId || '')
+  
+  // Ler carrierId da URL atual em vez da prop
+  const currentCarrierId = searchParams.get('carrier') || undefined
+  const [createCarrierId, setCreateCarrierId] = useState(currentCarrierId || '')
   const [importOpen, setImportOpen] = useState(false)
-  const [importCarrierId, setImportCarrierId] = useState(selectedCarrierId || '')
+  const [importCarrierId, setImportCarrierId] = useState(currentCarrierId || '')
   const [importMargin, setImportMargin] = useState('20')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
@@ -96,7 +99,8 @@ export function AdminFreightRoutesList({
 
   // Debug: verificar se carriers está carregando
   console.log('Debug - carriers:', carriers)
-  console.log('Debug - selectedCarrierId:', selectedCarrierId)
+  console.log('Debug - selectedCarrierId (prop):', selectedCarrierId)
+  console.log('Debug - currentCarrierId (URL):', currentCarrierId)
 
   // Map carrier_id to company_id for import button
   const carrierIdToCompanyId = new Map(
@@ -233,7 +237,7 @@ export function AdminFreightRoutesList({
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex gap-2 items-center">
           <Select
-            value={selectedCarrierId || 'all'}
+            value={currentCarrierId || 'all'}
             onValueChange={(v) => {
               console.log('Select onValueChange:', v)
               handleCarrierFilter(v === 'all' ? '' : v)
