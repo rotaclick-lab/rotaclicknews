@@ -94,6 +94,10 @@ export function AdminFreightRoutesList({
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Debug: verificar se carriers está carregando
+  console.log('Debug - carriers:', carriers)
+  console.log('Debug - selectedCarrierId:', selectedCarrierId)
+
   // Map carrier_id to company_id for import button
   const carrierIdToCompanyId = new Map(
     routes.map(r => [r.carrier_id, carriers.find(c => c.id === selectedCarrierId)?.id || ''])
