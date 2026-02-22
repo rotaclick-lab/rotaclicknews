@@ -329,8 +329,9 @@ export async function listAdminFreightRoutes(params: { carrierId?: string; page?
     })
 
   if (params.carrierId) {
-    const { data: carrier } = await admin.from('carriers').select('user_id').eq('id', params.carrierId).single()
-    if (carrier?.user_id) query = query.eq('carrier_id', carrier.user_id)
+    // carrierId é o ID da company, precisamos encontrar o user_id associado
+    const { data: profile } = await admin.from('profiles').select('id').eq('company_id', params.carrierId).eq('role', 'transportadora').limit(1).single()
+    if (profile?.id) query = query.eq('carrier_id', profile.id)
   }
 
   const { data, count, error } = await query
