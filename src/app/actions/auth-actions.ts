@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { getFriendlyError } from '@/lib/error-utils'
 
 async function writeAuditLog(
   userId: string | null,
@@ -168,23 +169,8 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    const normalizedMessage = (error.message || '').toLowerCase()
-    const errorCode = (error as { code?: string }).code || ''
-    const isEmailNotConfirmed =
-      errorCode === 'email_not_confirmed' ||
-      normalizedMessage.includes('email not confirmed') ||
-      normalizedMessage.includes('email_not_confirmed') ||
-      normalizedMessage.includes('confirm')
-
-    if (isEmailNotConfirmed) {
-      return {
-        error:
-          'Seu cadastro ainda não foi confirmado. Verifique seu e-mail e clique no link de confirmação enviado pela RotaClick. Se não encontrar, confira a caixa de spam.',
-      }
-    }
-
     await writeAuditLog(null, 'LOGIN_FAILED', 'auth', null, `Tentativa de login falhou para: ${resolvedEmail}`, { email: resolvedEmail })
-    return { error: 'Credenciais inválidas. Verifique seu acesso e tente novamente.' }
+    return { error: getFriendlyError(error, 'login') }
   }
 
   const {

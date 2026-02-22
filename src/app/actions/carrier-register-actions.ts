@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getFriendlyError } from '@/lib/error-utils'
 
 interface CarrierRegistrationData {
   // Responsável
@@ -89,6 +90,7 @@ function normalizeOptionalEnum(
   return { value: normalized }
 }
 
+
 async function rollbackCarrierRegistration(
   supabase: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -159,10 +161,7 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
 
   if (authError) {
     console.error('Erro ao criar usuário:', authError)
-    if (authError.message.includes('already been registered') || authError.message.includes('already registered')) {
-      return { success: false, error: 'Este email já está cadastrado. Tente fazer login.' }
-    }
-    return { success: false, error: authError.message }
+    return { success: false, error: getFriendlyError(authError, 'auth') }
   }
 
   if (!authData.user) {
@@ -228,7 +227,7 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
       await rollbackCarrierRegistration(supabase, userId)
       return { 
         success: false, 
-        error: `Erro ao salvar empresa: ${companyError.message} (${companyError.code}: ${companyError.details || companyError.hint || 'sem detalhes'})` 
+        error: getFriendlyError(companyError, 'company')
       }
     }
 
@@ -301,7 +300,7 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
       await rollbackCarrierRegistration(supabase, userId, createdCompanyId)
       return { 
         success: false, 
-        error: 'Não foi possível concluir o cadastro. Tente novamente.' 
+        error: getFriendlyError(profileError, 'profile')
       }
     }
 
@@ -391,7 +390,7 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
     await rollbackCarrierRegistration(supabase, userId, createdCompanyId)
     return { 
       success: false, 
-      error: 'Erro inesperado. Tente novamente ou entre em contato com o suporte.' 
+      error: getFriendlyError(error, 'company')
     }
   }
 }
