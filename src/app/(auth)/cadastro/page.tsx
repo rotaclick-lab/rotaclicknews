@@ -302,7 +302,7 @@ export default function CadastroUsuarioPage() {
     setCepLoading(true)
 
     try {
-      const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepDigits}`, {
+      const response = await fetch(`/api/viacep/${cepDigits}`, {
         headers: {
           Accept: 'application/json',
         },
@@ -322,10 +322,10 @@ export default function CadastroUsuarioPage() {
 
       setForm((prev) => ({
         ...prev,
-        street: data.street || prev.street,
-        neighborhood: data.neighborhood || prev.neighborhood,
-        city: data.city || prev.city,
-        state: (data.state || prev.state || '').toUpperCase(),
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: (data.uf || prev.state || '').toUpperCase(),
         complement: prev.complement || '',
       }))
 

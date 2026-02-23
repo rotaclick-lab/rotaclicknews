@@ -138,12 +138,12 @@ export default function CotacaoPage() {
     setOriginCepLoading(true)
     setOriginCity(null)
     setOriginCepNotFound(false)
-    fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`)
+    fetch(`/api/viacep/${digits}`)
       .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         if (cancelled) return
-        if (data.city) {
-          setOriginCity(`${data.city}/${data.state || ''}`)
+        if (data.localidade) {
+          setOriginCity(`${data.localidade}/${data.uf || ''}`)
           setOriginCepNotFound(false)
         } else {
           setOriginCepNotFound(true)
@@ -169,12 +169,12 @@ export default function CotacaoPage() {
     setDestinationCepLoading(true)
     setDestinationCity(null)
     setDestinationCepNotFound(false)
-    fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`)
+    fetch(`/api/viacep/${digits}`)
       .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         if (cancelled) return
-        if (data.city) {
-          setDestinationCity(`${data.city}/${data.state || ''}`)
+        if (data.localidade) {
+          setDestinationCity(`${data.localidade}/${data.uf || ''}`)
           setDestinationCepNotFound(false)
         } else {
           setDestinationCepNotFound(true)

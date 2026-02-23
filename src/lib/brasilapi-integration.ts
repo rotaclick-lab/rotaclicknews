@@ -33,42 +33,44 @@ export async function buscarCEP(cep: string): Promise<BrasilAPIResponse | null> 
       return null
     }
 
-    // Usar BrasilAPI diretamente (sem CORS)
-    const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`, {
+    // Usar proxy interno para evitar CORS (browser) ou BrasilAPI direto (server)
+    const isServer = typeof window === 'undefined'
+    const url = isServer
+      ? `https://brasilapi.com.br/api/cep/v2/${cepLimpo}`
+      : `/api/viacep/${cepLimpo}`
+
+    const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'RotaClick-Freight/1.0'
-      },
-      // Timeout de 10 segundos
+      headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(10000)
     })
 
     if (!response.ok) {
-      if (response.status === 404) {
-        console.log('BrasilAPI - CEP não encontrado:', cep)
-      }
+      console.log('CEP não encontrado:', cep)
       return null
     }
 
     const data = await response.json()
 
-    // BrasilAPI retorna erro com status 404, mas também pode retornar objeto de erro
     if (data && typeof data === 'object' && 'message' in data) {
-      console.log('BrasilAPI - Erro:', data.message)
       return null
     }
 
-    console.log('BrasilAPI - CEP encontrado:', { cidade: data.city, uf: data.state })
+    // Proxy retorna formato ViaCEP; BrasilAPI direto retorna city/state
+    const logradouro = data.logradouro ?? data.street ?? ''
+    const bairro = data.bairro ?? data.neighborhood ?? ''
+    const localidade = data.localidade ?? data.city ?? ''
+    const uf = data.uf ?? data.state ?? ''
 
-    // Converter para formato compatível
+    console.log('CEP encontrado:', { localidade, uf })
+
     return {
       cep: data.cep,
-      logradouro: data.street || '',
-      complemento: '',
-      bairro: data.neighborhood || '',
-      localidade: data.city,
-      uf: data.state,
+      logradouro,
+      complemento: data.complemento || '',
+      bairro,
+      localidade,
+      uf,
       gia: '',
       ddd: '',
       siafi: ''
