@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { registerCarrier } from '@/app/actions/carrier-register-actions'
 import { toast } from 'sonner'
+import { CepInput } from '@/components/ui/cep-input'
+import { type EnderecoViaCEP } from '@/hooks/useViaCEP'
 
 // ===== MASKS =====
 const maskCPF = (v: string) => v.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})/, '$1-$2').replace(/(-\d{2})\d+?$/, '$1')
@@ -216,43 +218,18 @@ export default function RegistroPage() {
     }
   }
 
-  // ===== REAL-TIME CEP VALIDATION + LOOKUP =====
-  const handleCEPChange = async (value: string) => {
-    const masked = maskCEP(value)
-    set('cep', masked)
-    const clean = masked.replace(/\D/g, '')
-    
-    if (clean.length === 8) {
-      setCepLoading(true)
-      setCepValid(null)
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
-        const data = await res.json()
-        if (!data.erro) {
-          setForm(prev => ({
-            ...prev,
-            cep: masked,
-            logradouro: data.logradouro || prev.logradouro,
-            bairro: data.bairro || prev.bairro,
-            cidade: data.localidade || prev.cidade,
-            uf: data.uf || prev.uf,
-          }))
-          setCepValid(true)
-          setErrors(prev => ({ ...prev, cep: undefined }))
-        } else {
-          setCepValid(false)
-          setErrors(prev => ({ ...prev, cep: 'CEP não encontrado.' }))
-        }
-      } catch {
-        setCepValid(false)
-        setErrors(prev => ({ ...prev, cep: 'Erro ao buscar CEP. Tente novamente.' }))
-      } finally {
-        setCepLoading(false)
-      }
-    } else {
-      setCepValid(null)
-      setErrors(prev => ({ ...prev, cep: undefined }))
-    }
+  // ===== CEP HANDLING COM NOVO COMPONENTE =====
+  const handleAddressFound = (endereco: EnderecoViaCEP) => {
+    setForm(prev => ({
+      ...prev,
+      cep: endereco.cep,
+      logradouro: endereco.logradouro || prev.logradouro,
+      bairro: endereco.bairro || prev.bairro,
+      cidade: endereco.cidade || prev.cidade,
+      uf: endereco.estado || prev.uf,
+    }))
+    setCepValid(true)
+    setErrors(prev => ({ ...prev, cep: undefined }))
   }
 
   // ===== REAL-TIME IE VALIDATION =====
@@ -653,27 +630,14 @@ export default function RegistroPage() {
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 md:col-span-3">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP <span className="text-red-400">*</span></label>
-                    <div className="relative">
-                      <input
-                        className={inputClass('cep')}
-                        placeholder="00000-000"
-                        value={form.cep}
-                        onChange={e => handleCEPChange(e.target.value)}
-                        maxLength={9}
-                      />
-                      {cepLoading && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <div className="w-5 h-5 border-2 border-[#13b9a5] border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                      )}
-                      {!cepLoading && cepValid === true && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-emerald-500">check_circle</span>
-                      )}
-                      {!cepLoading && cepValid === false && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 material-icons-round text-red-500">error</span>
-                      )}
-                    </div>
-                    {errorMessage('cep')}
+                    <CepInput
+                      value={form.cep}
+                      onChange={(value) => set('cep', value)}
+                      onAddressFound={handleAddressFound}
+                      placeholder="00000-000"
+                      className={inputClass('cep')}
+                      required
+                    />
                     {cepValid === true && !errors.cep && successIndicator(true)}
                   </div>
                   <div className="col-span-12 md:col-span-7">
