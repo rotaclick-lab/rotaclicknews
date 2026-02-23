@@ -357,10 +357,16 @@ export default function HomePage() {
         )}
         {/* Título */}
         <div className="text-center pt-10 pb-4 px-6">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-brand-800">
+          <h1
+            className="text-3xl md:text-4xl font-bold tracking-tight text-brand-800"
+            style={{ textShadow: '0 0 4px #fff, 0 0 8px #fff, 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff' }}
+          >
             Cotação de Frete <span className="text-orange-500">Online</span>
           </h1>
-          <p className="text-muted-foreground mt-2 max-w-[600px] mx-auto">
+          <p
+            className="text-muted-foreground mt-2 max-w-[600px] mx-auto"
+            style={{ textShadow: '0 0 4px #fff, 0 0 8px #fff, 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff' }}
+          >
             Compare preços de transportadoras em segundos. Preencha os dados abaixo e receba as melhores ofertas.
           </p>
         </div>
