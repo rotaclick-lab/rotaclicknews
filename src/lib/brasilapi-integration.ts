@@ -87,27 +87,10 @@ export async function buscarCEP(cep: string): Promise<BrasilAPIResponse | null> 
  */
 export async function buscarCEPsPorCidade(cidade: string, uf: string): Promise<string[] | null> {
   try {
-    const response = await fetch(`https://viacep.com.br/ws/${uf}/${cidade}/json/`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'RotaClick-Freight/1.0'
-      },
-      signal: AbortSignal.timeout(5000)
-    })
-
-    if (!response.ok) {
-      return null
-    }
-
-    const data = await response.json()
-
-    if (!Array.isArray(data) || data.length === 0) {
-      return null
-    }
-
-    // Retorna os primeiros 10 CEPs encontrados
-    return data.slice(0, 10).map((item: any) => item.cep).filter(Boolean)
+    // BrasilAPI não tem busca por cidade, retorna null para fallback
+    // Usar a rota de busca por CEP individual
+    console.log('BrasilAPI - busca por cidade não suportada, usando fallback:', { cidade, uf })
+    return null
   } catch (error) {
     console.error('Erro ao buscar CEPs por cidade:', error)
     return null

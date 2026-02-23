@@ -412,16 +412,18 @@ export default function PerfilPage() {
     const clean = value.replace(/\D/g, '')
     if (clean.length === 8) {
       try {
-        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`)
-        const data = await res.json()
-        if (!data.erro) {
-          setEmpresa(prev => ({
-            ...prev,
-            logradouro: data.logradouro || prev.logradouro,
-            bairro: data.bairro || prev.bairro,
-            cidade: data.localidade || prev.cidade,
-            estado: data.uf || prev.estado,
-          }))
+        const res = await fetch(`https://brasilapi.com.br/api/cep/v2/${clean}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.city) {
+            setEmpresa(prev => ({
+              ...prev,
+              logradouro: data.street || prev.logradouro,
+              bairro: data.neighborhood || prev.bairro,
+              cidade: data.city || prev.cidade,
+              estado: data.state || prev.estado,
+            }))
+          }
         }
       } catch {}
     }

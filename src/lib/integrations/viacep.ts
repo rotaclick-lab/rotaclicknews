@@ -1,21 +1,20 @@
 import type { ViaCEPAddress } from '@/types/integration.types'
 
-const VIACEP_BASE_URL = 'https://viacep.com.br/ws'
+const BRASILAPI_BASE_URL = 'https://brasilapi.com.br/api/cep/v2'
 
 export class ViaCEPClient {
   /**
-   * Busca endereço por CEP
+   * Busca endereço por CEP via BrasilAPI
    */
   async getAddress(cep: string): Promise<ViaCEPAddress | null> {
     try {
-      // Remove non-numeric characters
       const cleanCEP = cep.replace(/\D/g, '')
 
       if (cleanCEP.length !== 8) {
         throw new Error('CEP inválido')
       }
 
-      const response = await fetch(`${VIACEP_BASE_URL}/${cleanCEP}/json/`, {
+      const response = await fetch(`${BRASILAPI_BASE_URL}/${cleanCEP}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -24,61 +23,38 @@ export class ViaCEPClient {
       })
 
       if (!response.ok) {
-        throw new Error(`ViaCEP API error: ${response.status}`)
+        return null
       }
 
       const data = await response.json()
 
-      if (data.erro) {
+      if (!data.city) {
         return null
       }
 
-      return data as ViaCEPAddress
+      // Converter para formato ViaCEPAddress (compatibilidade)
+      return {
+        cep: data.cep,
+        logradouro: data.street || '',
+        complemento: '',
+        bairro: data.neighborhood || '',
+        localidade: data.city,
+        uf: data.state,
+        gia: '',
+        ddd: '',
+        siafi: '',
+      } as ViaCEPAddress
     } catch (error) {
-      console.error('ViaCEP error:', error)
+      console.error('BrasilAPI error:', error)
       return null
     }
   }
 
   /**
-   * Busca endereço por UF, cidade e logradouro
+   * Busca por logradouro não suportada na BrasilAPI - retorna vazio
    */
-  async searchAddress(uf: string, city: string, street: string): Promise<ViaCEPAddress[]> {
-    try {
-      const cleanUF = uf.trim()
-      const cleanCity = encodeURIComponent(city.trim())
-      const cleanStreet = encodeURIComponent(street.trim())
-
-      if (cleanStreet.length < 3) {
-        throw new Error('Logradouro deve ter pelo menos 3 caracteres')
-      }
-
-      const response = await fetch(
-        `${VIACEP_BASE_URL}/${cleanUF}/${cleanCity}/${cleanStreet}/json/`,
-        {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-          next: { revalidate: 86400 },
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`ViaCEP API error: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      if (Array.isArray(data)) {
-        return data as ViaCEPAddress[]
-      }
-
-      return []
-    } catch (error) {
-      console.error('ViaCEP search error:', error)
-      return []
-    }
+  async searchAddress(_uf: string, _city: string, _street: string): Promise<ViaCEPAddress[]> {
+    return []
   }
 
   /**

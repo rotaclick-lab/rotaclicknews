@@ -169,12 +169,12 @@ export default function HomePage() {
     setOriginCepLoading(true)
     setOriginCity(null)
     setOriginCepNotFound(false)
-    fetch(`https://viacep.com.br/ws/${digits}/json/`)
-      .then((res) => res.json())
+    fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`)
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         if (cancelled) return
-        if (!data.erro && data.localidade) {
-          setOriginCity(`${data.localidade}/${data.uf || ''}`)
+        if (data.city) {
+          setOriginCity(`${data.city}/${data.state || ''}`)
         } else {
           setOriginCepNotFound(true)
         }
@@ -195,12 +195,12 @@ export default function HomePage() {
     setDestinationCepLoading(true)
     setDestinationCity(null)
     setDestinationCepNotFound(false)
-    fetch(`https://viacep.com.br/ws/${digits}/json/`)
-      .then((res) => res.json())
+    fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`)
+      .then((res) => res.ok ? res.json() : Promise.reject())
       .then((data) => {
         if (cancelled) return
-        if (!data.erro && data.localidade) {
-          setDestinationCity(`${data.localidade}/${data.uf || ''}`)
+        if (data.city) {
+          setDestinationCity(`${data.city}/${data.state || ''}`)
         } else {
           setDestinationCepNotFound(true)
         }

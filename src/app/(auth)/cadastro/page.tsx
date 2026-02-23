@@ -302,31 +302,31 @@ export default function CadastroUsuarioPage() {
     setCepLoading(true)
 
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`, {
+      const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepDigits}`, {
         headers: {
           Accept: 'application/json',
         },
       })
 
-      const data = await response.json()
-
       if (requestId !== cepRequestId.current) {
         return
       }
 
-      if (!response.ok || data.erro) {
+      if (!response.ok) {
         setFieldError('cep', 'CEP não encontrado.')
         setCepMessage(null)
         return
       }
 
+      const data = await response.json()
+
       setForm((prev) => ({
         ...prev,
-        street: data.logradouro || prev.street,
-        neighborhood: data.bairro || prev.neighborhood,
-        city: data.localidade || prev.city,
-        state: (data.uf || prev.state || '').toUpperCase(),
-        complement: prev.complement || data.complemento || '',
+        street: data.street || prev.street,
+        neighborhood: data.neighborhood || prev.neighborhood,
+        city: data.city || prev.city,
+        state: (data.state || prev.state || '').toUpperCase(),
+        complement: prev.complement || '',
       }))
 
       setFieldError('cep', undefined)
