@@ -174,15 +174,27 @@ export async function POST(request: Request) {
 
     const profileById = new Map((profiles ?? []).map((profile) => [String(profile.id), profile]))
 
+    console.log('Debug - Profiles encontrados:', profiles?.length || 0)
+    console.log('Debug - Companies encontradas:', companies?.length || 0)
+    console.log('Debug - CarrierIds:', carrierIds)
+
     const offers = validRoutes
       .map((route) => {
         const profile = profileById.get(route.carrier_id)
         const company = profile?.company_id ? companyById.get(String(profile.company_id)) : undefined
 
+        console.log('Debug - Processando rota:', { 
+          routeId: route.id, 
+          carrierId: route.carrier_id, 
+          hasProfile: !!profile, 
+          hasCompany: !!company,
+          companyId: profile?.company_id 
+        })
+
         const carrierName =
           String(company?.nome_fantasia || company?.razao_social || company?.name || profile?.full_name || profile?.name || 'Transportadora')
 
-        return {
+        const offer = {
           id: route.id,
           carrier: carrierName,
           logoUrl: company?.logo_url ?? null,
@@ -190,8 +202,13 @@ export async function POST(request: Request) {
           deadline: route.deadline_days ? `${route.deadline_days} dias úteis` : 'Prazo sob consulta',
           type: 'Tabela Importada',
         }
+
+        console.log('Debug - Offer criada:', offer)
+        return offer
       })
       .sort((a, b) => a.price - b.price)
+
+    console.log('Debug - Final offers:', offers)
 
     return NextResponse.json({ success: true, data: offers })
   } catch (error) {
