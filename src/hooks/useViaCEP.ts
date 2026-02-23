@@ -31,8 +31,9 @@ export function useViaCEP(): UseViaCEPReturn {
   }, [])
 
   const buscarEndereco = useCallback(async (cep: string): Promise<EnderecoViaCEP | null> => {
-    // Limpar erro anterior
-    setError(null)
+    // TEMPORARIAMENTE DESABILITADO ATÉ DEPLOY
+    console.log('ViaCEP temporariamente desabilitado - aguardando deploy')
+    return null
     
     // Validar formato do CEP
     const cepLimpo = cep.replace(/\D/g, '')
