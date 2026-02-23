@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/app/api/rate-limit'
+import { normalizeCepToRegion } from '@/lib/shipping-regions'
 
 type QuoteRequestBody = {
   originCep: string
@@ -22,12 +23,6 @@ type FreightRouteRow = {
 
 function digitsOnly(value: string) {
   return value.replace(/\D/g, '')
-}
-
-function maskCep(value: string) {
-  const digits = digitsOnly(value)
-  if (digits.length !== 8) return value
-  return `${digits.slice(0, 5)}-${digits.slice(5)}`
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -108,11 +103,21 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    // Usar formato com hífen pois é como está salvo no banco
-    const originVariants = Array.from(new Set([maskCep(originDigits)]))
-    const destinationVariants = Array.from(new Set([maskCep(destinationDigits)]))
+    // Normalizar CEPs para regiões antes de buscar
+    const originRegionCep = await normalizeCepToRegion(originDigits)
+    const destRegionCep = await normalizeCepToRegion(destinationDigits)
 
-    console.log('Debug - Cotação:', { originDigits, destinationDigits, originVariants, destinationVariants })
+    const originVariants = Array.from(new Set([originRegionCep]))
+    const destinationVariants = Array.from(new Set([destRegionCep]))
+
+    console.log('Debug - Cotação:', { 
+      originDigits, 
+      destinationDigits, 
+      originRegionCep, 
+      destRegionCep, 
+      originVariants, 
+      destinationVariants 
+    })
 
     // Busca exata primeiro
     let { data: routes, error: routesError } = await admin
