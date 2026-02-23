@@ -305,7 +305,7 @@ export default function HomePage() {
         src="/images/bg.webp"
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-contain object-top -z-10 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-fill -z-10 pointer-events-none"
       />
       {/* Header Público */}
       <header className="sticky top-0 z-50 w-full border-b border-brand-100 bg-white/95 backdrop-blur">
