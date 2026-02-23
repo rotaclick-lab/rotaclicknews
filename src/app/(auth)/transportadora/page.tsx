@@ -40,7 +40,7 @@ export default function TransportadoraPage() {
 
   // Login state
 
-  const [loginEmail, setLoginEmail] = useState('')
+  const [loginCnpj, setLoginCnpj] = useState('')
 
   const [loginPassword, setLoginPassword] = useState('')
 
@@ -86,9 +86,9 @@ export default function TransportadoraPage() {
 
   const handleLogin = async () => {
 
-    if (!loginEmail || !loginPassword) {
+    if (!loginCnpj || !loginPassword) {
 
-      toast.error('Preencha email e senha')
+      toast.error('Preencha CNPJ e senha')
 
       return
 
@@ -100,7 +100,7 @@ export default function TransportadoraPage() {
 
       const formData = new FormData()
 
-      formData.append('email', loginEmail)
+      formData.append('identifier', loginCnpj.replace(/\D/g, ''))
 
       formData.append('password', loginPassword)
 
@@ -364,23 +364,25 @@ export default function TransportadoraPage() {
 
                 <div className="space-y-2">
 
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-cnpj">CNPJ</Label>
 
                   <Input
 
-                    id="login-email"
+                    id="login-cnpj"
 
-                    type="email"
+                    type="text"
 
-                    placeholder="seu@email.com"
+                    placeholder="00.000.000/0000-00"
 
-                    className="focus-visible:ring-brand-500"
+                    className="focus-visible:ring-brand-500 font-mono"
 
-                    value={loginEmail}
+                    value={loginCnpj}
 
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    onChange={(e) => setLoginCnpj(maskCNPJ(e.target.value))}
 
                     disabled={loginLoading}
+
+                    onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
 
                   />
 

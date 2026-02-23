@@ -147,15 +147,20 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
   // Usar admin client (service_role) para bypassar RLS
   const supabase = createAdminClient()
 
-  // 1. Criar o usuário no Supabase Auth (admin pode criar sem restrições)
+  // 1. Criar o usuário no Supabase Auth usando email sintético baseado no CNPJ
+  // Permite o mesmo email real em múltiplas transportadoras; login é feito por CNPJ + senha
+  const cnpjDigits = data.cnpj.replace(/\D/g, '')
+  const syntheticEmail = `cnpj_${cnpjDigits}@rotaclick.internal`
+
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: data.email,
+    email: syntheticEmail,
     password: data.senha,
-    email_confirm: false, // Enviar email de confirmação
+    email_confirm: true,
     user_metadata: {
       full_name: data.nomeCompleto,
       role: 'transportadora',
-      cnpj: data.cnpj.replace(/\D/g, ''),
+      cnpj: cnpjDigits,
+      contact_email: data.email,
     },
   })
 
@@ -360,22 +365,6 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
         type: 'system',
         is_read: false,
       })
-
-    // 6. Enviar email de confirmação via Supabase Auth
-    // O admin.createUser com email_confirm: false gera o link de confirmação
-    // Precisamos enviar o email manualmente via generateLink
-    const { error: inviteError } = await supabase.auth.admin.generateLink({
-      type: 'signup',
-      email: data.email,
-      password: data.senha,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.rotaclick.com.br'}/auth/callback`,
-      },
-    })
-
-    if (inviteError) {
-      console.error('Erro ao gerar link de confirmação (não crítico):', inviteError)
-    }
 
     return { 
       success: true, 

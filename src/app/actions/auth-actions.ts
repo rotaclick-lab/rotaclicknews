@@ -92,36 +92,9 @@ async function resolveLoginEmail(identifier: string): Promise<string | null> {
   }
 
   if (digits.length === 14) {
-    const { data: company, error: companyError } = await admin
-      .from('companies')
-      .select('id, email')
-      .eq('document', digits)
-      .maybeSingle()
-
-    if (companyError) {
-      console.error('Erro ao resolver CNPJ para login (companies):', companyError)
-      return null
-    }
-
-    if (company?.email) {
-      return company.email
-    }
-
-    if (!company?.id) return null
-
-    const { data: profiles, error: profileError } = await admin
-      .from('profiles')
-      .select('email')
-      .eq('company_id', company.id)
-      .eq('role', 'transportadora')
-      .limit(1)
-
-    if (profileError) {
-      console.error('Erro ao resolver CNPJ para login (profiles):', profileError)
-      return null
-    }
-
-    return profiles?.[0]?.email ?? null
+    // Login de transportadora usa email sintético baseado no CNPJ
+    // O email real fica apenas para notificações em companies.email
+    return `cnpj_${digits}@rotaclick.internal`
   }
 
   return null
