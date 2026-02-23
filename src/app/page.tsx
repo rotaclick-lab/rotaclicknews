@@ -305,7 +305,7 @@ export default function HomePage() {
         backgroundImage: "url('/images/bg.webp')",
         backgroundSize: '100% auto',
         backgroundPosition: 'top center',
-        backgroundAttachment: 'scroll',
+        backgroundAttachment: 'fixed',
         backgroundRepeat: 'no-repeat',
       }}
     >
