@@ -21,7 +21,7 @@ export interface ViaCEPError {
 }
 
 /**
- * Busca informações de um CEP na API ViaCEP
+ * Busca informações de um CEP na API ViaCEP (via proxy)
  * @param cep - CEP no formato 00000-000 ou 00000000
  * @returns Promise com dados do CEP ou null se não encontrar
  */
@@ -34,11 +34,11 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
       return null
     }
 
-    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
+    // Usar nossa API route como proxy para evitar CORS
+    const response = await fetch(`/api/viacep/${cepLimpo}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'RotaClick-Freight/1.0'
       },
       // Timeout de 5 segundos
       signal: AbortSignal.timeout(5000)
@@ -50,14 +50,14 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
 
     const data = await response.json()
 
-    // ViaCEP retorna { erro: true } quando não encontra o CEP
-    if (data && typeof data === 'object' && 'erro' in data) {
+    // Verificar se houve erro na resposta
+    if (data && typeof data === 'object' && 'error' in data) {
       return null
     }
 
     return data as ViaCEPResponse
   } catch (error) {
-    console.error('Erro ao buscar CEP no ViaCEP:', error)
+    console.error('Erro ao buscar CEP:', error)
     return null
   }
 }
