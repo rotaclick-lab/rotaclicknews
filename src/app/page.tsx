@@ -629,15 +629,23 @@ export default function HomePage() {
 
                       <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                         <div className="flex items-center gap-6">
-                          <div className={cn(
-                            "w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden transition-colors shrink-0",
-                            selectedOffer?.id === offer.id ? "bg-brand-500 text-white ring-2 ring-brand-500" : "bg-brand-50 text-brand-600 border border-brand-100"
-                          )}>
-                            {offer.logoUrl ? (
-                              <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1" />
-                            ) : (
-                              <Truck className={cn("h-8 w-8", offer.type.includes('Pesada') ? "h-10 w-10" : "h-8 w-8")} />
-                            )}
+                          {/* Logo em esfera + nome da transportadora */}
+                          <div className="flex flex-col items-center gap-1.5 shrink-0">
+                            <div className={cn(
+                              "w-16 h-16 rounded-full flex items-center justify-center overflow-hidden transition-all shrink-0 shadow-md",
+                              selectedOffer?.id === offer.id
+                                ? "bg-brand-500 text-white ring-2 ring-brand-500 ring-offset-2"
+                                : "bg-white text-brand-600 border-2 border-brand-100"
+                            )}>
+                              {offer.logoUrl ? (
+                                <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1.5" />
+                              ) : (
+                                <Truck className="h-8 w-8" />
+                              )}
+                            </div>
+                            <span className="text-[11px] font-semibold text-center text-muted-foreground leading-tight max-w-[80px] truncate" title={offer.carrier}>
+                              {offer.carrier}
+                            </span>
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
