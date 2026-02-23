@@ -299,7 +299,16 @@ export default function HomePage() {
   const totals = calculateTotals()
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background relative">
+      {/* Imagem de fundo responsiva */}
+      <Image
+        src="/images/bg.webp"
+        alt=""
+        fill
+        priority
+        className="object-cover object-center -z-10"
+        sizes="100vw"
+      />
       {/* Header Público */}
       <header className="sticky top-0 z-50 w-full border-b border-brand-100 bg-white/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
