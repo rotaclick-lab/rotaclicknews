@@ -41,8 +41,8 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
         'Accept': 'application/json',
         'User-Agent': 'RotaClick-Freight/1.0'
       },
-      // Timeout de 5 segundos
-      signal: AbortSignal.timeout(5000)
+      // Timeout de 10 segundos
+      signal: AbortSignal.timeout(10000)
     })
 
     if (!response.ok) {
