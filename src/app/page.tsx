@@ -627,18 +627,34 @@ export default function HomePage() {
                         )}
                       </div>
 
-                      {/* Esfera com logo */}
-                      <div className={cn(
-                        "w-20 h-20 rounded-full flex items-center justify-center overflow-hidden transition-all shadow-lg",
-                        selectedOffer?.id === offer.id
-                          ? "bg-brand-500 text-white ring-4 ring-brand-400 ring-offset-2"
-                          : "bg-white text-brand-600 border-2 border-brand-100 group-hover:border-brand-300 group-hover:shadow-xl"
-                      )}>
-                        {offer.logoUrl ? (
-                          <Image src={offer.logoUrl} alt={offer.carrier} width={80} height={80} className="w-full h-full object-contain p-2" />
-                        ) : (
-                          <Truck className="h-9 w-9" />
-                        )}
+                      {/* Pin formato RotaClick com logo */}
+                      <div className="relative flex flex-col items-center">
+                        {/* Círculo do pin */}
+                        <div className={cn(
+                          "w-20 h-20 rounded-full flex items-center justify-center overflow-hidden transition-all shadow-lg",
+                          selectedOffer?.id === offer.id
+                            ? "bg-brand-500 text-white ring-4 ring-brand-400 ring-offset-2"
+                            : "bg-white text-brand-600 border-2 border-brand-200 group-hover:border-brand-400 group-hover:shadow-xl"
+                        )}>
+                          {offer.logoUrl ? (
+                            <Image src={offer.logoUrl} alt={offer.carrier} width={80} height={80} className="w-full h-full object-contain p-2" />
+                          ) : (
+                            <Truck className="h-9 w-9" />
+                          )}
+                        </div>
+                        {/* Ponta triangular do pin */}
+                        <div
+                          className="-mt-px"
+                          style={{
+                            width: 0,
+                            height: 0,
+                            borderLeft: '10px solid transparent',
+                            borderRight: '10px solid transparent',
+                            borderTop: selectedOffer?.id === offer.id ? '14px solid #06A6AB' : '14px solid #cbd5e1',
+                          }}
+                        />
+                        {/* Sombra oval embaixo do pin */}
+                        <div className="w-5 h-1.5 bg-black/15 rounded-full blur-sm mt-0.5" />
                       </div>
 
                       {/* Nome da transportadora */}
