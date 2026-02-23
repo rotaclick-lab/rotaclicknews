@@ -108,8 +108,9 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    const originVariants = Array.from(new Set([originDigits, maskCep(originDigits)]))
-    const destinationVariants = Array.from(new Set([destinationDigits, maskCep(destinationDigits)]))
+    // Usar formato com hífen pois é como está salvo no banco
+    const originVariants = Array.from(new Set([maskCep(originDigits)]))
+    const destinationVariants = Array.from(new Set([maskCep(destinationDigits)]))
 
     console.log('Debug - Cotação:', { originDigits, destinationDigits, originVariants, destinationVariants })
 
