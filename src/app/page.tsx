@@ -303,9 +303,9 @@ export default function HomePage() {
       className="flex min-h-screen flex-col"
       style={{
         backgroundImage: "url('/images/bg.webp')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        backgroundSize: '100% auto',
+        backgroundPosition: 'top center',
+        backgroundAttachment: 'scroll',
         backgroundRepeat: 'no-repeat',
       }}
     >
