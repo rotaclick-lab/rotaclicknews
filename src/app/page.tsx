@@ -606,81 +606,109 @@ export default function HomePage() {
                   </Card>
                 )}
                 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-6">
                   {results.map((offer, index) => (
                     <div
                       key={offer.id}
                       onClick={() => setSelectedOffer(offer)}
-                      className={cn(
-                        "cursor-pointer flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all hover:shadow-lg group",
-                        selectedOffer?.id === offer.id
-                          ? "border-brand-500 bg-brand-50/60 shadow-md"
-                          : "border-muted bg-white hover:border-brand-300"
-                      )}
+                      className="cursor-pointer flex flex-col items-center group"
                     >
-                      {/* Badge melhor preço */}
-                      <div className="h-5 flex items-center">
-                        {index === 0 && (
-                          <span className="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                            Melhor preço
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Pin formato RotaClick com logo */}
-                      <div className="relative flex flex-col items-center">
-                        {/* Círculo do pin */}
-                        <div className={cn(
-                          "w-20 h-20 rounded-full flex items-center justify-center overflow-hidden transition-all shadow-lg",
+                      {/* Corpo do pin com conteúdo */}
+                      <div
+                        className={cn(
+                          "w-full flex flex-col items-center gap-3 px-4 pt-5 pb-6 transition-all",
                           selectedOffer?.id === offer.id
-                            ? "bg-brand-500 text-white ring-4 ring-brand-400 ring-offset-2"
-                            : "bg-white text-brand-600 border-2 border-brand-200 group-hover:border-brand-400 group-hover:shadow-xl"
-                        )}>
-                          {offer.logoUrl ? (
-                            <Image src={offer.logoUrl} alt={offer.carrier} width={80} height={80} className="w-full h-full object-contain p-2" />
-                          ) : (
-                            <Truck className="h-9 w-9" />
+                            ? "bg-brand-500 text-white shadow-xl shadow-brand-300/50"
+                            : "bg-white border-2 border-slate-200 shadow-md group-hover:border-brand-400 group-hover:shadow-lg"
+                        )}
+                        style={{ borderRadius: '50% 50% 50% 50% / 35% 35% 65% 65%' }}
+                      >
+                        {/* Badge melhor preço */}
+                        <div className="h-5 flex items-center">
+                          {index === 0 && (
+                            <span className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                              selectedOffer?.id === offer.id ? "bg-white/20 text-white" : "bg-orange-100 text-orange-600"
+                            )}>
+                              Melhor preço
+                            </span>
                           )}
                         </div>
-                        {/* Ponta triangular do pin */}
-                        <div
-                          className="-mt-px"
-                          style={{
-                            width: 0,
-                            height: 0,
-                            borderLeft: '10px solid transparent',
-                            borderRight: '10px solid transparent',
-                            borderTop: selectedOffer?.id === offer.id ? '14px solid #06A6AB' : '14px solid #cbd5e1',
-                          }}
-                        />
-                        {/* Sombra oval embaixo do pin */}
-                        <div className="w-5 h-1.5 bg-black/15 rounded-full blur-sm mt-0.5" />
-                      </div>
 
-                      {/* Nome da transportadora */}
-                      <p className="text-sm font-bold text-center text-slate-700 leading-tight line-clamp-2" title={offer.carrier}>
-                        {offer.carrier}
-                      </p>
+                        {/* Logo */}
+                        <div className={cn(
+                          "w-16 h-16 rounded-full flex items-center justify-center overflow-hidden",
+                          selectedOffer?.id === offer.id
+                            ? "bg-white/20 text-white"
+                            : "bg-brand-50 text-brand-600 border-2 border-brand-100"
+                        )}>
+                          {offer.logoUrl ? (
+                            <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1.5" />
+                          ) : (
+                            <Truck className="h-8 w-8" />
+                          )}
+                        </div>
 
-                      {/* Prazo */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{offer.deadline}</span>
-                      </div>
-
-                      {/* Preço */}
-                      <div className="mt-auto w-full text-center bg-orange-50 rounded-xl py-2 px-3 border border-orange-100">
-                        <p className="text-[10px] text-orange-400 font-semibold uppercase tracking-widest">Preço Final</p>
-                        <p className="text-xl font-black text-orange-500">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
+                        {/* Nome */}
+                        <p className={cn(
+                          "text-sm font-bold text-center leading-tight line-clamp-2",
+                          selectedOffer?.id === offer.id ? "text-white" : "text-slate-700"
+                        )} title={offer.carrier}>
+                          {offer.carrier}
                         </p>
+
+                        {/* Prazo */}
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs",
+                          selectedOffer?.id === offer.id ? "text-white/80" : "text-muted-foreground"
+                        )}>
+                          <Calendar className="h-3 w-3" />
+                          <span>{offer.deadline}</span>
+                        </div>
+
+                        {/* Preço */}
+                        <div className={cn(
+                          "w-full text-center rounded-xl py-2 px-3",
+                          selectedOffer?.id === offer.id ? "bg-white/15" : "bg-orange-50 border border-orange-100"
+                        )}>
+                          <p className={cn(
+                            "text-[10px] font-semibold uppercase tracking-widest",
+                            selectedOffer?.id === offer.id ? "text-white/70" : "text-orange-400"
+                          )}>Preço Final</p>
+                          <p className={cn(
+                            "text-xl font-black",
+                            selectedOffer?.id === offer.id ? "text-white" : "text-orange-500"
+                          )}>
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
+                          </p>
+                        </div>
+
+                        {/* Seguro incluso */}
+                        <div className={cn(
+                          "flex items-center gap-1 text-[11px] font-medium",
+                          selectedOffer?.id === offer.id ? "text-white/80" : "text-brand-600"
+                        )}>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Seguro Incluso</span>
+                        </div>
                       </div>
 
-                      {/* Seguro incluso */}
-                      <div className="flex items-center gap-1 text-[11px] text-brand-600 font-medium">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>Seguro Incluso</span>
-                      </div>
+                      {/* Ponta do pin */}
+                      <div
+                        style={{
+                          width: 0,
+                          height: 0,
+                          borderLeft: '22px solid transparent',
+                          borderRight: '22px solid transparent',
+                          borderTop: selectedOffer?.id === offer.id ? '30px solid #06A6AB' : '30px solid #e2e8f0',
+                          marginTop: '-1px',
+                        }}
+                      />
+                      {/* Sombra oval */}
+                      <div className={cn(
+                        "h-2 rounded-full blur-sm mt-1 transition-all",
+                        selectedOffer?.id === offer.id ? "w-12 bg-brand-400/40" : "w-8 bg-black/15"
+                      )} />
                     </div>
                   ))}
                 </div>
