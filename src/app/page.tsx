@@ -280,15 +280,9 @@ export default function HomePage() {
       }
 
       const offers = payload.data ?? []
-      const lowestOffer =
-        offers.length > 0
-          ? offers.reduce((bestOffer, currentOffer) =>
-              currentOffer.price < bestOffer.price ? currentOffer : bestOffer
-            )
-          : null
 
-      setResults(lowestOffer ? [lowestOffer] : [])
-      setSelectedOffer(lowestOffer)
+      setResults(offers)
+      setSelectedOffer(offers[0] ?? null)
       setStep(3)
 
       if (offers.length === 0) {
