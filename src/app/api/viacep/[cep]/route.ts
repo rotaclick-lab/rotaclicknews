@@ -4,13 +4,13 @@ import { buscarCEPBrasilAPI, converterBrasilAPIParaViaCEP } from '@/lib/brasilap
 
 export async function GET(
   request: Request,
-  { params }: { params: { cep: string } }
+  { params }: { params: Promise<{ cep: string }> }
 ) {
   const limited = rateLimit(request as any, 30)
   if (limited) return limited
 
   try {
-    const cep = params.cep
+    const { cep } = await params
     
     // Validar formato do CEP
     const cepLimpo = cep.replace(/\D/g, '')
