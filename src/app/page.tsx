@@ -612,67 +612,66 @@ export default function HomePage() {
                   </Card>
                 )}
                 
-                <div className="grid grid-cols-1 gap-4">
-                  {results.map((offer) => (
-                    <Card 
-                      key={offer.id} 
-                      className={cn(
-                        "cursor-pointer transition-all hover:shadow-lg border-2 relative overflow-hidden group",
-                        selectedOffer?.id === offer.id ? "border-brand-500 bg-brand-50/50" : "border-muted hover:border-brand-300"
-                      )}
+                <div className="grid grid-cols-3 gap-4">
+                  {results.map((offer, index) => (
+                    <div
+                      key={offer.id}
                       onClick={() => setSelectedOffer(offer)}
+                      className={cn(
+                        "cursor-pointer flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all hover:shadow-lg group",
+                        selectedOffer?.id === offer.id
+                          ? "border-brand-500 bg-brand-50/60 shadow-md"
+                          : "border-muted bg-white hover:border-brand-300"
+                      )}
                     >
-                      {/* Truck Animation Background */}
-                      <div className="absolute -right-4 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <Truck className="h-24 w-24 rotate-12" />
+                      {/* Badge melhor preço */}
+                      <div className="h-5 flex items-center">
+                        {index === 0 && (
+                          <span className="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                            Melhor preço
+                          </span>
+                        )}
                       </div>
 
-                      <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                        <div className="flex items-center gap-6">
-                          {/* Logo em esfera + nome da transportadora */}
-                          <div className="flex flex-col items-center gap-1.5 shrink-0">
-                            <div className={cn(
-                              "w-16 h-16 rounded-full flex items-center justify-center overflow-hidden transition-all shrink-0 shadow-md",
-                              selectedOffer?.id === offer.id
-                                ? "bg-brand-500 text-white ring-2 ring-brand-500 ring-offset-2"
-                                : "bg-white text-brand-600 border-2 border-brand-100"
-                            )}>
-                              {offer.logoUrl ? (
-                                <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1.5" />
-                              ) : (
-                                <Truck className="h-8 w-8" />
-                              )}
-                            </div>
-                            <span className="text-[11px] font-semibold text-center text-muted-foreground leading-tight max-w-[80px] truncate" title={offer.carrier}>
-                              {offer.carrier}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-bold text-xl">Proposta recomendada</h3>
-                              <span className="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                                {offer.type}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3.5 w-3.5" /> {offer.deadline}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-brand-500" /> Seguro Incluso
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right bg-background/50 p-3 rounded-xl border border-brand-100">
-                          <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Preço Final</p>
-                          <p className="text-3xl font-black text-orange-500">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      {/* Esfera com logo */}
+                      <div className={cn(
+                        "w-20 h-20 rounded-full flex items-center justify-center overflow-hidden transition-all shadow-lg",
+                        selectedOffer?.id === offer.id
+                          ? "bg-brand-500 text-white ring-4 ring-brand-400 ring-offset-2"
+                          : "bg-white text-brand-600 border-2 border-brand-100 group-hover:border-brand-300 group-hover:shadow-xl"
+                      )}>
+                        {offer.logoUrl ? (
+                          <Image src={offer.logoUrl} alt={offer.carrier} width={80} height={80} className="w-full h-full object-contain p-2" />
+                        ) : (
+                          <Truck className="h-9 w-9" />
+                        )}
+                      </div>
+
+                      {/* Nome da transportadora */}
+                      <p className="text-sm font-bold text-center text-slate-700 leading-tight line-clamp-2" title={offer.carrier}>
+                        {offer.carrier}
+                      </p>
+
+                      {/* Prazo */}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{offer.deadline}</span>
+                      </div>
+
+                      {/* Preço */}
+                      <div className="mt-auto w-full text-center bg-orange-50 rounded-xl py-2 px-3 border border-orange-100">
+                        <p className="text-[10px] text-orange-400 font-semibold uppercase tracking-widest">Preço Final</p>
+                        <p className="text-xl font-black text-orange-500">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(offer.price)}
+                        </p>
+                      </div>
+
+                      {/* Seguro incluso */}
+                      <div className="flex items-center gap-1 text-[11px] text-brand-600 font-medium">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Seguro Incluso</span>
+                      </div>
+                    </div>
                   ))}
                 </div>
 
