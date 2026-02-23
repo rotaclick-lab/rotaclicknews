@@ -122,6 +122,7 @@ export async function POST(request: Request) {
       .or('is_active.is.null,is_active.eq.true')
 
     console.log('Debug - Rotas encontradas (busca exata):', routes?.length || 0, routesError)
+    console.log('Debug - Exemplo de rotas no banco:', routes?.slice(0, 2))
 
     if (routesError) {
       console.error('Erro ao consultar freight_routes:', routesError)
