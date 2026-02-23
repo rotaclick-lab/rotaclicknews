@@ -1,22 +1,21 @@
 /**
- * Integração com API ViaCEP
- * Obtém informações de CEP como cidade, estado, bairro
+ * Integração com BrasilAPI
+ * API brasileira moderna e sem CORS para dados de CEP
  */
 
-export interface ViaCEPResponse {
+export interface BrasilAPIResponse {
   cep: string
   logradouro: string
   complemento: string
   bairro: string
   localidade: string
   uf: string
-  ibge: string
   gia: string
   ddd: string
   siafi: string
 }
 
-export interface ViaCEPError {
+export interface BrasilAPIError {
   erro: boolean
 }
 
@@ -25,7 +24,7 @@ export interface ViaCEPError {
  * @param cep - CEP no formato 00000-000 ou 00000000
  * @returns Promise com dados do CEP ou null se não encontrar
  */
-export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
+export async function buscarCEP(cep: string): Promise<BrasilAPIResponse | null> {
   try {
     // Normalizar CEP para apenas dígitos
     const cepLimpo = cep.replace(/\D/g, '')
@@ -62,7 +61,7 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
 
     console.log('BrasilAPI - CEP encontrado:', { cidade: data.city, uf: data.state })
 
-    // Converter para formato ViaCEP (compatibilidade)
+    // Converter para formato compatível
     return {
       cep: data.cep,
       logradouro: data.street || '',
@@ -73,7 +72,7 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
       gia: '',
       ddd: '',
       siafi: ''
-    } as ViaCEPResponse
+    } as BrasilAPIResponse
   } catch (error) {
     console.error('Erro ao buscar CEP na BrasilAPI:', error)
     return null

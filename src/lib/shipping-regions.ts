@@ -1,9 +1,9 @@
 /**
- * Sistema de regiões de entrega com ViaCEP
- * Encontra a região correspondente a um CEP usando faixas + API ViaCEP
+ * Sistema de regiões de entrega com BrasilAPI
+ * Encontra a região correspondente a um CEP usando faixas + API BrasilAPI
  */
 
-import { buscarCEP } from './viacep'
+import { buscarCEP } from './brasilapi-integration'
 
 export interface ShippingRegion {
   id: string
@@ -43,18 +43,18 @@ export async function findRegionByCep(cep: string): Promise<ShippingRegion | nul
     return data as ShippingRegion
   }
   
-  // 2. Se não encontrar em faixas, usar ViaCEP
-  console.log('ViaCEP - Buscando CEP:', cep)
+  // 2. Se não encontrar em faixas, usa BrasilAPI
+  console.log('BrasilAPI - Buscando CEP:', cep)
   const dadosCEP = await buscarCEP(cep)
   
   if (!dadosCEP) {
-    console.log('ViaCEP - CEP não encontrado:', cep)
+    console.log('BrasilAPI - CEP não encontrado:', cep)
     return null
   }
   
-  console.log('ViaCEP - CEP encontrado:', { cidade: dadosCEP.localidade, uf: dadosCEP.uf })
+  console.log('BrasilAPI - CEP encontrado:', { cidade: dadosCEP.localidade, uf: dadosCEP.uf })
   
-  // Buscar região pela cidade/estado encontrada no ViaCEP
+  // Buscar região pela cidade/estado encontrada na BrasilAPI
   const { data: regionByCity } = await admin
     .from('shipping_regions')
     .select('*')
@@ -64,7 +64,7 @@ export async function findRegionByCep(cep: string): Promise<ShippingRegion | nul
     .limit(1)
     .single()
   
-  console.log('ViaCEP - Região encontrada por cidade:', regionByCity ? 'SIM' : 'NÃO')
+  console.log('BrasilAPI - Região encontrada por cidade:', regionByCity ? 'SIM' : 'NÃO')
   return regionByCity as ShippingRegion || null
 }
 
