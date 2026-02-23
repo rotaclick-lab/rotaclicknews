@@ -77,7 +77,7 @@ export async function normalizeCepToRegion(cep: string): Promise<string> {
   const region = await findRegionByCep(cep)
   
   if (!region) {
-    // Se não encontrar região, tenta usar ViaCEP para obter um CEP válido
+    // Se não encontrar região, tenta usar BrasilAPI para obter um CEP válido
     const dadosCEP = await buscarCEP(cep)
     if (dadosCEP) {
       return dadosCEP.cep
@@ -85,6 +85,12 @@ export async function normalizeCepToRegion(cep: string): Promise<string> {
     // Se não encontrar nada, retorna o CEP formatado
     return formatCep(cep)
   }
+  
+  console.log('Normalização CEP:', {
+    original: cep,
+    region: region.name,
+    representative: region.representative_cep
+  })
   
   return region.representative_cep
 }
