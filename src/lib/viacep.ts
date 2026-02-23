@@ -21,7 +21,7 @@ export interface ViaCEPError {
 }
 
 /**
- * Busca informações de um CEP na API ViaCEP (via proxy)
+ * Busca informações de um CEP na BrasilAPI
  * @param cep - CEP no formato 00000-000 ou 00000000
  * @returns Promise com dados do CEP ou null se não encontrar
  */
@@ -34,30 +34,48 @@ export async function buscarCEP(cep: string): Promise<ViaCEPResponse | null> {
       return null
     }
 
-    // Usar nossa API route como proxy para evitar CORS
-    const response = await fetch(`/api/viacep/${cepLimpo}`, {
+    // Usar BrasilAPI diretamente (sem CORS)
+    const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'User-Agent': 'RotaClick-Freight/1.0'
       },
       // Timeout de 5 segundos
       signal: AbortSignal.timeout(5000)
     })
 
     if (!response.ok) {
+      if (response.status === 404) {
+        console.log('BrasilAPI - CEP não encontrado:', cep)
+      }
       return null
     }
 
     const data = await response.json()
 
-    // Verificar se houve erro na resposta
-    if (data && typeof data === 'object' && 'error' in data) {
+    // BrasilAPI retorna erro com status 404, mas também pode retornar objeto de erro
+    if (data && typeof data === 'object' && 'message' in data) {
+      console.log('BrasilAPI - Erro:', data.message)
       return null
     }
 
-    return data as ViaCEPResponse
+    console.log('BrasilAPI - CEP encontrado:', { cidade: data.city, uf: data.state })
+
+    // Converter para formato ViaCEP (compatibilidade)
+    return {
+      cep: data.cep,
+      logradouro: data.street || '',
+      complemento: '',
+      bairro: data.neighborhood || '',
+      localidade: data.city,
+      uf: data.state,
+      gia: '',
+      ddd: '',
+      siafi: ''
+    } as ViaCEPResponse
   } catch (error) {
-    console.error('Erro ao buscar CEP:', error)
+    console.error('Erro ao buscar CEP na BrasilAPI:', error)
     return null
   }
 }

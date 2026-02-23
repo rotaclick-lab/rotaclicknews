@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { rateLimit } from '@/app/api/rate-limit'
-import { buscarCEP } from '@/lib/viacep'
+import { buscarCEPBrasilAPI, converterBrasilAPIParaViaCEP } from '@/lib/brasilapi'
 
 export async function GET(
   request: Request,
@@ -22,7 +22,17 @@ export async function GET(
     }
 
     // Buscar informações do CEP
-    const dados = await buscarCEP(cep)
+    const dadosBrasilAPI = await buscarCEPBrasilAPI(cep)
+    
+    if (!dadosBrasilAPI) {
+      return NextResponse.json(
+        { error: 'CEP não encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Converter para formato ViaCEP (compatibilidade)
+    const dados = converterBrasilAPIParaViaCEP(dadosBrasilAPI)
     
     if (!dados) {
       return NextResponse.json(

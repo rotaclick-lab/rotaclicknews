@@ -218,11 +218,18 @@ export default function RegistroPage() {
     }
   }
 
-  // ===== CEP HANDLING TEMPORARIAMENTE DESABILITADO =====
-  // TODO: Reabilitar após deploy da nova versão com proxy ViaCEP
+  // ===== CEP HANDLING COM BRASILAPI (SEM CORS) =====
   const handleAddressFound = (endereco: EnderecoViaCEP) => {
-    // Função temporariamente desabilitada
-    console.log('ViaCEP temporariamente desabilitado')
+    setForm(prev => ({
+      ...prev,
+      cep: endereco.cep,
+      logradouro: endereco.logradouro || prev.logradouro,
+      bairro: endereco.bairro || prev.bairro,
+      cidade: endereco.cidade || prev.cidade,
+      uf: endereco.estado || prev.uf,
+    }))
+    setCepValid(true)
+    setErrors(prev => ({ ...prev, cep: undefined }))
   }
 
   // ===== REAL-TIME IE VALIDATION =====
@@ -623,17 +630,15 @@ export default function RegistroPage() {
                 <div className="grid grid-cols-12 gap-6">
                   <div className="col-span-12 md:col-span-3">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">CEP <span className="text-red-400">*</span></label>
-                    <div className="relative">
-                      <input
-                        className={inputClass('cep')}
-                        placeholder="00000-000"
-                        value={form.cep}
-                        onChange={e => set('cep', maskCEP(e.target.value))}
-                        maxLength={9}
-                        required
-                      />
-                    </div>
-                    {errorMessage('cep')}
+                    <CepInput
+                      value={form.cep}
+                      onChange={(value) => set('cep', value)}
+                      onAddressFound={handleAddressFound}
+                      placeholder="00000-000"
+                      className={inputClass('cep')}
+                      required
+                    />
+                    {cepValid === true && !errors.cep && successIndicator(true)}
                   </div>
                   <div className="col-span-12 md:col-span-7">
                     <label className="block text-[18px] font-medium text-slate-700 mb-2">Logradouro</label>
