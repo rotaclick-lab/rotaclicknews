@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { redirect, notFound } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { PageBuilderClient } from './page-builder-client'
 
 export const dynamic = 'force-dynamic'
@@ -24,7 +24,7 @@ export default async function CampaignPageBuilderPage({ params }: { params: { id
     .eq('id', params.id)
     .single()
 
-  if (!campaign) notFound()
+  if (!campaign) redirect('/admin/campanhas')
 
   return (
     <div className="h-screen overflow-hidden bg-slate-50">
