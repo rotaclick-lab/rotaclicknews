@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { Toaster } from 'sonner'
 import { updateCampaign, type Campaign, type PageBlock } from '@/app/actions/platform-actions'
 import {
   Save, Eye, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown,
   Type, ImageIcon, MousePointer, Columns, Minus, Video, Layout,
   Loader2, GripVertical,
 } from 'lucide-react'
-import Link from 'next/link'
 
 const BLOCK_TYPES: Array<{
   type: PageBlock['type']
@@ -32,7 +32,7 @@ const BLOCK_TYPES: Array<{
     type: 'text',
     label: 'Bloco de Texto',
     icon: Type,
-    description: 'Parágrafo de texto rico',
+    description: 'Parágrafo de texto',
     defaultContent: { content: 'Escreva seu texto aqui.', align: 'left', text_color: '#1e293b', font_size: '16' },
   },
   {
@@ -60,7 +60,7 @@ const BLOCK_TYPES: Array<{
     type: 'video',
     label: 'Vídeo',
     icon: Video,
-    description: 'Embed de vídeo do YouTube ou Vimeo',
+    description: 'Embed YouTube ou Vimeo',
     defaultContent: { url: '', caption: '' },
   },
   {
@@ -232,8 +232,8 @@ function BlockEditor({ block, onChange }: { block: PageBlock; onChange: (content
       {block.type === 'image' && (<>{field('src', 'URL da imagem', 'url')}{field('alt', 'Texto alternativo')}{field('caption', 'Legenda')}{field('width', 'Largura (%)', 'number')}</>)}
       {block.type === 'cta' && (<>{field('title', 'Título')}{field('subtitle', 'Subtítulo', 'textarea')}{field('button_label', 'Texto do botão')}{field('button_url', 'URL do botão', 'url')}{field('button_color', 'Cor do botão', 'color')}{field('bg_color', 'Cor de fundo', 'color')}{field('text_color', 'Cor do texto', 'color')}</>)}
       {block.type === 'columns' && (<>{field('left_title', 'Título esquerda')}{field('left_text', 'Texto esquerda', 'textarea')}{field('left_image', 'Imagem esquerda (URL)', 'url')}{field('right_title', 'Título direita')}{field('right_text', 'Texto direita', 'textarea')}{field('right_image', 'Imagem direita (URL)', 'url')}</>)}
-      {block.type === 'video' && (<>{field('url', 'URL do YouTube / Vimeo', 'url')}{field('caption', 'Legenda')}</>)}
-      {block.type === 'divider' && (<>{field('color', 'Cor da linha', 'color')}{field('margin', 'Espaçamento vertical (px)', 'number')}</>)}
+      {block.type === 'video' && (<>{field('url', 'URL YouTube / Vimeo', 'url')}{field('caption', 'Legenda')}</>)}
+      {block.type === 'divider' && (<>{field('color', 'Cor da linha', 'color')}{field('margin', 'Espaçamento (px)', 'number')}</>)}
     </div>
   )
 }
@@ -281,142 +281,166 @@ export function PageBuilderClient({ campaign }: { campaign: Campaign }) {
       page_content: blocks,
     })
     setSaving(false)
-    if (res.success) toast.success('Página salva com sucesso!')
+    if (res.success) toast.success('Página salva!')
     else toast.error(res.error ?? 'Erro ao salvar')
   }
 
   const publicUrl = slug ? `/campanhas/${slug}` : null
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Top bar */}
-      <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
-        <Link href="/admin/campanhas">
-          <Button variant="ghost" size="icon" className="h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
-        </Link>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{campaign.title}</p>
-          <p className="text-xs text-muted-foreground">Editor de página da campanha</p>
-        </div>
-        <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">/campanhas/</span>
-          <input
-            value={slug}
-            onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
-            placeholder="meu-slug"
-            className="text-sm border-none outline-none bg-transparent w-28"
-          />
-        </div>
-        {publicUrl && (
-          <a href={publicUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm"><Eye className="h-4 w-4 mr-2" />Visualizar</Button>
-          </a>
-        )}
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Salvar
-        </Button>
-      </div>
+    <>
+      <Toaster richColors />
+      <div className="flex flex-col h-screen bg-white font-sans">
+        {/* Top bar */}
+        <div className="border-b border-slate-200 px-4 py-2.5 flex items-center gap-3 flex-shrink-0 bg-white shadow-sm">
+          <button
+            onClick={() => { window.location.href = '/admin/campanhas' }}
+            className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            title="Voltar"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate text-slate-800">{campaign.title}</p>
+            <p className="text-xs text-slate-500">Editor de página</p>
+          </div>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Left: block palette */}
-        <div className="w-56 border-r border-slate-200 bg-white overflow-y-auto flex-shrink-0">
-          <div className="p-3 border-b border-slate-100">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Blocos</p>
+          {/* Slug */}
+          <div className="hidden md:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+            <span className="text-xs text-slate-400 select-none">/campanhas/</span>
+            <input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
+              placeholder="meu-slug"
+              className="text-sm border-none outline-none bg-transparent w-32 text-slate-700"
+            />
           </div>
-          <div className="p-2 space-y-1">
-            {BLOCK_TYPES.map((bt) => (
-              <button
-                key={bt.type}
-                onClick={() => addBlock(bt.type)}
-                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-slate-50 text-left transition-colors group"
-              >
-                <div className="p-1.5 rounded-md bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors flex-shrink-0">
-                  <bt.icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-700 leading-tight">{bt.label}</p>
-                  <p className="text-xs text-muted-foreground leading-tight truncate">{bt.description}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+
+          {publicUrl && (
+            <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition-colors"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Visualizar
+            </a>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-slate-900 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-slate-700 disabled:opacity-50 transition-colors"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            Salvar
+          </button>
         </div>
 
-        {/* Center: canvas */}
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-6">
-          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm min-h-[600px] overflow-hidden">
-            {blocks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-96 text-center gap-4 text-muted-foreground">
-                <Plus className="h-10 w-10 opacity-30" />
-                <p className="text-sm">Adicione blocos no painel esquerdo para construir sua página</p>
+        <div className="flex flex-1 min-h-0">
+          {/* Left: block palette */}
+          <div className="w-52 border-r border-slate-200 bg-slate-50 overflow-y-auto flex-shrink-0">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Adicionar bloco</p>
+            <div className="px-2 pb-4 space-y-0.5">
+              {BLOCK_TYPES.map((bt) => (
+                <button
+                  key={bt.type}
+                  onClick={() => addBlock(bt.type)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white hover:shadow-sm text-left transition-all group"
+                >
+                  <div className="p-1.5 rounded-md bg-white border border-slate-200 group-hover:border-slate-300 flex-shrink-0">
+                    <bt.icon className="h-3.5 w-3.5 text-slate-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-700 leading-tight">{bt.label}</p>
+                    <p className="text-xs text-slate-400 leading-tight truncate">{bt.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Center: canvas */}
+          <div className="flex-1 overflow-y-auto bg-slate-100 p-8">
+            <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm min-h-[600px] overflow-hidden ring-1 ring-slate-200">
+              {blocks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[500px] text-center gap-3 text-slate-400">
+                  <div className="p-4 rounded-2xl bg-slate-50">
+                    <Plus className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm font-medium">Clique em um bloco à esquerda para começar</p>
+                </div>
+              ) : (
+                <div>
+                  {blocks.map((block, idx) => {
+                    const isSelected = block.id === selectedId
+                    return (
+                      <div
+                        key={block.id}
+                        onClick={() => setSelectedId(block.id)}
+                        className={`relative group cursor-pointer ${isSelected ? 'outline outline-2 outline-blue-500 outline-offset-[-2px]' : 'hover:outline hover:outline-1 hover:outline-slate-300 hover:outline-offset-[-1px]'}`}
+                      >
+                        {/* Toolbar */}
+                        <div className={`absolute top-2 right-2 z-20 flex gap-1 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <button onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'up') }} disabled={idx === 0} className="p-1 bg-white rounded shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronUp className="h-3 w-3" />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'down') }} disabled={idx === blocks.length - 1} className="p-1 bg-white rounded shadow-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronDown className="h-3 w-3" />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); removeBlock(block.id) }} className="p-1 bg-white rounded shadow-sm border border-red-200 hover:bg-red-50 text-red-500">
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {/* Type badge */}
+                        <div className={`absolute top-2 left-2 z-20 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-md font-medium flex items-center gap-1">
+                            <GripVertical className="h-3 w-3" />
+                            {BLOCK_TYPES.find((t) => t.type === block.type)?.label}
+                          </span>
+                        </div>
+                        <div className="p-6">
+                          <BlockPreview block={block} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: properties panel */}
+          <div className="w-64 border-l border-slate-200 bg-white overflow-y-auto flex-shrink-0">
+            {selectedBlock ? (
+              <div className="p-4 space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  {(() => {
+                    const def = BLOCK_TYPES.find((t) => t.type === selectedBlock.type)
+                    if (!def) return null
+                    return (
+                      <>
+                        <div className="p-1.5 rounded-md border border-slate-200 bg-slate-50">
+                          <def.icon className="h-3.5 w-3.5 text-slate-600" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-800">{def.label}</p>
+                      </>
+                    )
+                  })()}
+                </div>
+                <BlockEditor
+                  block={selectedBlock}
+                  onChange={(content) => updateBlockContent(selectedBlock.id, content)}
+                />
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
-                {blocks.map((block, idx) => {
-                  const isSelected = block.id === selectedId
-                  return (
-                    <div
-                      key={block.id}
-                      onClick={() => setSelectedId(block.id)}
-                      className={`relative group cursor-pointer transition-all ${isSelected ? 'ring-2 ring-blue-400 ring-inset' : 'hover:ring-1 hover:ring-slate-300 hover:ring-inset'}`}
-                    >
-                      <div className={`absolute top-2 right-2 z-10 flex gap-1 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                        <button onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'up') }} disabled={idx === 0} className="p-1 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-30">
-                          <ChevronUp className="h-3 w-3" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); moveBlock(block.id, 'down') }} disabled={idx === blocks.length - 1} className="p-1 bg-white border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-30">
-                          <ChevronDown className="h-3 w-3" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); removeBlock(block.id) }} className="p-1 bg-white border border-red-200 rounded hover:bg-red-50 text-red-500">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <div className={`absolute top-2 left-2 z-10 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
-                        <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded font-medium flex items-center gap-1">
-                          <GripVertical className="h-3 w-3" />
-                          {BLOCK_TYPES.find((t) => t.type === block.type)?.label}
-                        </span>
-                      </div>
-                      <div className="p-6"><BlockPreview block={block} /></div>
-                    </div>
-                  )
-                })}
+              <div className="flex flex-col items-center justify-center h-64 gap-2 text-slate-400 p-6 text-center">
+                <Layout className="h-6 w-6 opacity-40" />
+                <p className="text-xs">Selecione um bloco no canvas para editar</p>
               </div>
             )}
           </div>
         </div>
-
-        {/* Right: block editor */}
-        <div className="w-72 border-l border-slate-200 bg-white overflow-y-auto flex-shrink-0">
-          {selectedBlock ? (
-            <div className="p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                {(() => {
-                  const def = BLOCK_TYPES.find((t) => t.type === selectedBlock.type)
-                  if (!def) return null
-                  return (
-                    <>
-                      <div className="p-1.5 rounded-md bg-blue-50 text-blue-600"><def.icon className="h-4 w-4" /></div>
-                      <div>
-                        <p className="text-sm font-semibold">{def.label}</p>
-                        <p className="text-xs text-muted-foreground">{def.description}</p>
-                      </div>
-                    </>
-                  )
-                })()}
-              </div>
-              <hr className="border-slate-100" />
-              <BlockEditor block={selectedBlock} onChange={(content) => updateBlockContent(selectedBlock.id, content)} />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground p-6 text-center">
-              <Layout className="h-8 w-8 opacity-30" />
-              <p className="text-sm">Clique em um bloco no canvas para editar suas propriedades</p>
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   )
 }
