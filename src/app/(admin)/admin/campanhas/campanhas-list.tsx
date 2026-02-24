@@ -446,11 +446,12 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Link href={`/admin/campanhas/${c.id}/page-builder`}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-brand-600" title="Editar página">
-                        <LayoutTemplate className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="ghost" size="icon" className="h-8 w-8 text-brand-600" title="Editar página"
+                      onClick={() => { window.location.href = `/admin/campanhas/${c.id}/page-builder` }}
+                    >
+                      <LayoutTemplate className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost" size="icon" className="h-8 w-8"
                       title={c.status === 'active' ? 'Desativar' : 'Ativar'}
