@@ -114,6 +114,10 @@ async function resolveDefaultRedirectByRole(userId: string): Promise<string> {
     return '/dashboard'
   }
 
+  if (profile?.role === 'admin') {
+    return '/admin'
+  }
+
   if (profile?.role === 'cliente') {
     return '/cliente'
   }
