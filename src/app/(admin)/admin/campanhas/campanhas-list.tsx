@@ -251,7 +251,14 @@ function CampaignForm({
           <Label>Posição (ordem)</Label>
           <Input name="position" type="number" defaultValue={String(initial?.position ?? 0)} min="0" />
         </div>
-        <div />
+        <div>
+          <Label>Slug (URL da página)</Label>
+          <div className="flex items-center">
+            <span className="text-xs text-muted-foreground bg-slate-100 border border-r-0 border-input rounded-l-md px-2 h-9 flex items-center">/campanhas/</span>
+            <Input name="slug" defaultValue={initial?.slug ?? ''} placeholder="minha-campanha" className="rounded-l-none" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Deixe vazio se não quiser página dedicada.</p>
+        </div>
         <div>
           <Label>Início</Label>
           <Input name="starts_at" type="datetime-local" defaultValue={initial?.starts_at?.slice(0, 16) ?? ''} />
@@ -303,6 +310,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
       position: Number(data.position) || 0,
       starts_at: data.starts_at || undefined,
       ends_at: data.ends_at || undefined,
+      slug: data.slug?.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || undefined,
     })
     setLoading(false)
     if (res.success && res.data) {
@@ -332,6 +340,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
       position: Number(data.position) || 0,
       starts_at: data.starts_at || undefined,
       ends_at: data.ends_at || undefined,
+      slug: data.slug?.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || undefined,
     })
     setLoading(false)
     if (res.success) {

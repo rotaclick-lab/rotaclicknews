@@ -50,6 +50,7 @@ type CampaignBanner = {
   link_label: string | null
   bg_color: string | null
   text_color: string | null
+  slug: string | null
 }
 
 export default function HomePage() {
@@ -338,21 +339,31 @@ export default function HomePage() {
         {/* Campanhas */}
         {campaigns.length > 0 && (
           <div className="w-full max-w-[1000px] mx-auto px-4 pt-4 space-y-2">
-            {campaigns.filter(c => c.type === 'banner' || c.type === 'promo').map((c) => (
-              <div key={c.id} className="w-full rounded-xl overflow-hidden" style={{ backgroundColor: c.bg_color ?? '#2BBCB3' }}>
-                <div className="flex items-center justify-between gap-4 px-6 py-3">
-                  <div>
-                    <p className="font-bold text-sm" style={{ color: c.text_color ?? '#fff' }}>{c.title}</p>
-                    {c.description && <p className="text-xs opacity-80" style={{ color: c.text_color ?? '#fff' }}>{c.description}</p>}
+            {campaigns.map((c) => {
+              const href = c.slug ? `/campanhas/${c.slug}` : c.link_url ?? undefined
+              return (
+                <div key={c.id} className="w-full rounded-xl overflow-hidden shadow-sm" style={{ backgroundColor: c.bg_color ?? '#2BBCB3' }}>
+                  <div className="flex items-center justify-between gap-4 px-6 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {c.image_url && (
+                        <div className="relative h-10 w-16 rounded overflow-hidden flex-shrink-0">
+                          <Image src={c.image_url} alt="" fill className="object-cover" unoptimized />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm truncate" style={{ color: c.text_color ?? '#fff' }}>{c.title}</p>
+                        {c.description && <p className="text-xs opacity-80 truncate" style={{ color: c.text_color ?? '#fff' }}>{c.description}</p>}
+                      </div>
+                    </div>
+                    {href && (
+                      <a href={href} className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors" style={{ color: c.text_color ?? '#fff' }}>
+                        {c.link_label ?? 'Saiba mais'}
+                      </a>
+                    )}
                   </div>
-                  {c.link_url && (
-                    <a href={c.link_url} className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30" style={{ color: c.text_color ?? '#fff' }}>
-                      {c.link_label ?? 'Saiba mais'}
-                    </a>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
         {/* Título */}

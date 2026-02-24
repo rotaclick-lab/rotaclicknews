@@ -10,7 +10,7 @@ export async function GET() {
 
     const { data, error } = await admin
       .from('campaigns')
-      .select('id, title, description, type, image_url, link_url, link_label, bg_color, text_color, position')
+      .select('id, title, description, type, image_url, link_url, link_label, bg_color, text_color, position, slug')
       .eq('status', 'active')
       .or(`starts_at.is.null,starts_at.lte.${now}`)
       .or(`ends_at.is.null,ends_at.gte.${now}`)
