@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 interface RoleGuardProps {
@@ -8,14 +9,15 @@ interface RoleGuardProps {
 
 export async function RoleGuard({ children, allowedRole }: RoleGuardProps) {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    const headersList = await headers()
+    const pathname = headersList.get('x-pathname') ?? `/${allowedRole === 'admin' ? 'admin' : 'dashboard'}`
+    redirect(`/login?next=${encodeURIComponent(pathname)}`)
   }
 
-  // Busca o perfil do usuário para verificar a role
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -23,14 +25,8 @@ export async function RoleGuard({ children, allowedRole }: RoleGuardProps) {
     .single()
 
   if (!profile || profile.role !== allowedRole) {
-    if (profile?.role === 'cliente') {
-      redirect('/cliente')
-    }
-    if (profile?.role === 'admin') {
-      redirect('/admin')
-    }
-
-    // fallback para transportadora
+    if (profile?.role === 'admin') redirect('/admin')
+    if (profile?.role === 'cliente') redirect('/cliente')
     redirect('/dashboard')
   }
 
