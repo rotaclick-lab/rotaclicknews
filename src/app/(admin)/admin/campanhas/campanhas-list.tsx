@@ -456,7 +456,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
                   <div className="flex gap-1">
                     <Button
                       variant="ghost" size="icon" className="h-8 w-8 text-brand-600" title="Editar página"
-                      onClick={() => router.push(`/admin-editor/campanhas/${c.id}`)}
+                      onClick={() => { console.log('[Editor btn] campaign:', JSON.stringify({id: c.id, title: c.title})); router.push(`/admin-editor/campanhas/${c.id}`) }}
                     >
                       <LayoutTemplate className="h-4 w-4" />
                     </Button>
