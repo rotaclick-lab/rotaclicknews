@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -457,7 +456,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
                   <div className="flex gap-1">
                     <Button
                       variant="ghost" size="icon" className="h-8 w-8 text-brand-600" title="Editar página"
-                      onClick={() => { window.location.href = `/admin-editor/campanhas/${c.id}` }}
+                      onClick={() => router.push(`/admin-editor/campanhas/${c.id}`)}
                     >
                       <LayoutTemplate className="h-4 w-4" />
                     </Button>
