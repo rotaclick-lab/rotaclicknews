@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ExternalLink, Megaphone } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ExternalLink, Megaphone, Upload, X, Loader2 } from 'lucide-react'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -34,6 +35,102 @@ const STATUS_CLASSES: Record<string, string> = {
   scheduled: 'bg-blue-100 text-blue-800',
 }
 
+function ImageUploader({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (url: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/campaigns/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.url) {
+        toast.error(json.error ?? 'Erro no upload')
+      } else {
+        onChange(json.url)
+        toast.success('Imagem enviada')
+      }
+    } catch {
+      toast.error('Erro ao enviar imagem')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {value ? (
+        <div className="relative w-full h-36 rounded-lg overflow-hidden border border-slate-200 group">
+          <Image src={value} alt="Preview" fill className="object-cover" unoptimized />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
+              Trocar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              onClick={() => onChange('')}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="w-full h-36 rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-slate-700 transition-colors"
+        >
+          {uploading
+            ? <Loader2 className="h-7 w-7 animate-spin" />
+            : <Upload className="h-7 w-7" />}
+          <span className="text-sm">{uploading ? 'Enviando...' : 'Clique para fazer upload'}</span>
+          <span className="text-xs">JPG, PNG, WebP ou GIF — máx. 5MB</span>
+        </button>
+      )}
+
+      {/* Campo oculto para URL manual como fallback */}
+      <div className="flex gap-2 items-center">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Ou cole uma URL de imagem..."
+          className="text-xs"
+        />
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleFile(f)
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
+
 function CampaignForm({
   initial,
   onSubmit,
@@ -43,8 +140,31 @@ function CampaignForm({
   onSubmit: (data: Record<string, string>) => void
   loading: boolean
 }) {
+  const [imageUrl, setImageUrl] = useState(initial?.image_url ?? '')
+  const [bgColor, setBgColor] = useState(initial?.bg_color ?? '#2BBCB3')
+  const [textColor, setTextColor] = useState(initial?.text_color ?? '#FFFFFF')
+
   return (
     <div className="space-y-4">
+      {/* Preview do banner */}
+      <div
+        className="w-full rounded-lg p-4 flex items-center justify-between min-h-[72px] transition-colors"
+        style={{ backgroundColor: bgColor, color: textColor }}
+      >
+        <div className="flex items-center gap-3">
+          {imageUrl && (
+            <div className="relative h-12 w-20 rounded overflow-hidden flex-shrink-0">
+              <Image src={imageUrl} alt="" fill className="object-cover" unoptimized />
+            </div>
+          )}
+          <div>
+            <p className="font-bold text-sm">Preview do banner</p>
+            <p className="text-xs opacity-80">Assim ficará na home</p>
+          </div>
+        </div>
+        <span className="text-xs font-semibold border rounded px-2 py-1" style={{ borderColor: textColor }}>Saiba mais →</span>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <Label>Título *</Label>
@@ -70,32 +190,67 @@ function CampaignForm({
             <option value="scheduled">Agendado</option>
           </select>
         </div>
+
+        {/* Upload de imagem */}
         <div className="col-span-2">
-          <Label>URL da imagem</Label>
-          <Input name="image_url" defaultValue={initial?.image_url ?? ''} placeholder="https://..." />
+          <Label>Imagem do banner</Label>
+          <ImageUploader value={imageUrl} onChange={setImageUrl} />
+          <input type="hidden" name="image_url" value={imageUrl} />
         </div>
-        <div>
-          <Label>Link (URL)</Label>
-          <Input name="link_url" defaultValue={initial?.link_url ?? ''} placeholder="https://..." />
+
+        {/* Link */}
+        <div className="col-span-2">
+          <Label>Link &quot;Saiba mais&quot; (URL de destino)</Label>
+          <Input name="link_url" defaultValue={initial?.link_url ?? ''} placeholder="https://... (ex: /transportadoras ou link externo)" />
         </div>
-        <div>
-          <Label>Label do botão</Label>
-          <Input name="link_label" defaultValue={initial?.link_label ?? ''} placeholder="Saiba mais" />
+        <div className="col-span-2">
+          <Label>Texto do botão</Label>
+          <Input name="link_label" defaultValue={initial?.link_label ?? 'Saiba mais'} placeholder="Saiba mais" />
         </div>
+
+        {/* Cores */}
         <div>
           <Label>Cor de fundo</Label>
           <div className="flex gap-2 items-center">
-            <Input name="bg_color" defaultValue={initial?.bg_color ?? '#2BBCB3'} placeholder="#2BBCB3" className="flex-1" />
+            <input
+              type="color"
+              value={bgColor}
+              onChange={(e) => setBgColor(e.target.value)}
+              className="h-9 w-10 rounded border cursor-pointer p-0.5"
+            />
+            <Input
+              name="bg_color"
+              value={bgColor}
+              onChange={(e) => setBgColor(e.target.value)}
+              placeholder="#2BBCB3"
+              className="flex-1"
+            />
           </div>
         </div>
         <div>
           <Label>Cor do texto</Label>
-          <Input name="text_color" defaultValue={initial?.text_color ?? '#FFFFFF'} placeholder="#FFFFFF" />
+          <div className="flex gap-2 items-center">
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              className="h-9 w-10 rounded border cursor-pointer p-0.5"
+            />
+            <Input
+              name="text_color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+              placeholder="#FFFFFF"
+              className="flex-1"
+            />
+          </div>
         </div>
+
         <div>
           <Label>Posição (ordem)</Label>
           <Input name="position" type="number" defaultValue={String(initial?.position ?? 0)} min="0" />
         </div>
+        <div />
         <div>
           <Label>Início</Label>
           <Input name="starts_at" type="datetime-local" defaultValue={initial?.starts_at?.slice(0, 16) ?? ''} />
