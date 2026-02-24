@@ -476,7 +476,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
 
       {/* Create */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Nova campanha</DialogTitle></DialogHeader>
           <form onSubmit={handleCreate}>
             <CampaignForm onSubmit={() => {}} loading={loading} />
@@ -486,7 +486,7 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
 
       {/* Edit */}
       <Dialog open={!!editItem} onOpenChange={(o) => !o && setEditItem(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader><DialogTitle>Editar campanha</DialogTitle></DialogHeader>
           {editItem && (
             <form onSubmit={handleEdit}>
