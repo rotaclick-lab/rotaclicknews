@@ -29,11 +29,13 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_position ON public.campaigns(position);
 -- RLS: apenas admins gerenciam; público pode ler campanhas ativas
 ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read active campaigns" ON public.campaigns;
 CREATE POLICY "Public read active campaigns"
   ON public.campaigns
   FOR SELECT
   USING (status = 'active');
 
+DROP POLICY IF EXISTS "Admin full access on campaigns" ON public.campaigns;
 CREATE POLICY "Admin full access on campaigns"
   ON public.campaigns
   FOR ALL
