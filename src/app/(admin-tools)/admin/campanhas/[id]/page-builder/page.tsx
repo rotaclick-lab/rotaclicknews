@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { PageBuilderClient } from '@/app/(admin)/admin/campanhas/[id]/page-builder/page-builder-client'
+import { PageBuilderClient } from './page-builder-client'
 
 export const dynamic = 'force-dynamic'
 
