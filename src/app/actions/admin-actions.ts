@@ -690,3 +690,108 @@ export async function getCarrierFinancialSummary(carrierId: string) {
     data: { totalRevenue, totalCarrierAmount, totalRotaclick, pendingCount: pending.length, paidCount: paid.length, freights: rows },
   }
 }
+
+// =====================================================
+// CARRIER INTEGRATIONS
+// =====================================================
+
+export type IntegrationType = 'ssw' | 'intelipost' | 'mandae' | 'correios' | 'manual'
+
+export interface CarrierIntegration {
+  id: string
+  company_id: string
+  integration_type: IntegrationType
+  is_active: boolean
+  config: Record<string, string>
+  notes: string | null
+  negotiated_at: string | null
+  created_at: string
+  updated_at: string
+  company?: { id: string; name: string; cnpj: string; document: string }
+}
+
+export async function listCarrierIntegrations(params?: { companyId?: string }) {
+  const { admin } = await requireAdmin()
+
+  let query = admin
+    .from('carrier_integrations')
+    .select('*, company:companies(id, name, cnpj, document)')
+    .order('created_at', { ascending: false })
+
+  if (params?.companyId) {
+    query = query.eq('company_id', params.companyId)
+  }
+
+  const { data, error } = await query
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const, data: (data ?? []) as CarrierIntegration[] }
+}
+
+export async function upsertCarrierIntegration(payload: {
+  companyId: string
+  integrationType: IntegrationType
+  config: Record<string, string>
+  notes?: string
+  negotiatedAt?: string
+  isActive?: boolean
+}) {
+  const { admin, user } = await requireAdmin()
+
+  const { data, error } = await admin
+    .from('carrier_integrations')
+    .upsert(
+      {
+        company_id: payload.companyId,
+        integration_type: payload.integrationType,
+        config: payload.config,
+        notes: payload.notes ?? null,
+        negotiated_at: payload.negotiatedAt ?? null,
+        is_active: payload.isActive ?? true,
+        negotiated_by: user.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'company_id,integration_type' }
+    )
+    .select()
+    .single()
+
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const, data }
+}
+
+export async function toggleCarrierIntegration(integrationId: string, isActive: boolean) {
+  const { admin } = await requireAdmin()
+
+  const { error } = await admin
+    .from('carrier_integrations')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('id', integrationId)
+
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const }
+}
+
+export async function deleteCarrierIntegration(integrationId: string) {
+  const { admin } = await requireAdmin()
+
+  const { error } = await admin
+    .from('carrier_integrations')
+    .delete()
+    .eq('id', integrationId)
+
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const }
+}
+
+export async function listCompaniesForIntegration() {
+  const { admin } = await requireAdmin()
+
+  const { data, error } = await admin
+    .from('companies')
+    .select('id, name, cnpj, document, is_active, logo_url')
+    .eq('approval_status', 'approved')
+    .order('name', { ascending: true })
+
+  if (error) return { success: false as const, error: error.message }
+  return { success: true as const, data: data ?? [] }
+}
