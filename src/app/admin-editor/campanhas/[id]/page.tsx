@@ -5,8 +5,9 @@ import { PageBuilderClient } from './page-builder-client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function CampaignEditorPage({ params }: { params: { id: string } }) {
-  console.log('[Editor] acessando id:', params.id)
+export default async function CampaignEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  console.log('[Editor] acessando id:', id)
   const supabase = await createClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   console.log('[Editor] user:', user?.id ?? 'null', '| authError:', authError?.message ?? 'none')
@@ -25,7 +26,7 @@ export default async function CampaignEditorPage({ params }: { params: { id: str
   const { data: campaign, error: campaignError } = await admin
     .from('campaigns')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
   console.log('[Editor] campaign:', campaign?.id ?? 'null', '| campaignError:', campaignError?.message ?? 'none')
 
