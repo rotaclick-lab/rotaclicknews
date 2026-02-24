@@ -3,11 +3,12 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ExternalLink, Megaphone, Upload, X, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight, ExternalLink, Megaphone, Upload, X, Loader2, LayoutTemplate } from 'lucide-react'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -69,7 +70,7 @@ function ImageUploader({
     <div className="space-y-2">
       {value ? (
         <div className="relative w-full h-36 rounded-lg overflow-hidden border border-slate-200 group">
-          <Image src={value} alt="Preview" fill className="object-cover" unoptimized />
+          <Image src={value} alt="Preview" fill className="object-contain" unoptimized />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <Button
               type="button"
@@ -390,8 +391,9 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
               <TableHead>Tipo</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Posição</TableHead>
+              <TableHead>Página</TableHead>
               <TableHead>Período</TableHead>
-              <TableHead className="w-[120px]">Ações</TableHead>
+              <TableHead className="w-[150px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -425,6 +427,18 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
                   </span>
                 </TableCell>
                 <TableCell className="text-sm">{c.position}</TableCell>
+                <TableCell>
+                  {c.slug ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 font-mono">/campanhas/{c.slug}</span>
+                      <a href={`/campanhas/${c.slug}`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3 w-3 text-indigo-500" />
+                      </a>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-400 italic">Sem página</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {c.starts_at ? new Date(c.starts_at).toLocaleDateString('pt-BR') : '—'}
                   {' → '}
@@ -432,6 +446,11 @@ export function CampanhasList({ campaigns: initial }: { campaigns: Campaign[] })
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    <Link href={`/admin/campanhas/${c.id}/page-builder`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-brand-600" title="Editar página">
+                        <LayoutTemplate className="h-4 w-4" />
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost" size="icon" className="h-8 w-8"
                       title={c.status === 'active' ? 'Desativar' : 'Ativar'}

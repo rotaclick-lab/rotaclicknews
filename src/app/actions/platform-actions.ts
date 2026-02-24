@@ -99,6 +99,12 @@ export async function updatePlatformSettingsBatch(settings: Record<string, strin
 
 // ===== CAMPAIGNS =====
 
+export type PageBlock = {
+  id: string
+  type: 'hero' | 'text' | 'image' | 'cta' | 'columns' | 'divider' | 'video'
+  content: Record<string, string | number | boolean>
+}
+
 export type Campaign = {
   id: string
   title: string
@@ -114,6 +120,8 @@ export type Campaign = {
   position: number
   starts_at: string | null
   ends_at: string | null
+  slug: string | null
+  page_content: PageBlock[] | null
   created_at: string
 }
 
@@ -167,6 +175,8 @@ export async function createCampaign(data: {
   position?: number
   starts_at?: string
   ends_at?: string
+  slug?: string
+  page_content?: PageBlock[]
 }) {
   try {
     const { user, admin } = await requireAdmin()
@@ -206,6 +216,8 @@ export async function updateCampaign(
     position: number
     starts_at: string
     ends_at: string
+    slug: string
+    page_content: PageBlock[]
   }>
 ) {
   try {
