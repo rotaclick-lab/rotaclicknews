@@ -39,9 +39,9 @@ CREATE POLICY "Admin full access on carrier_integrations"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM users u
-      WHERE u.id = auth.uid()
-      AND u.role = 'admin'
+      SELECT 1 FROM profiles p
+      WHERE p.id = auth.uid()
+      AND p.role = 'admin'
     )
   );
 
