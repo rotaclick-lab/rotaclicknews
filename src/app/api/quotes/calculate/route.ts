@@ -183,7 +183,7 @@ export async function POST(request: Request) {
     console.log('Debug - Companies encontradas:', companies?.length || 0)
     console.log('Debug - CarrierIds:', carrierIds)
 
-    const offers = validRoutes
+    const localOffers = validRoutes
       .map((route) => {
         const profile = profileById.get(route.carrier_id)
         const company = profile?.company_id ? companyById.get(String(profile.company_id)) : undefined
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
         const offer = {
           id: route.id,
           carrier: carrierName,
-          logoUrl: company?.logo_url ?? null,
+          logoUrl: (company?.logo_url as string | null) ?? null,
           price: calculateFreightTotal(route, taxableWeight, invoiceValue),
           deadline: route.deadline_days ? `${route.deadline_days} dias úteis` : 'Prazo sob consulta',
           type: 'Tabela Importada',
@@ -211,11 +211,40 @@ export async function POST(request: Request) {
         console.log('Debug - Offer criada:', offer)
         return offer
       })
-      .sort((a, b) => a.price - b.price)
 
-    console.log('Debug - Final offers:', offers)
+    // Busca SSW em paralelo (não bloqueia se falhar)
+    let sswOffers: Array<{ id: string; carrier: string; logoUrl: string | null; price: number; deadline: string; type: string }> = []
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const sswRes = await fetch(`${baseUrl}/api/quotes/ssw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cepOrigem: originDigits,
+          cepDestino: destinationDigits,
+          peso: taxableWeight,
+          valor: invoiceValue,
+          volumes: 1,
+        }),
+        signal: AbortSignal.timeout(12000),
+      })
+      if (sswRes.ok) {
+        const sswData = await sswRes.json()
+        sswOffers = (sswData.data ?? []).map((o: { id: string; carrier: string; logoUrl: string | null; price: number; deadline: string }) => ({
+          ...o,
+          type: 'SSW',
+        }))
+        console.log('Debug - SSW offers:', sswOffers.length)
+      }
+    } catch (sswErr) {
+      console.warn('SSW indisponível ou timeout:', sswErr)
+    }
 
-    return NextResponse.json({ success: true, data: offers })
+    const allOffers = [...localOffers, ...sswOffers].sort((a, b) => a.price - b.price)
+
+    console.log('Debug - Final offers:', allOffers.length)
+
+    return NextResponse.json({ success: true, data: allOffers })
   } catch (error) {
     console.error('Erro inesperado ao calcular cotação:', error)
     return NextResponse.json({ success: false, error: 'Erro inesperado ao calcular cotação.' }, { status: 500 })
