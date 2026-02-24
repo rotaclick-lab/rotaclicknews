@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ExternalLink, Info, Shield, Zap } from 'lucide-react'
+import pkg from '@/../package.json'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,8 @@ async function getPlatformStats() {
 
 const ENV_VARS = [
   { key: 'NEXT_PUBLIC_SUPABASE_URL', label: 'Supabase URL' },
-  { key: 'NEXT_PUBLIC_APP_URL', label: 'App URL' },
+  { key: 'NEXT_PUBLIC_APP_URL', label: 'App URL (Produção)' },
+  { key: 'SUPABASE_SERVICE_ROLE_KEY', label: 'Supabase Service Role Key', secret: true },
   { key: 'STRIPE_SECRET_KEY', label: 'Stripe Secret Key', secret: true },
   { key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', label: 'Stripe Publishable Key' },
   { key: 'GOOGLE_MAPS_API_KEY', label: 'Google Maps API Key', secret: true },
@@ -153,8 +155,8 @@ export default async function AdminConfiguracoesPage() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {[
-              { label: 'Versão', value: '1.0.0' },
-              { label: 'Framework', value: 'Next.js 16' },
+              { label: 'Versão', value: pkg.version ?? '—' },
+              { label: 'Framework', value: 'Next.js 15' },
               { label: 'Banco de dados', value: 'Supabase (PostgreSQL)' },
               { label: 'Pagamentos', value: 'Stripe Connect' },
             ].map(({ label, value }) => (

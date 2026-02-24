@@ -27,7 +27,7 @@ async function requireAdmin() {
   return { user, admin: createAdminClient() }
 }
 
-export async function listAdminUsers(params: { page?: number; perPage?: number; search?: string }) {
+export async function listAdminUsers(params: { page?: number; perPage?: number; search?: string; role?: string }) {
   const { admin } = await requireAdmin()
   const page = params.page ?? 1
   const perPage = params.perPage ?? 20
@@ -37,6 +37,10 @@ export async function listAdminUsers(params: { page?: number; perPage?: number; 
   if (params.search?.trim()) {
     const s = `%${params.search.trim()}%`
     query = query.or(`name.ilike.${s},email.ilike.${s}`)
+  }
+
+  if (params.role?.trim()) {
+    query = query.eq('role', params.role.trim())
   }
 
   const { data, count, error } = await query

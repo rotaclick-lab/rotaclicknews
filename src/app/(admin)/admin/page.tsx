@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Building2, Truck, FileText, Upload, DollarSign, Route, ShieldCheck, Settings } from 'lucide-react'
+import { Users, Building2, Truck, FileText, Upload, DollarSign, Route, ShieldCheck, Settings, Plug, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -22,14 +22,19 @@ async function getAdminStats() {
       try { const r = await query; return r.count ?? 0 } catch { return 0 }
     }
 
-    const [usersCount, companiesCount, carriersCount, freightsCount, rntrcCount, routesCount, ingestionResult] =
+    const [usersCount, companiesApprovedCount, freightsCount, rntrcCount, routesCount, integrationsCount, revenueResult, ingestionResult] =
       await Promise.all([
         safeCount(admin.from('profiles').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
-        safeCount(admin.from('companies').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
-        safeCount(admin.from('carriers').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
-        safeCount(admin.from('freights').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('companies').select('*', { count: 'exact', head: true }).eq('approval_status', 'approved') as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('freights').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid') as unknown as Promise<{ count: number | null }>),
         safeCount(admin.from('rntrc_cache').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
-        safeCount(admin.from('freight_routes').select('*', { count: 'exact', head: true }) as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('freight_routes').select('*', { count: 'exact', head: true }).or('is_active.is.null,is_active.eq.true') as unknown as Promise<{ count: number | null }>),
+        safeCount(admin.from('carrier_integrations').select('*', { count: 'exact', head: true }).eq('is_active', true) as unknown as Promise<{ count: number | null }>),
+        (async () => {
+          try {
+            return await admin.from('freights').select('price').eq('payment_status', 'paid')
+          } catch { return { data: [] as Array<{ price: number }> } }
+        })(),
         (async () => {
           try {
             return await admin
@@ -41,13 +46,16 @@ async function getAdminStats() {
         })(),
       ])
 
+    const totalRevenue = (revenueResult.data ?? []).reduce((s, r) => s + (Number(r.price) || 0), 0)
+
     return {
       users: usersCount ?? 0,
-      companies: companiesCount ?? 0,
-      carriers: carriersCount ?? 0,
+      companies: companiesApprovedCount ?? 0,
       freights: freightsCount ?? 0,
       rntrcCache: rntrcCount ?? 0,
       routes: routesCount ?? 0,
+      integrations: integrationsCount ?? 0,
+      totalRevenue,
       lastIngestions: (ingestionResult.data ?? []) as IngestionRun[],
     }
   } catch (e) {
@@ -55,10 +63,11 @@ async function getAdminStats() {
     return {
       users: 0,
       companies: 0,
-      carriers: 0,
       freights: 0,
       rntrcCache: 0,
       routes: 0,
+      integrations: 0,
+      totalRevenue: 0,
       lastIngestions: [] as IngestionRun[],
     }
   }
@@ -69,6 +78,7 @@ const QUICK_LINKS = [
   { href: '/admin/empresas', label: 'Empresas', icon: Building2, color: 'text-purple-600 bg-purple-50' },
   { href: '/admin/transportadoras', label: 'Transportadoras', icon: Truck, color: 'text-orange-600 bg-orange-50' },
   { href: '/admin/tabela-frete', label: 'Tabelas de Frete', icon: DollarSign, color: 'text-green-600 bg-green-50' },
+  { href: '/admin/integracoes', label: 'Integrações', icon: Plug, color: 'text-brand-600 bg-brand-50' },
   { href: '/admin/rntrc', label: 'RNTRC', icon: Upload, color: 'text-indigo-600 bg-indigo-50' },
   { href: '/admin/auditoria', label: 'Auditoria', icon: ShieldCheck, color: 'text-red-600 bg-red-50' },
   { href: '/admin/configuracoes', label: 'Configurações', icon: Settings, color: 'text-slate-600 bg-slate-50' },
@@ -85,13 +95,28 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* KPIs */}
+      {/* KPI Receita em destaque */}
+      <Card className="border-brand-200 bg-gradient-to-r from-brand-50 to-orange-50">
+        <CardContent className="pt-5 pb-4 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-orange-100">
+            <TrendingUp className="h-6 w-6 text-orange-600" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Receita Total (fretes pagos)</p>
+            <p className="text-3xl font-black text-orange-600">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalRevenue)}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: 'Usuários', value: stats.users, icon: Users, href: '/admin/usuarios' },
-          { label: 'Empresas', value: stats.companies, icon: Building2, href: '/admin/empresas' },
-          { label: 'Transportadoras', value: stats.carriers, icon: Truck, href: '/admin/transportadoras' },
-          { label: 'Fretes', value: stats.freights, icon: FileText, href: '/admin/tabela-frete' },
-          { label: 'Rotas de Frete', value: stats.routes, icon: Route, href: '/admin/tabela-frete' },
+          { label: 'Transportadoras', value: stats.companies, icon: Truck, href: '/admin/transportadoras' },
+          { label: 'Fretes Pagos', value: stats.freights, icon: FileText, href: '/admin/repasses' },
+          { label: 'Rotas Ativas', value: stats.routes, icon: Route, href: '/admin/tabela-frete' },
+          { label: 'Integrações', value: stats.integrations, icon: Plug, href: '/admin/integracoes' },
           { label: 'RNTRC Cache', value: stats.rntrcCache, icon: Upload, href: '/admin/rntrc' },
         ].map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href}>

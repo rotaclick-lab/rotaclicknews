@@ -5,7 +5,7 @@ import { AdminUsersList } from './admin-users-list'
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
-  searchParams: { page?: string; search?: string }
+  searchParams: { page?: string; search?: string; role?: string }
 }
 
 export default async function AdminUsuariosPage({ searchParams }: PageProps) {
@@ -13,7 +13,8 @@ export default async function AdminUsuariosPage({ searchParams }: PageProps) {
   const result = await listAdminUsers({
     page,
     perPage: 20,
-    search: searchParams.search,
+    ...(searchParams.search ? { search: searchParams.search } : {}),
+    ...(searchParams.role ? { role: searchParams.role } : {}),
   })
 
   return (

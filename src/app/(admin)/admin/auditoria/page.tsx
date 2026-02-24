@@ -89,6 +89,19 @@ export default async function AdminAuditoriaPage({ searchParams }: PageProps) {
       total = count ?? 0
     }
 
+    // Resolve user UUIDs to names/emails
+    const userIds = [...new Set(logs.map(l => l.user_id).filter(Boolean))] as string[]
+    if (userIds.length > 0) {
+      const { data: profiles } = await admin
+        .from('profiles')
+        .select('id, name, full_name, email')
+        .in('id', userIds)
+      if (profiles) {
+        const profileMap = new Map(profiles.map(p => [p.id, p.name || p.full_name || p.email || p.id]))
+        logs = logs.map(l => ({ ...l, user_id: l.user_id ? (profileMap.get(l.user_id) ?? l.user_id) : null }))
+      }
+    }
+
     const { data: allLogs } = await admin
       .from('audit_logs')
       .select('action, resource_type')
@@ -161,7 +174,7 @@ export default async function AdminAuditoriaPage({ searchParams }: PageProps) {
                       <TableCell className="font-mono text-xs text-muted-foreground max-w-[140px] truncate">
                         {log.resource_id || '-'}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground max-w-[140px] truncate">
+                      <TableCell className="text-xs text-muted-foreground max-w-[160px] truncate" title={log.user_id ?? undefined}>
                         {log.user_id || 'sistema'}
                       </TableCell>
                     </TableRow>

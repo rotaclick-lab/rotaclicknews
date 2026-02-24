@@ -76,10 +76,27 @@ export function AdminUsersList({
     e.preventDefault()
     const form = e.currentTarget
     const search = (form.elements.namedItem('search') as HTMLInputElement)?.value
-    const params = new URLSearchParams()
+    const params = new URLSearchParams(searchParams)
     if (search) params.set('search', search)
+    else params.delete('search')
     params.set('page', '1')
     router.push(`/admin/usuarios?${params.toString()}`)
+  }
+
+  const handleRoleFilter = (role: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (role === 'all') params.delete('role')
+    else params.set('role', role)
+    params.set('page', '1')
+    router.push(`/admin/usuarios?${params.toString()}`)
+  }
+
+  const currentRole = searchParams.get('role') ?? 'all'
+
+  const ROLE_BADGE: Record<string, string> = {
+    admin: 'bg-red-100 text-red-700',
+    transportadora: 'bg-brand-100 text-brand-700',
+    cliente: 'bg-blue-100 text-blue-700',
   }
 
   const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -146,17 +163,31 @@ export function AdminUsersList({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 items-center justify-between">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            name="search"
-            placeholder="Buscar por nome ou email..."
-            defaultValue={searchParams.get('search') ?? ''}
-            className="max-w-sm"
-          />
-          <Button type="submit" size="icon" variant="secondary">
-            <Search className="h-4 w-4" />
-          </Button>
-        </form>
+        <div className="flex gap-2 flex-wrap">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Input
+              name="search"
+              placeholder="Buscar por nome ou email..."
+              defaultValue={searchParams.get('search') ?? ''}
+              className="max-w-sm"
+            />
+            <Button type="submit" size="icon" variant="secondary">
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
+          {/* Filtro por role */}
+          <Select value={currentRole} onValueChange={handleRoleFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Todos os roles" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="transportadora">Transportadora</SelectItem>
+              <SelectItem value="cliente">Cliente</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <Button onClick={() => setCreateOpen(true)} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           Novo usuário
@@ -179,19 +210,24 @@ export function AdminUsersList({
               <TableCell className="font-medium">{u.name || u.full_name || '-'}</TableCell>
               <TableCell>{u.email || '-'}</TableCell>
               <TableCell>
-                <Select
-                  value={u.role || 'cliente'}
-                  onValueChange={(v) => handleRoleChange(u.id, v as 'transportadora' | 'cliente' | 'admin')}
-                >
-                  <SelectTrigger className="w-[130px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="transportadora">Transportadora</SelectItem>
-                    <SelectItem value="cliente">Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ROLE_BADGE[u.role ?? ''] ?? 'bg-slate-100 text-slate-600'}`}>
+                    {u.role ?? 'cliente'}
+                  </span>
+                  <Select
+                    value={u.role || 'cliente'}
+                    onValueChange={(v) => handleRoleChange(u.id, v as 'transportadora' | 'cliente' | 'admin')}
+                  >
+                    <SelectTrigger className="w-[40px] h-7 px-1">
+                      <Pencil className="h-3 w-3" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="transportadora">Transportadora</SelectItem>
+                      <SelectItem value="cliente">Cliente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {new Date(u.created_at).toLocaleDateString('pt-BR')}

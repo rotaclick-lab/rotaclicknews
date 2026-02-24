@@ -85,7 +85,6 @@ export default function AdminRntrcPage() {
 
 async function RntrcHistory() {
   try {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
     const admin = createAdminClient()
 
     const { data: runs } = await admin
