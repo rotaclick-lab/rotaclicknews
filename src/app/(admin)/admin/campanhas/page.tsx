@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminCampanhasPage() {
   const result = await listCampaigns()
-  const campaigns = result.success ? result.data ?? [] : []
+  const campaigns = result.data ?? []
 
   return (
     <div className="space-y-6">

@@ -127,7 +127,7 @@ export type Campaign = {
 
 export async function listCampaigns(params?: { type?: string; status?: string }) {
   try {
-    const { admin } = await requireAdmin()
+    const admin = createAdminClient()
     let query = admin
       .from('campaigns')
       .select('*')
@@ -136,10 +136,10 @@ export async function listCampaigns(params?: { type?: string; status?: string })
     if (params?.type) query = query.eq('type', params.type)
     if (params?.status) query = query.eq('status', params.status)
     const { data, error } = await query
-    if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: error.message, data: [] as Campaign[] }
     return { success: true, data: (data ?? []) as Campaign[] }
   } catch (e) {
-    return { success: false, error: String(e) }
+    return { success: false, error: String(e), data: [] as Campaign[] }
   }
 }
 
