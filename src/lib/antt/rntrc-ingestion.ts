@@ -112,18 +112,28 @@ function parseCsvLine(line: string, headers: string[]): Record<string, string> {
 }
 
 function mapRowToCache(row: Record<string, string>): RntrcCacheRow | null {
-  const rntrc = (row['RNTRC'] ?? row['NU_RNTRC'] ?? row['rntrc'] ?? row['NumeroRNTRC'] ?? '').replace(/\D/g, '')
+  // Nomes reais das colunas do CSV da ANTT (Jan/2026):
+  // numero_rntrc, nome_transportador, situacao_rntrc, cpfcnpjtransportador,
+  // categoria_transportador, municipio, uf, data_primeiro_cadastro, data_situacao_rntrc
+  const rntrc = (
+    row['numero_rntrc'] ?? row['RNTRC'] ?? row['NU_RNTRC'] ?? row['rntrc'] ?? row['NumeroRNTRC'] ?? ''
+  ).replace(/\D/g, '')
   if (!rntrc || rntrc.length < 8) return null
 
-  const situacaoRaw = row['SG_SITUACAO'] ?? row['SITUACAO'] ?? row['situacao'] ?? row['Situacao'] ?? 'UNKNOWN'
+  const situacaoRaw =
+    row['situacao_rntrc'] ?? row['SG_SITUACAO'] ?? row['SITUACAO'] ?? row['situacao'] ?? row['Situacao'] ?? 'UNKNOWN'
   return {
     rntrc,
-    cpf_cnpj: (row['CPF_CNPJ'] ?? row['NU_CPF_CNPJ'] ?? row['cpf_cnpj'] ?? row['CPFCNPJ'] ?? '').replace(/\D/g, '') || null,
-    razao_social: (row['NO_RAZAO_SOCIAL'] ?? row['RAZAO_SOCIAL'] ?? row['razao_social'] ?? row['Nome'] ?? '').trim() || null,
+    cpf_cnpj: (
+      row['cpfcnpjtransportador'] ?? row['CPF_CNPJ'] ?? row['NU_CPF_CNPJ'] ?? row['cpf_cnpj'] ?? row['CPFCNPJ'] ?? ''
+    ).replace(/\D/g, '') || null,
+    razao_social: (
+      row['nome_transportador'] ?? row['NO_RAZAO_SOCIAL'] ?? row['RAZAO_SOCIAL'] ?? row['razao_social'] ?? row['Nome'] ?? ''
+    ).trim() || null,
     situacao: normalizeSituacao(situacaoRaw),
-    categoria: (row['DS_CATEGORIA'] ?? row['CATEGORIA'] ?? row['categoria'] ?? '').trim() || null,
-    uf: (row['SG_UF'] ?? row['UF'] ?? row['uf'] ?? '').trim() || null,
-    municipio: (row['NO_MUNICIPIO'] ?? row['MUNICIPIO'] ?? row['municipio'] ?? '').trim() || null,
+    categoria: (row['categoria_transportador'] ?? row['DS_CATEGORIA'] ?? row['CATEGORIA'] ?? row['categoria'] ?? '').trim() || null,
+    uf: (row['uf'] ?? row['SG_UF'] ?? row['UF'] ?? '').trim() || null,
+    municipio: (row['municipio'] ?? row['NO_MUNICIPIO'] ?? row['MUNICIPIO'] ?? '').trim() || null,
     data_atualizacao_antt: null,
   }
 }
