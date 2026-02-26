@@ -147,33 +147,54 @@ export function RntrcUploadForm() {
 
     stageTimerRef.current = setInterval(() => {
       setFetchStageIndex((i) => Math.min(i + 1, ANTT_STAGES.length - 1))
-    }, 8000)
+    }, 12000)
 
     try {
+      // Inicia o job em background — retorna jobId imediatamente
       const res = await fetch('/api/admin/rntrc/fetch-from-antt', { method: 'POST' })
-      let data: { success: boolean; recordsImported: number; errors: string[]; error?: string }
-      try {
-        data = await res.json()
-      } catch {
-        const errMsg = `Erro HTTP ${res.status}: ${res.statusText}`
-        toast.error(errMsg)
-        setResult({ success: false, recordsImported: 0, errors: [errMsg] })
-        return
-      }
-      if (!res.ok) {
+      const data = await res.json()
+
+      if (!res.ok || !data.success || !data.jobId) {
         const errMsg = data.error || `Erro HTTP ${res.status}`
-        const allErrors = [errMsg, ...(data.errors ?? [])]
-        setResult({ success: false, recordsImported: 0, errors: allErrors })
+        setResult({ success: false, recordsImported: 0, errors: [errMsg] })
         toast.error(errMsg)
         return
       }
-      setResult(data)
-      if (data.success) {
-        toast.success(`${data.recordsImported} registros importados da ANTT!`)
-        router.refresh()
-      } else {
-        toast.error(`Falha na importação. ${data.errors?.[0] || 'Erro desconhecido'}`)
+
+      const jobId: string = data.jobId
+      toast.info('Importação iniciada. Processando em background...')
+
+      // Polling do status a cada 5s por até 15 minutos
+      const MAX_POLLS = 180
+      for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
+        await new Promise((r) => setTimeout(r, 5000))
+
+        const statusRes = await fetch(`/api/admin/rntrc/job-status/${jobId}`)
+        if (!statusRes.ok) continue
+
+        const job = await statusRes.json()
+        const status: string = job.status ?? 'RUNNING'
+
+        if (status === 'SUCCESS') {
+          setResult({ success: true, recordsImported: job.records_imported, errors: [] })
+          toast.success(`${(job.records_imported as number).toLocaleString('pt-BR')} registros importados da ANTT!`)
+          router.refresh()
+          return
+        }
+
+        if (status === 'FAILED') {
+          const errMsg = job.error_message || 'Erro desconhecido no processamento'
+          setResult({ success: false, recordsImported: 0, errors: [errMsg] })
+          toast.error(`Falha na importação: ${errMsg}`)
+          return
+        }
+
+        // RUNNING — continua polling
       }
+
+      // Timeout do polling
+      setResult({ success: false, recordsImported: 0, errors: ['Tempo limite de espera excedido. Verifique o histórico para o resultado.'] })
+      toast.warning('Processamento ainda em andamento. Verifique o histórico.')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erro inesperado'
       toast.error(msg)

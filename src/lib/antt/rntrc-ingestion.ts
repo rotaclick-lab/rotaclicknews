@@ -29,6 +29,88 @@ async function fetchCsvUrlFromCkan(): Promise<{ url: string; name: string } | nu
   return null
 }
 
+/** Inicia o download e ingestão RNTRC em background — retorna jobId imediatamente */
+export async function ingestRntrcFromCkanApiAsync(): Promise<{
+  jobId: string
+  error?: string
+}> {
+  const admin = createAdminClient()
+
+  // Cria o registro de job com status RUNNING
+  const { data: jobRow, error: insertError } = await admin
+    .from('antt_ingestion_runs')
+    .insert({
+      source_url: 'ckan_api_async_pending',
+      status: 'RUNNING',
+      records_imported: 0,
+      metadata: { started_at: new Date().toISOString() },
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !jobRow) {
+    return { jobId: '', error: 'Erro ao criar job: ' + (insertError?.message ?? 'unknown') }
+  }
+
+  const jobId = jobRow.id as string
+  console.log('[RNTRC] Job criado:', jobId)
+
+  // Dispara o processamento em background (não awaited)
+  void runIngestionJob(jobId, admin)
+
+  return { jobId }
+}
+
+async function runIngestionJob(jobId: string, admin: ReturnType<typeof createAdminClient>) {
+  try {
+    const csvResource = await fetchCsvUrlFromCkan()
+    if (!csvResource) {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: 'Nenhum recurso CSV encontrado na API CKAN da ANTT',
+      }).eq('id', jobId)
+      return
+    }
+
+    await admin.from('antt_ingestion_runs').update({
+      source_url: csvResource.url,
+      metadata: { started_at: new Date().toISOString(), csv_name: csvResource.name },
+    }).eq('id', jobId)
+
+    const res = await fetch(csvResource.url, { signal: AbortSignal.timeout(300000) })
+    if (!res.ok) {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: `Falha ao baixar CSV: ${res.status} ${res.statusText}`,
+      }).eq('id', jobId)
+      return
+    }
+
+    const contentType = res.headers.get('content-type') ?? ''
+    const charsetMatch = contentType.match(/charset=([\w-]+)/i)
+    const charset = charsetMatch?.[1] ?? 'iso-8859-1'
+    console.log('[RNTRC] Content-Type:', contentType, '| Charset:', charset)
+    const buffer = await res.arrayBuffer()
+    console.log('[RNTRC] Tamanho:', (buffer.byteLength / 1024 / 1024).toFixed(2), 'MB')
+    const csvText = new TextDecoder(charset).decode(buffer)
+    console.log('[RNTRC] Primeiros 300 chars:', csvText.slice(0, 300))
+
+    const sourceLabel = `ckan_api_${csvResource.name}_${new Date().toISOString().slice(0, 10)}`
+    const result = await ingestRntrcFromCsv(csvText, sourceLabel)
+
+    console.log('[RNTRC] Job', jobId, 'finalizado:', result.recordsImported, 'registros')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[RNTRC] Job', jobId, 'erro fatal:', msg)
+    try {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: msg,
+      }).eq('id', jobId)
+    } catch { /* ignore */ }
+  }
+}
+
 /** Baixa CSV da ANTT via API CKAN e faz ingestão */
 export async function ingestRntrcFromCkanApi(): Promise<{
   success: boolean

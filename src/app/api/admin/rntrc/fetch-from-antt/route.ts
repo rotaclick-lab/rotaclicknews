@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { ingestRntrcFromCkanApi } from '@/lib/antt/rntrc-ingestion'
+import { ingestRntrcFromCkanApiAsync } from '@/lib/antt/rntrc-ingestion'
 
-export const maxDuration = 300
+export const maxDuration = 60
 
 export async function POST() {
   try {
@@ -26,15 +26,15 @@ export async function POST() {
       return NextResponse.json({ success: false, error: 'Acesso negado. Apenas administradores.' }, { status: 403 })
     }
 
-    const result = await ingestRntrcFromCkanApi()
+    const { jobId, error } = await ingestRntrcFromCkanApiAsync()
 
-    return NextResponse.json({
-      success: result.success,
-      recordsImported: result.recordsImported,
-      errors: result.errors.slice(0, 20),
-    })
+    if (error || !jobId) {
+      return NextResponse.json({ success: false, error: error ?? 'Erro ao iniciar job' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, jobId, message: 'Importação iniciada em background' })
   } catch (error) {
-    console.error('Erro ao buscar RNTRC da ANTT:', error)
+    console.error('Erro ao iniciar importação RNTRC:', error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Erro inesperado' },
       { status: 500 }
