@@ -151,8 +151,22 @@ export function RntrcUploadForm() {
 
     try {
       const res = await fetch('/api/admin/rntrc/fetch-from-antt', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erro ao buscar da ANTT')
+      let data: { success: boolean; recordsImported: number; errors: string[]; error?: string }
+      try {
+        data = await res.json()
+      } catch {
+        const errMsg = `Erro HTTP ${res.status}: ${res.statusText}`
+        toast.error(errMsg)
+        setResult({ success: false, recordsImported: 0, errors: [errMsg] })
+        return
+      }
+      if (!res.ok) {
+        const errMsg = data.error || `Erro HTTP ${res.status}`
+        const allErrors = [errMsg, ...(data.errors ?? [])]
+        setResult({ success: false, recordsImported: 0, errors: allErrors })
+        toast.error(errMsg)
+        return
+      }
       setResult(data)
       if (data.success) {
         toast.success(`${data.recordsImported} registros importados da ANTT!`)
