@@ -492,6 +492,12 @@ export async function listPendingCarriers(params: { status?: string } = {}) {
 export async function approveCarrier(companyId: string, paymentTermDays: 7 | 21 | 28 = 7) {
   const { admin, user } = await requireAdmin()
 
+  // Buscar dados da empresa e perfil antes de aprovar
+  const [{ data: company }, { data: profile }] = await Promise.all([
+    admin.from('companies').select('id, name, razao_social, nome_fantasia, rntrc, rntrc_number').eq('id', companyId).single(),
+    admin.from('profiles').select('id, name').eq('company_id', companyId).eq('role', 'transportadora').single(),
+  ])
+
   const { error } = await admin
     .from('companies')
     .update({
@@ -506,15 +512,25 @@ export async function approveCarrier(companyId: string, paymentTermDays: 7 | 21 
 
   if (error) return { success: false as const, error: error.message }
 
-  // Notificar o usuário da transportadora
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, name')
-    .eq('company_id', companyId)
-    .eq('role', 'transportadora')
-    .single()
-
+  // Criar registro na tabela carriers se ainda não existir
   if (profile) {
+    const { data: existingCarrier } = await admin
+      .from('carriers')
+      .select('id')
+      .eq('user_id', profile.id)
+      .single()
+
+    if (!existingCarrier) {
+      const rntrc = company?.rntrc_number || company?.rntrc || null
+      const companyName = company?.nome_fantasia || company?.razao_social || company?.name || null
+      await admin.from('carriers').insert({
+        user_id: profile.id,
+        company_name: companyName,
+        rntrc: rntrc ? String(rntrc).replace(/\D/g, '') : null,
+        rntrc_status: 'UNKNOWN',
+      })
+    }
+
     void admin.from('notifications').insert({
       user_id: profile.id,
       company_id: companyId,
