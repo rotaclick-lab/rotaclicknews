@@ -4,18 +4,26 @@ const CKAN_API_BASE = 'https://dados.antt.gov.br/api/3/action'
 
 /** Busca URL do CSV RNTRC mais recente na API CKAN da ANTT */
 async function fetchCsvUrlFromCkan(): Promise<{ url: string; name: string } | null> {
-  // Dataset principal do RNTRC (ID fixo e confiável)
+  console.log('[RNTRC] Buscando dataset na API CKAN:', `${CKAN_API_BASE}/package_show?id=rntrc`)
   const showRes = await fetch(`${CKAN_API_BASE}/package_show?id=rntrc`, { signal: AbortSignal.timeout(30000) })
+  console.log('[RNTRC] Status da resposta CKAN:', showRes.status, showRes.statusText)
   const showJson = await showRes.json()
+  console.log('[RNTRC] CKAN success:', showJson.success, '| resources:', showJson.result?.resources?.length ?? 0)
 
   if (showJson.success && showJson.result?.resources?.length) {
-    const csvResources = (showJson.result.resources as Array<{ format?: string; url: string; name: string; position: number }>)
+    const allResources = showJson.result.resources as Array<{ format?: string; url: string; name: string; position: number }>
+    console.log('[RNTRC] Recursos disponíveis:', allResources.map(r => `${r.name} (${r.format}) pos=${r.position}`))
+    const csvResources = allResources
       .filter((r) => (r.format || '').toUpperCase() === 'CSV')
-      .sort((a, b) => b.position - a.position) // mais recente = maior posição
+      .sort((a, b) => b.position - a.position)
+    console.log('[RNTRC] CSVs encontrados:', csvResources.map(r => `${r.name} pos=${r.position}`))
     const first = csvResources[0]
     if (first) {
+      console.log('[RNTRC] CSV selecionado:', first.name, '|', first.url)
       return { url: first.url, name: first.name }
     }
+  } else {
+    console.error('[RNTRC] Falha ao buscar dataset CKAN:', JSON.stringify(showJson).slice(0, 500))
   }
 
   return null
@@ -51,8 +59,11 @@ export async function ingestRntrcFromCkanApi(): Promise<{
     const contentType = res.headers.get('content-type') ?? ''
     const charsetMatch = contentType.match(/charset=([\w-]+)/i)
     const charset = charsetMatch?.[1] ?? 'iso-8859-1'
+    console.log('[RNTRC] Content-Type:', contentType, '| Charset detectado:', charset)
     const buffer = await res.arrayBuffer()
+    console.log('[RNTRC] Tamanho do arquivo:', (buffer.byteLength / 1024 / 1024).toFixed(2), 'MB')
     const csvText = new TextDecoder(charset).decode(buffer)
+    console.log('[RNTRC] Primeiros 300 chars do CSV:', csvText.slice(0, 300))
     return ingestRntrcFromCsv(csvText, `ckan_api_${csvResource.name}_${new Date().toISOString().slice(0, 10)}`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -156,7 +167,11 @@ export async function ingestRntrcFromCsv(csvText: string, sourceLabel = 'upload_
       }
     }
 
+    console.log('[RNTRC] Linhas mapeadas com sucesso:', rows.length, '| Erros de parse:', errors.length)
+    if (rows.length > 0) console.log('[RNTRC] Exemplo primeiro registro:', JSON.stringify(rows[0]))
+
     if (rows.length === 0) {
+      console.error('[RNTRC] Nenhum registro válido. Erros:', errors.slice(0, 5))
       await admin.from('antt_ingestion_runs').insert({
         source_url: sourceLabel,
         status: 'FAILED',
@@ -168,13 +183,18 @@ export async function ingestRntrcFromCsv(csvText: string, sourceLabel = 'upload_
     }
 
     const BATCH = 500
+    console.log('[RNTRC] Iniciando upsert:', rows.length, 'registros em batches de', BATCH)
     for (let i = 0; i < rows.length; i += BATCH) {
       const batch = rows.slice(i, i + BATCH)
       const { error } = await admin.from('rntrc_cache').upsert(batch, {
         onConflict: 'rntrc',
         ignoreDuplicates: false,
       })
-      if (error) throw error
+      if (error) {
+        console.error('[RNTRC] Erro no upsert batch', i / BATCH + 1, ':', error.message, error.code, error.details)
+        throw error
+      }
+      if (i % 5000 === 0) console.log('[RNTRC] Progresso upsert:', i + batch.length, '/', rows.length)
     }
 
     await admin.from('antt_ingestion_runs').insert({
