@@ -62,6 +62,7 @@ export async function ingestRntrcFromCkanApiAsync(): Promise<{
 }
 
 async function runIngestionJob(jobId: string, admin: ReturnType<typeof createAdminClient>) {
+  const startedAt = new Date().toISOString()
   try {
     const csvResource = await fetchCsvUrlFromCkan()
     if (!csvResource) {
@@ -74,14 +75,22 @@ async function runIngestionJob(jobId: string, admin: ReturnType<typeof createAdm
 
     await admin.from('antt_ingestion_runs').update({
       source_url: csvResource.url,
-      metadata: { started_at: new Date().toISOString(), csv_name: csvResource.name },
+      metadata: { started_at: startedAt, csv_name: csvResource.name, phase: 'downloading' },
     }).eq('id', jobId)
 
-    const res = await fetch(csvResource.url, { signal: AbortSignal.timeout(300000) })
+    console.log('[RNTRC] Job', jobId, '| Iniciando download streaming:', csvResource.url)
+    const res = await fetch(csvResource.url, { signal: AbortSignal.timeout(600000) })
     if (!res.ok) {
       await admin.from('antt_ingestion_runs').update({
         status: 'FAILED',
         error_message: `Falha ao baixar CSV: ${res.status} ${res.statusText}`,
+      }).eq('id', jobId)
+      return
+    }
+    if (!res.body) {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: 'Resposta sem body stream',
       }).eq('id', jobId)
       return
     }
@@ -90,15 +99,11 @@ async function runIngestionJob(jobId: string, admin: ReturnType<typeof createAdm
     const charsetMatch = contentType.match(/charset=([\w-]+)/i)
     const charset = charsetMatch?.[1] ?? 'iso-8859-1'
     console.log('[RNTRC] Content-Type:', contentType, '| Charset:', charset)
-    const buffer = await res.arrayBuffer()
-    console.log('[RNTRC] Tamanho:', (buffer.byteLength / 1024 / 1024).toFixed(2), 'MB')
-    const csvText = new TextDecoder(charset).decode(buffer)
-    console.log('[RNTRC] Primeiros 300 chars:', csvText.slice(0, 300))
 
     const sourceLabel = `ckan_api_${csvResource.name}_${new Date().toISOString().slice(0, 10)}`
-    const result = await ingestRntrcFromCsv(csvText, sourceLabel)
+    const totalImported = await streamIngestCsv(res.body, charset, jobId, sourceLabel, startedAt, admin)
 
-    console.log('[RNTRC] Job', jobId, 'finalizado:', result.recordsImported, 'registros')
+    console.log('[RNTRC] Job', jobId, 'finalizado:', totalImported, 'registros')
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[RNTRC] Job', jobId, 'erro fatal:', msg)
@@ -109,6 +114,170 @@ async function runIngestionJob(jobId: string, admin: ReturnType<typeof createAdm
       }).eq('id', jobId)
     } catch { /* ignore */ }
   }
+}
+
+/** Inicia ingestão RNTRC a partir de arquivo no Supabase Storage — retorna jobId imediatamente */
+export async function ingestRntrcFromStorageAsync(storagePath: string): Promise<{
+  jobId: string
+  error?: string
+}> {
+  const admin = createAdminClient()
+
+  const { data: jobRow, error: insertError } = await admin
+    .from('antt_ingestion_runs')
+    .insert({
+      source_url: `storage:${storagePath}`,
+      status: 'RUNNING',
+      records_imported: 0,
+      metadata: { started_at: new Date().toISOString(), storage_path: storagePath },
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !jobRow) {
+    return { jobId: '', error: 'Erro ao criar job: ' + (insertError?.message ?? 'unknown') }
+  }
+
+  const jobId = jobRow.id as string
+  console.log('[RNTRC] Job storage criado:', jobId, '| path:', storagePath)
+
+  void runStorageIngestionJob(jobId, storagePath, admin)
+
+  return { jobId }
+}
+
+async function runStorageIngestionJob(
+  jobId: string,
+  storagePath: string,
+  admin: ReturnType<typeof createAdminClient>
+) {
+  const startedAt = new Date().toISOString()
+  try {
+    console.log('[RNTRC] Job', jobId, '| Baixando do Storage:', storagePath)
+    const { data: fileData, error: dlError } = await admin.storage
+      .from('rntrc-uploads')
+      .download(storagePath)
+
+    if (dlError || !fileData) {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: `Erro ao baixar do Storage: ${dlError?.message ?? 'sem dados'}`,
+      }).eq('id', jobId)
+      return
+    }
+
+    const buffer = await fileData.arrayBuffer()
+    console.log('[RNTRC] Job', jobId, '| Tamanho:', (buffer.byteLength / 1024 / 1024).toFixed(2), 'MB')
+    const csvText = new TextDecoder('iso-8859-1').decode(buffer)
+
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(csvText))
+        controller.close()
+      },
+    })
+
+    const sourceLabel = `upload_storage_${storagePath}_${new Date().toISOString().slice(0, 10)}`
+    await streamIngestCsv(stream, 'utf-8', jobId, sourceLabel, startedAt, admin)
+
+    // Remove o arquivo temporário do Storage
+    await admin.storage.from('rntrc-uploads').remove([storagePath])
+    console.log('[RNTRC] Job', jobId, '| Arquivo temporário removido do Storage')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[RNTRC] Job storage', jobId, 'erro fatal:', msg)
+    try {
+      await admin.from('antt_ingestion_runs').update({
+        status: 'FAILED',
+        error_message: msg,
+      }).eq('id', jobId)
+    } catch { /* ignore */ }
+  }
+}
+
+/** Processa um ReadableStream de CSV linha a linha com upserts em batch */
+async function streamIngestCsv(
+  body: ReadableStream<Uint8Array>,
+  charset: string,
+  jobId: string,
+  sourceLabel: string,
+  startedAt: string,
+  admin: ReturnType<typeof createAdminClient>
+): Promise<number> {
+  const BATCH = 500
+  const decoder = new TextDecoder(charset)
+  const reader = body.getReader()
+  const headers: string[] = []
+  let sep = ';'
+  let lineBuffer = ''
+  let totalImported = 0
+  let batchBuffer: RntrcCacheRow[] = []
+  let isFirstLine = true
+  let bytesRead = 0
+
+  const flushBatch = async () => {
+    if (batchBuffer.length === 0) return
+    const { error } = await admin.from('rntrc_cache').upsert(batchBuffer, {
+      onConflict: 'rntrc',
+      ignoreDuplicates: false,
+    })
+    if (error) throw new Error(`Upsert error: ${error.message}`)
+    totalImported += batchBuffer.length
+    batchBuffer = []
+    if (totalImported % 10000 === 0) {
+      console.log('[RNTRC] Job', jobId, '| Progresso:', totalImported, 'registros')
+      await admin.from('antt_ingestion_runs').update({
+        records_imported: totalImported,
+        metadata: { started_at: startedAt, phase: 'upserting', records_so_far: totalImported },
+      }).eq('id', jobId)
+    }
+  }
+
+  const processLine = async (line: string) => {
+    const trimmed = line.trim()
+    if (!trimmed) return
+    if (isFirstLine) {
+      isFirstLine = false
+      sep = trimmed.includes(';') ? ';' : ','
+      const hdrs = trimmed.split(sep).map((h) => h.replace(/^\uFEFF/, '').replace(/^"|"$/g, '').trim()).filter(Boolean)
+      headers.push(...hdrs)
+      console.log('[RNTRC] Job', jobId, '| Headers:', headers)
+      await admin.from('antt_ingestion_runs').update({
+        metadata: { started_at: startedAt, phase: 'parsing', headers },
+      }).eq('id', jobId)
+      return
+    }
+    if (headers.length === 0) return
+    const row = parseCsvLine(trimmed, headers)
+    const mapped = mapRowToCache(row)
+    if (mapped) {
+      batchBuffer.push(mapped)
+      if (batchBuffer.length >= BATCH) await flushBatch()
+    }
+  }
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    bytesRead += value.byteLength
+    const chunk = decoder.decode(value, { stream: true })
+    lineBuffer += chunk
+    const lines = lineBuffer.split(/\r?\n/)
+    lineBuffer = lines.pop() ?? ''
+    for (const line of lines) await processLine(line)
+  }
+  if (lineBuffer.trim()) await processLine(lineBuffer)
+  await flushBatch()
+
+  console.log('[RNTRC] Job', jobId, '| Stream completo:', (bytesRead / 1024 / 1024).toFixed(2), 'MB | Total:', totalImported)
+
+  await admin.from('antt_ingestion_runs').update({
+    status: 'SUCCESS',
+    records_imported: totalImported,
+    metadata: { started_at: startedAt, bytes_read: bytesRead, phase: 'done', total_imported: totalImported },
+  }).eq('id', jobId)
+
+  return totalImported
 }
 
 /** Baixa CSV da ANTT via API CKAN e faz ingestão */

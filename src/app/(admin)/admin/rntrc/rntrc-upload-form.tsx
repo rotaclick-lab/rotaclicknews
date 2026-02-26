@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Download, Upload, CheckCircle2, XCircle } from 'lucide-react'
@@ -86,7 +87,7 @@ export function RntrcUploadForm() {
     }
   }, [])
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) {
       toast.error('Selecione um arquivo CSV')
       return
@@ -97,47 +98,75 @@ export function RntrcUploadForm() {
     setUploadProgress(0)
     setUploadStage('uploading')
 
-    const formData = new FormData()
-    formData.append('file', file)
+    try {
+      // 1. Upload direto ao Supabase Storage (bypassa limite 4.5MB da Vercel)
+      const supabase = createClient()
+      const storagePath = `rntrc_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
 
-    const xhr = new XMLHttpRequest()
+      const { error: uploadError } = await supabase.storage
+        .from('rntrc-uploads')
+        .upload(storagePath, file, {
+          cacheControl: '0',
+          upsert: true,
+        })
 
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 100)
-        setUploadProgress(pct)
-        if (pct === 100) setUploadStage('processing')
+      if (uploadError) {
+        throw new Error(`Erro no upload para Storage: ${uploadError.message}`)
       }
-    })
 
-    xhr.addEventListener('load', () => {
-      try {
-        const data = JSON.parse(xhr.responseText)
-        setResult(data)
-        if (xhr.status >= 200 && xhr.status < 300 && data.success) {
-          toast.success(`${data.recordsImported} registros importados com sucesso!`)
-          router.refresh()
-        } else {
-          toast.error(data.error || `Falha na importação. ${data.errors?.length || 0} erros.`)
-        }
-      } catch {
-        toast.error('Resposta inválida do servidor')
-        setResult({ success: false, recordsImported: 0, errors: ['Resposta inválida do servidor'] })
-      } finally {
-        setLoading(false)
-        setUploadStage('idle')
+      setUploadProgress(100)
+      setUploadStage('processing')
+      toast.info('Arquivo enviado. Processando em background...')
+
+      // 2. Dispara o job de processamento
+      const res = await fetch('/api/admin/rntrc/process-from-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storagePath }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || !data.success || !data.jobId) {
+        throw new Error(data.error || `Erro HTTP ${res.status}`)
       }
-    })
 
-    xhr.addEventListener('error', () => {
-      toast.error('Erro de rede ao enviar o arquivo')
-      setResult({ success: false, recordsImported: 0, errors: ['Erro de rede ao enviar o arquivo'] })
+      // 3. Polling do status
+      await pollJobStatus(data.jobId as string)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erro inesperado'
+      toast.error(msg)
+      setResult({ success: false, recordsImported: 0, errors: [msg] })
+    } finally {
       setLoading(false)
       setUploadStage('idle')
-    })
+    }
+  }
 
-    xhr.open('POST', '/api/admin/rntrc/upload')
-    xhr.send(formData)
+  const pollJobStatus = async (jobId: string) => {
+    const MAX_POLLS = 180
+    for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
+      await new Promise((r) => setTimeout(r, 5000))
+      try {
+        const statusRes = await fetch(`/api/admin/rntrc/job-status/${jobId}`)
+        if (!statusRes.ok) continue
+        const job = await statusRes.json()
+        const status: string = job.status ?? 'RUNNING'
+        if (status === 'SUCCESS') {
+          setResult({ success: true, recordsImported: job.records_imported, errors: [] })
+          toast.success(`${(job.records_imported as number).toLocaleString('pt-BR')} registros importados!`)
+          router.refresh()
+          return
+        }
+        if (status === 'FAILED') {
+          const errMsg = job.error_message || 'Erro desconhecido'
+          setResult({ success: false, recordsImported: 0, errors: [errMsg] })
+          toast.error(`Falha: ${errMsg}`)
+          return
+        }
+      } catch { /* continua polling */ }
+    }
+    setResult({ success: false, recordsImported: 0, errors: ['Tempo limite excedido. Verifique o histórico.'] })
+    toast.warning('Processamento ainda em andamento. Verifique o histórico.')
   }
 
   const handleFetchFromAntt = async () => {
@@ -163,38 +192,7 @@ export function RntrcUploadForm() {
 
       const jobId: string = data.jobId
       toast.info('Importação iniciada. Processando em background...')
-
-      // Polling do status a cada 5s por até 15 minutos
-      const MAX_POLLS = 180
-      for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-        await new Promise((r) => setTimeout(r, 5000))
-
-        const statusRes = await fetch(`/api/admin/rntrc/job-status/${jobId}`)
-        if (!statusRes.ok) continue
-
-        const job = await statusRes.json()
-        const status: string = job.status ?? 'RUNNING'
-
-        if (status === 'SUCCESS') {
-          setResult({ success: true, recordsImported: job.records_imported, errors: [] })
-          toast.success(`${(job.records_imported as number).toLocaleString('pt-BR')} registros importados da ANTT!`)
-          router.refresh()
-          return
-        }
-
-        if (status === 'FAILED') {
-          const errMsg = job.error_message || 'Erro desconhecido no processamento'
-          setResult({ success: false, recordsImported: 0, errors: [errMsg] })
-          toast.error(`Falha na importação: ${errMsg}`)
-          return
-        }
-
-        // RUNNING — continua polling
-      }
-
-      // Timeout do polling
-      setResult({ success: false, recordsImported: 0, errors: ['Tempo limite de espera excedido. Verifique o histórico para o resultado.'] })
-      toast.warning('Processamento ainda em andamento. Verifique o histórico.')
+      await pollJobStatus(jobId)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Erro inesperado'
       toast.error(msg)
