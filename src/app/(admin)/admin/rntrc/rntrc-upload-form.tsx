@@ -24,8 +24,8 @@ export function RntrcUploadForm() {
         toast.error('Apenas arquivos CSV são aceitos')
         return
       }
-      if (f.size > 50 * 1024 * 1024) {
-        toast.error('Arquivo muito grande. Máximo 50MB.')
+      if (f.size > 200 * 1024 * 1024) {
+        toast.error('Arquivo muito grande. Máximo 200MB.')
         return
       }
       setFile(f)

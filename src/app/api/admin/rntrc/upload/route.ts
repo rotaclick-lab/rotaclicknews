@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ingestRntrcFromCsv } from '@/lib/antt/rntrc-ingestion'
 
+export const maxDuration = 300
+
+export const config = {
+  api: {
+    bodyParser: false,
+    sizeLimit: '200mb',
+  },
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
@@ -35,10 +44,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Apenas arquivos CSV são aceitos' }, { status: 400 })
     }
 
-    const maxSize = 50 * 1024 * 1024 // 50MB
+    const maxSize = 200 * 1024 * 1024 // 200MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { success: false, error: 'Arquivo muito grande. Máximo 50MB.' },
+        { success: false, error: 'Arquivo muito grande. Máximo 200MB.' },
         { status: 400 }
       )
     }
