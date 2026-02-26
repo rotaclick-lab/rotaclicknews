@@ -2,36 +2,20 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const CKAN_API_BASE = 'https://dados.antt.gov.br/api/3/action'
 
-/** Busca URL do CSV RNTRC na API CKAN da ANTT */
-async function fetchCsvUrlFromCkan(): Promise<string | null> {
-  // Tentar package_search por rntrc/transportadores
-  const searchRes = await fetch(
-    `${CKAN_API_BASE}/package_search?q=rntrc+transportadores&rows=10`
-  )
-  const searchJson = await searchRes.json()
+/** Busca URL do CSV RNTRC mais recente na API CKAN da ANTT */
+async function fetchCsvUrlFromCkan(): Promise<{ url: string; name: string } | null> {
+  // Dataset principal do RNTRC (ID fixo e confiável)
+  const showRes = await fetch(`${CKAN_API_BASE}/package_show?id=rntrc`, { signal: AbortSignal.timeout(30000) })
+  const showJson = await showRes.json()
 
-  if (!searchJson.success || !searchJson.result?.results?.length) {
-    // Fallback: datasets conhecidos (rntrc-veiculos = RNTRC Dados de Veículos)
-    const knownIds = ['rntrc-veiculos', 'rntrc-transportadores', 'transporte-rodoviario-de-cargas']
-    for (const id of knownIds) {
-      const showRes = await fetch(`${CKAN_API_BASE}/package_show?id=${id}`)
-      const showJson = await showRes.json()
-      if (showJson.success && showJson.result?.resources?.length) {
-        const csv = showJson.result.resources.find(
-          (r: { format?: string }) => (r.format || '').toUpperCase() === 'CSV'
-        )
-        if (csv?.url) return csv.url
-      }
+  if (showJson.success && showJson.result?.resources?.length) {
+    const csvResources = (showJson.result.resources as Array<{ format?: string; url: string; name: string; position: number }>)
+      .filter((r) => (r.format || '').toUpperCase() === 'CSV')
+      .sort((a, b) => b.position - a.position) // mais recente = maior posição
+    const first = csvResources[0]
+    if (first) {
+      return { url: first.url, name: first.name }
     }
-    return null
-  }
-
-  for (const pkg of searchJson.result.results) {
-    const resources = pkg.resources || []
-    const csv = resources.find(
-      (r: { format?: string }) => (r.format || '').toUpperCase() === 'CSV'
-    )
-    if (csv?.url) return csv.url
   }
 
   return null
@@ -45,8 +29,8 @@ export async function ingestRntrcFromCkanApi(): Promise<{
   source?: string
 }> {
   try {
-    const csvUrl = await fetchCsvUrlFromCkan()
-    if (!csvUrl) {
+    const csvResource = await fetchCsvUrlFromCkan()
+    if (!csvResource) {
       return {
         success: false,
         recordsImported: 0,
@@ -54,7 +38,7 @@ export async function ingestRntrcFromCkanApi(): Promise<{
       }
     }
 
-    const res = await fetch(csvUrl)
+    const res = await fetch(csvResource.url, { signal: AbortSignal.timeout(300000) })
     if (!res.ok) {
       return {
         success: false,
@@ -64,7 +48,7 @@ export async function ingestRntrcFromCkanApi(): Promise<{
     }
 
     const csvText = await res.text()
-    return ingestRntrcFromCsv(csvText, `ckan_api_${new Date().toISOString().slice(0, 10)}`)
+    return ingestRntrcFromCsv(csvText, `ckan_api_${csvResource.name}_${new Date().toISOString().slice(0, 10)}`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     return { success: false, recordsImported: 0, errors: [msg] }
@@ -108,22 +92,22 @@ function parseCsvLine(line: string, headers: string[]): Record<string, string> {
   headers.forEach((h, i) => {
     row[h] = values[i] ?? ''
   })
-  return row
+  return row as Record<string, string>
 }
 
 function mapRowToCache(row: Record<string, string>): RntrcCacheRow | null {
-  const rntrc = (row.RNTRC ?? row.NU_RNTRC ?? row.rntrc ?? row.NumeroRNTRC ?? '').replace(/\D/g, '')
+  const rntrc = (row['RNTRC'] ?? row['NU_RNTRC'] ?? row['rntrc'] ?? row['NumeroRNTRC'] ?? '').replace(/\D/g, '')
   if (!rntrc || rntrc.length < 8) return null
 
-  const situacaoRaw = row.SG_SITUACAO ?? row.SITUACAO ?? row.situacao ?? row.Situacao ?? 'UNKNOWN'
+  const situacaoRaw = row['SG_SITUACAO'] ?? row['SITUACAO'] ?? row['situacao'] ?? row['Situacao'] ?? 'UNKNOWN'
   return {
     rntrc,
-    cpf_cnpj: (row.CPF_CNPJ ?? row.NU_CPF_CNPJ ?? row.cpf_cnpj ?? row.CPFCNPJ ?? '').replace(/\D/g, '') || null,
-    razao_social: (row.NO_RAZAO_SOCIAL ?? row.RAZAO_SOCIAL ?? row.razao_social ?? row.Nome ?? '').trim() || null,
+    cpf_cnpj: (row['CPF_CNPJ'] ?? row['NU_CPF_CNPJ'] ?? row['cpf_cnpj'] ?? row['CPFCNPJ'] ?? '').replace(/\D/g, '') || null,
+    razao_social: (row['NO_RAZAO_SOCIAL'] ?? row['RAZAO_SOCIAL'] ?? row['razao_social'] ?? row['Nome'] ?? '').trim() || null,
     situacao: normalizeSituacao(situacaoRaw),
-    categoria: (row.DS_CATEGORIA ?? row.CATEGORIA ?? row.categoria ?? '').trim() || null,
-    uf: (row.SG_UF ?? row.UF ?? row.uf ?? '').trim() || null,
-    municipio: (row.NO_MUNICIPIO ?? row.MUNICIPIO ?? row.municipio ?? '').trim() || null,
+    categoria: (row['DS_CATEGORIA'] ?? row['CATEGORIA'] ?? row['categoria'] ?? '').trim() || null,
+    uf: (row['SG_UF'] ?? row['UF'] ?? row['uf'] ?? '').trim() || null,
+    municipio: (row['NO_MUNICIPIO'] ?? row['MUNICIPIO'] ?? row['municipio'] ?? '').trim() || null,
     data_atualizacao_antt: null,
   }
 }
@@ -142,8 +126,9 @@ export async function ingestRntrcFromCsv(csvText: string, sourceLabel = 'upload_
       return { success: false, recordsImported: 0, errors: ['CSV vazio ou inválido'] }
     }
 
-    const sep = lines[0].includes(';') ? ';' : ','
-    const headers = lines[0]
+    const firstLine = lines[0] ?? ''
+    const sep = firstLine.includes(';') ? ';' : ','
+    const headers = firstLine
       .split(sep)
       .map((h) => h.replace(/^"|"$/g, '').trim())
       .filter(Boolean)
@@ -155,7 +140,7 @@ export async function ingestRntrcFromCsv(csvText: string, sourceLabel = 'upload_
     const rows: RntrcCacheRow[] = []
     for (let i = 1; i < lines.length; i++) {
       try {
-        const row = parseCsvLine(lines[i], headers)
+        const row = parseCsvLine(lines[i] ?? '', headers)
         const mapped = mapRowToCache(row)
         if (mapped) rows.push(mapped)
       } catch (e) {
