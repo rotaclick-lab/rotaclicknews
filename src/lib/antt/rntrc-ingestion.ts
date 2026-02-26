@@ -47,7 +47,12 @@ export async function ingestRntrcFromCkanApi(): Promise<{
       }
     }
 
-    const csvText = await res.text()
+    // CSV da ANTT geralmente usa ISO-8859-1 (Latin-1)
+    const contentType = res.headers.get('content-type') ?? ''
+    const charsetMatch = contentType.match(/charset=([\w-]+)/i)
+    const charset = charsetMatch?.[1] ?? 'iso-8859-1'
+    const buffer = await res.arrayBuffer()
+    const csvText = new TextDecoder(charset).decode(buffer)
     return ingestRntrcFromCsv(csvText, `ckan_api_${csvResource.name}_${new Date().toISOString().slice(0, 10)}`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -136,6 +141,9 @@ export async function ingestRntrcFromCsv(csvText: string, sourceLabel = 'upload_
     if (headers.length === 0) {
       return { success: false, recordsImported: 0, errors: ['Cabeçalho inválido'] }
     }
+
+    console.log('[RNTRC] Headers detectados:', headers)
+    console.log('[RNTRC] Separador:', sep, '| Total de linhas:', lines.length)
 
     const rows: RntrcCacheRow[] = []
     for (let i = 1; i < lines.length; i++) {

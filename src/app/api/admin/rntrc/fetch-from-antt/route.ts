@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { ingestRntrcFromCkanApi } from '@/lib/antt/rntrc-ingestion'
 
+export const maxDuration = 300
+
 export async function POST() {
   try {
     const supabase = await createClient()
