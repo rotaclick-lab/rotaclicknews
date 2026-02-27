@@ -53,10 +53,38 @@ type CampaignBanner = {
   slug: string | null
 }
 
+type BgImage = { name: string; url: string; path: string }
+
+function useRandomBg() {
+  const [bgUrl, setBgUrl] = useState('/images/bg.webp')
+
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
+    const device = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'
+
+    fetch('/api/admin/bg-images')
+      .then((r) => r.json())
+      .then((payload) => {
+        if (!payload.success) return
+        const grouped = payload.data as Record<string, BgImage[]>
+        let list: BgImage[] = grouped[device] ?? []
+        if (list.length === 0 && device !== 'desktop') list = grouped['desktop'] ?? []
+        if (list.length === 0) return
+        const picked = list[Math.floor(Math.random() * list.length)]
+        if (picked?.url) setBgUrl(picked.url)
+      })
+      .catch(() => {})
+  }, [])
+
+  return bgUrl
+}
+
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isDemoMode = searchParams.get('demo') === '1'
+  const bgUrl = useRandomBg()
   const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
@@ -303,9 +331,9 @@ export default function HomePage() {
     <div
       className="flex min-h-screen flex-col"
       style={{
-        backgroundImage: "url('/images/bg.webp')",
-        backgroundSize: '100% auto',
-        backgroundPosition: 'top center',
+        backgroundImage: `url('${bgUrl}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
         backgroundAttachment: 'fixed',
         backgroundRepeat: 'no-repeat',
       }}

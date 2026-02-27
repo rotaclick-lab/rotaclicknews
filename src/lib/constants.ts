@@ -19,6 +19,7 @@ import {
   Paintbrush,
   ScrollText,
   Plug,
+  ImageIcon,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -98,6 +99,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: 'Repasses', href: '/admin/repasses', icon: Banknote, description: 'Pagamentos às transportadoras' },
   { title: 'Tabelas de Frete', href: '/admin/tabela-frete', icon: DollarSign, description: 'Rotas por transportador' },
   { title: 'Campanhas', href: '/admin/campanhas', icon: Megaphone, description: 'Banners e destaques na home' },
+  { title: 'Imagens de Fundo', href: '/admin/bg-images', icon: ImageIcon, description: 'Imagens de fundo da home por dispositivo' },
   { title: 'Personalização', href: '/admin/personalizacao', icon: Paintbrush, description: 'Cores, logo e textos' },
   { title: 'RNTRC', href: '/admin/rntrc', icon: Upload, description: 'Upload CSV ANTT' },
   { title: 'Integrações', href: '/admin/integracoes', icon: Plug, description: 'TMS negociados por transportadora' },
