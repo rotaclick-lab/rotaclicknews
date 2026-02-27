@@ -44,6 +44,8 @@ function ImageUploader({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [tab, setTab] = useState<'upload' | 'url'>(value && !value.startsWith('blob') ? 'url' : 'upload')
+  const [urlInput, setUrlInput] = useState(value ?? '')
 
   const handleFile = async (file: File) => {
     setUploading(true)
@@ -56,6 +58,7 @@ function ImageUploader({
         toast.error(json.error ?? 'Erro no upload')
       } else {
         onChange(json.url)
+        setUrlInput(json.url)
         toast.success('Imagem enviada')
       }
     } catch {
@@ -65,56 +68,74 @@ function ImageUploader({
     }
   }
 
+  const handleUrlConfirm = () => {
+    onChange(urlInput.trim())
+  }
+
   return (
     <div className="space-y-2">
-      {value ? (
+      {/* Preview */}
+      {value && (
         <div className="relative w-full h-36 rounded-lg overflow-hidden border border-slate-200 group">
           <Image src={value} alt="Preview" fill className="object-contain" unoptimized />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => inputRef.current?.click()}
-              disabled={uploading}
-            >
+            <Button type="button" size="sm" variant="secondary" onClick={() => inputRef.current?.click()} disabled={uploading}>
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 mr-1" />}
-              Trocar
+              Trocar arquivo
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="destructive"
-              onClick={() => onChange('')}
-            >
+            <Button type="button" size="sm" variant="destructive" onClick={() => { onChange(''); setUrlInput('') }}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Abas */}
+      <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+        <button
+          type="button"
+          onClick={() => setTab('upload')}
+          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-colors ${tab === 'upload' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          Upload de arquivo
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('url')}
+          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-colors border-l border-slate-200 ${tab === 'url' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          URL externa
+        </button>
+      </div>
+
+      {tab === 'upload' ? (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="w-full h-36 rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-slate-700 transition-colors"
+          className="w-full h-24 rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-400 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:text-slate-700 transition-colors"
         >
-          {uploading
-            ? <Loader2 className="h-7 w-7 animate-spin" />
-            : <Upload className="h-7 w-7" />}
-          <span className="text-sm">{uploading ? 'Enviando...' : 'Clique para fazer upload'}</span>
-          <span className="text-xs">JPG, PNG, WebP ou GIF — máx. 5MB</span>
+          {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
+          <span className="text-sm">{uploading ? 'Enviando...' : 'Clique para selecionar arquivo'}</span>
+          <span className="text-xs text-slate-400">JPG, PNG, WebP ou GIF — máx. 5MB — salvo no Supabase</span>
         </button>
+      ) : (
+        <div className="flex gap-2">
+          <Input
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onBlur={handleUrlConfirm}
+            onKeyDown={(e) => e.key === 'Enter' && handleUrlConfirm()}
+            placeholder="https://i.imgur.com/... ou qualquer URL pública"
+            className="text-xs flex-1"
+          />
+          <Button type="button" size="sm" variant="secondary" onClick={handleUrlConfirm}>
+            Aplicar
+          </Button>
+        </div>
       )}
-
-      {/* Campo oculto para URL manual como fallback */}
-      <div className="flex gap-2 items-center">
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Ou cole uma URL de imagem..."
-          className="text-xs"
-        />
-      </div>
 
       <input
         ref={inputRef}
