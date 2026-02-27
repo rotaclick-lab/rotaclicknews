@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { updateCampaign, type Campaign, type PageBlock } from '@/app/actions/pla
 import {
   Save, Eye, ArrowLeft, Plus, Trash2, ChevronUp, ChevronDown,
   Type, ImageIcon, MousePointer, Columns, Minus, Video, Layout,
-  Loader2, GripVertical,
+  Loader2, GripVertical, Upload, ExternalLink, X,
 } from 'lucide-react'
 
 const BLOCK_TYPES: Array<{
@@ -183,6 +183,86 @@ function BlockPreview({ block }: { block: PageBlock }) {
   return null
 }
 
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [tab, setTab] = useState<'upload' | 'url'>('upload')
+  const [urlInput, setUrlInput] = useState(value ?? '')
+
+  const handleFile = async (file: File) => {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/campaigns/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.url) {
+        toast.error(json.error ?? 'Erro no upload')
+      } else {
+        onChange(json.url)
+        setUrlInput(json.url)
+        toast.success('Imagem enviada')
+      }
+    } catch {
+      toast.error('Erro ao enviar imagem')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <div className="mt-1 space-y-1.5">
+        {value && (
+          <div className="relative w-full h-24 rounded-lg overflow-hidden border border-slate-200 group">
+            <Image src={value} alt="" fill className="object-contain" unoptimized />
+            <button
+              type="button"
+              onClick={() => { onChange(''); setUrlInput('') }}
+              className="absolute top-1 right-1 bg-black/60 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+        <div className="flex rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+          <button type="button" onClick={() => setTab('upload')}
+            className={`flex-1 py-1 flex items-center justify-center gap-1 transition-colors ${
+              tab === 'upload' ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+            }`}>
+            <Upload className="h-3 w-3" /> Upload
+          </button>
+          <button type="button" onClick={() => setTab('url')}
+            className={`flex-1 py-1 flex items-center justify-center gap-1 transition-colors border-l border-slate-200 ${
+              tab === 'url' ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+            }`}>
+            <ExternalLink className="h-3 w-3" /> URL
+          </button>
+        </div>
+        {tab === 'upload' ? (
+          <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading}
+            className="w-full h-16 rounded-md border-2 border-dashed border-slate-200 hover:border-slate-400 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600 transition-colors text-xs">
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {uploading ? 'Enviando...' : 'Selecionar arquivo'}
+          </button>
+        ) : (
+          <div className="flex gap-1">
+            <Input value={urlInput} onChange={(e) => setUrlInput(e.target.value)}
+              onBlur={() => onChange(urlInput.trim())}
+              onKeyDown={(e) => e.key === 'Enter' && onChange(urlInput.trim())}
+              placeholder="https://..." className="text-xs h-8 flex-1" />
+            <Button type="button" size="sm" variant="secondary" className="h-8 px-2 text-xs"
+              onClick={() => onChange(urlInput.trim())}>OK</Button>
+          </div>
+        )}
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
+      </div>
+    </div>
+  )
+}
+
 function BlockEditor({ block, onChange }: { block: PageBlock; onChange: (content: Record<string, string | number | boolean>) => void }) {
   const c = block.content
   const set = (key: string, val: string | number | boolean) => onChange({ ...c, [key]: val })
@@ -215,7 +295,14 @@ function BlockEditor({ block, onChange }: { block: PageBlock; onChange: (content
 
   return (
     <div className="space-y-3 pt-2">
-      {block.type === 'hero' && (<>{field('title', 'Título')}{field('subtitle', 'Subtítulo', 'textarea')}{field('image_url', 'URL da imagem de fundo', 'url')}{field('bg_color', 'Cor de fundo', 'color')}{field('text_color', 'Cor do texto', 'color')}{field('min_height', 'Altura mínima (px)', 'number')}</>)}
+      {block.type === 'hero' && (<>
+        {field('title', 'Título')}
+        {field('subtitle', 'Subtítulo', 'textarea')}
+        <ImageField label="Imagem de fundo" value={String(c.image_url ?? '')} onChange={(v) => set('image_url', v)} />
+        {field('bg_color', 'Cor de fundo', 'color')}
+        {field('text_color', 'Cor do texto', 'color')}
+        {field('min_height', 'Altura mínima (px)', 'number')}
+      </>)}
       {block.type === 'text' && (<>
         {field('content', 'Conteúdo', 'textarea')}
         <div>
@@ -229,9 +316,21 @@ function BlockEditor({ block, onChange }: { block: PageBlock; onChange: (content
         {field('text_color', 'Cor do texto', 'color')}
         {field('font_size', 'Tamanho da fonte (px)', 'number')}
       </>)}
-      {block.type === 'image' && (<>{field('src', 'URL da imagem', 'url')}{field('alt', 'Texto alternativo')}{field('caption', 'Legenda')}{field('width', 'Largura (%)', 'number')}</>)}
+      {block.type === 'image' && (<>
+        <ImageField label="Imagem" value={String(c.src ?? '')} onChange={(v) => set('src', v)} />
+        {field('alt', 'Texto alternativo')}
+        {field('caption', 'Legenda')}
+        {field('width', 'Largura (%)', 'number')}
+      </>)}
       {block.type === 'cta' && (<>{field('title', 'Título')}{field('subtitle', 'Subtítulo', 'textarea')}{field('button_label', 'Texto do botão')}{field('button_url', 'URL do botão', 'url')}{field('button_color', 'Cor do botão', 'color')}{field('bg_color', 'Cor de fundo', 'color')}{field('text_color', 'Cor do texto', 'color')}</>)}
-      {block.type === 'columns' && (<>{field('left_title', 'Título esquerda')}{field('left_text', 'Texto esquerda', 'textarea')}{field('left_image', 'Imagem esquerda (URL)', 'url')}{field('right_title', 'Título direita')}{field('right_text', 'Texto direita', 'textarea')}{field('right_image', 'Imagem direita (URL)', 'url')}</>)}
+      {block.type === 'columns' && (<>
+        {field('left_title', 'Título esquerda')}
+        {field('left_text', 'Texto esquerda', 'textarea')}
+        <ImageField label="Imagem esquerda" value={String(c.left_image ?? '')} onChange={(v) => set('left_image', v)} />
+        {field('right_title', 'Título direita')}
+        {field('right_text', 'Texto direita', 'textarea')}
+        <ImageField label="Imagem direita" value={String(c.right_image ?? '')} onChange={(v) => set('right_image', v)} />
+      </>)}
       {block.type === 'video' && (<>{field('url', 'URL YouTube / Vimeo', 'url')}{field('caption', 'Legenda')}</>)}
       {block.type === 'divider' && (<>{field('color', 'Cor da linha', 'color')}{field('margin', 'Espaçamento (px)', 'number')}</>)}
     </div>
