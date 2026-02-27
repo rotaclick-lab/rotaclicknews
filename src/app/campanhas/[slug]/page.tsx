@@ -158,8 +158,9 @@ function RenderBlock({ block }: { block: PageBlock }) {
   return null
 }
 
-export default async function CampaignPublicPage({ params }: { params: { slug: string } }) {
-  const campaign = await getCampaign(params.slug)
+export default async function CampaignPublicPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const campaign = await getCampaign(slug)
   if (!campaign) notFound()
 
   const blocks: PageBlock[] = Array.isArray(campaign.page_content) ? campaign.page_content : []
