@@ -64,9 +64,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Device inválido. Use: desktop, tablet ou mobile' }, { status: 400 })
   }
 
-  const allowed = ['image/webp', 'image/jpeg', 'image/jpg', 'image/png']
-  if (!allowed.includes(file.type)) {
-    return NextResponse.json({ error: 'Formato não permitido. Use WebP, JPG ou PNG.' }, { status: 400 })
+  if (file.type !== 'image/webp') {
+    return NextResponse.json({ error: 'Formato não permitido. Apenas WebP é aceito.' }, { status: 400 })
   }
   if (file.size > 20 * 1024 * 1024) {
     return NextResponse.json({ error: 'Arquivo muito grande. Máximo 20MB.' }, { status: 400 })

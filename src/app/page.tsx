@@ -55,36 +55,64 @@ type CampaignBanner = {
 
 type BgImage = { name: string; url: string; path: string }
 
+const BG_CACHE_KEY = 'rc_bg'
+const BG_CACHE_TTL = 15 * 60 * 1000 // 15 min
+
 function useRandomBg() {
   const [bgUrl, setBgUrl] = useState('/images/bg.webp')
+  const [bgReady, setBgReady] = useState(false)
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768
     const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024
     const device = isMobile ? 'mobile' : isTablet ? 'tablet' : 'desktop'
 
+    const applyUrl = (url: string) => {
+      const img = new window.Image()
+      img.onload = () => { setBgUrl(url); setBgReady(true) }
+      img.onerror = () => setBgReady(true)
+      img.src = url
+    }
+
+    // Tentar cache primeiro
+    try {
+      const raw = sessionStorage.getItem(BG_CACHE_KEY)
+      if (raw) {
+        const c = JSON.parse(raw) as { url: string; device: string; ts: number }
+        if (c.device === device && Date.now() - c.ts < BG_CACHE_TTL && c.url) {
+          applyUrl(c.url)
+          return
+        }
+      }
+    } catch { /* ignora */ }
+
     fetch('/api/admin/bg-images')
       .then((r) => r.json())
       .then((payload) => {
-        if (!payload.success) return
+        if (!payload.success) { setBgReady(true); return }
         const grouped = payload.data as Record<string, BgImage[]>
         let list: BgImage[] = grouped[device] ?? []
         if (list.length === 0 && device !== 'desktop') list = grouped['desktop'] ?? []
-        if (list.length === 0) return
+        if (list.length === 0) { setBgReady(true); return }
         const picked = list[Math.floor(Math.random() * list.length)]
-        if (picked?.url) setBgUrl(picked.url)
+        if (picked?.url) {
+          try { sessionStorage.setItem(BG_CACHE_KEY, JSON.stringify({ url: picked.url, device, ts: Date.now() })) } catch { /* ignora */ }
+          applyUrl(picked.url)
+        } else {
+          setBgReady(true)
+        }
       })
-      .catch(() => {})
+      .catch(() => setBgReady(true))
   }, [])
 
-  return bgUrl
+  return { bgUrl, bgReady }
 }
 
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isDemoMode = searchParams.get('demo') === '1'
-  const bgUrl = useRandomBg()
+  const { bgUrl, bgReady } = useRandomBg()
   const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
@@ -336,6 +364,8 @@ export default function HomePage() {
         backgroundPosition: 'center top',
         backgroundAttachment: 'fixed',
         backgroundRepeat: 'no-repeat',
+        opacity: bgReady ? 1 : 0.98,
+        transition: 'background-image 0.4s ease-in-out',
       }}
     >
       {/* Header Público */}

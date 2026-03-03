@@ -15,21 +15,21 @@ const DEVICE_CONFIG: { key: Device; label: string; icon: React.ElementType; hint
     key: 'desktop',
     label: 'Desktop',
     icon: Monitor,
-    hint: 'Landscape — recomendado 1920×1080px ou maior',
+    hint: 'Landscape — recomendado 1920×1080px, WebP quality 75-80, alvo < 200KB',
     ratio: 'aspect-video',
   },
   {
     key: 'tablet',
     label: 'Tablet',
     icon: Tablet,
-    hint: 'Portrait ou landscape — recomendado 1024×768px',
+    hint: 'Portrait/landscape — recomendado 1024×768px, WebP quality 75, alvo < 100KB',
     ratio: 'aspect-[4/3]',
   },
   {
     key: 'mobile',
     label: 'Mobile',
     icon: Smartphone,
-    hint: 'Portrait — recomendado 768×1024px',
+    hint: 'Portrait — recomendado 768×1024px, WebP quality 75, alvo < 80KB',
     ratio: 'aspect-[9/16]',
   },
 ]
@@ -154,11 +154,17 @@ export function BgImagesManager() {
                 <input
                   ref={(el) => { inputRefs.current[key] = el }}
                   type="file"
-                  accept="image/webp,image/jpeg,image/png"
+                  accept="image/webp"
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0]
-                    if (f) void handleUpload(key, f)
+                    if (!f) return
+                    if (f.type !== 'image/webp') {
+                      toast.error('Apenas arquivos WebP são aceitos. Converta sua imagem em squoosh.app')
+                      e.target.value = ''
+                      return
+                    }
+                    void handleUpload(key, f)
                     e.target.value = ''
                   }}
                 />
@@ -240,7 +246,7 @@ export function BgImagesManager() {
           <li>A home escolhe automaticamente uma imagem aleatória ao carregar, por tipo de dispositivo</li>
           <li>Se não houver imagem de tablet, usa a de desktop</li>
           <li>Se não houver nenhuma imagem, usa o fundo padrão</li>
-          <li>Formatos aceitos: WebP, JPG, PNG — máximo 20MB por imagem</li>
+          <li>Formato aceito: <strong>WebP</strong> — máximo 20MB por imagem. Use <a href="https://squoosh.app" target="_blank" rel="noopener noreferrer" className="underline">squoosh.app</a> para converter e comprimir</li>
         </ul>
       </div>
     </div>
