@@ -217,7 +217,7 @@ export default async function ClientePage() {
                 <Truck className="h-10 w-10 opacity-30" />
                 <p className="text-sm">Você ainda não tem fretes contratados.</p>
                 <Button asChild size="sm" className="bg-brand-500 hover:bg-brand-600 text-white mt-1">
-                  <Link href="/cotacao">Fazer primeira cotação</Link>
+                  <Link href="/cotacao?from=cliente">Fazer primeira cotação</Link>
                 </Button>
               </div>
             ) : (
