@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import Link from 'next/link'
 import { Package, TrendingUp, DollarSign, Truck, Plus, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -212,8 +213,8 @@ export default async function ClientePage() {
                     {stats.recentFreights.map((f) => {
                       const proofCount = Array.isArray(f.proof_urls) ? f.proof_urls.length : 0
                       return (
-                        <>
-                          <tr key={f.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                        <Fragment key={f.id}>
+                          <tr className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                             <td className="py-3 px-3 font-medium text-slate-700">
                               {formatCep(f.origin_zip)} → {formatCep(f.dest_zip)}
                             </td>
@@ -229,13 +230,13 @@ export default async function ClientePage() {
                             </td>
                           </tr>
                           {proofCount > 0 && (
-                            <tr key={`${f.id}-proof`} className="border-b border-slate-50 bg-emerald-50/30">
+                            <tr className="border-b border-slate-50 bg-emerald-50/30">
                               <td colSpan={5} className="px-3 pb-3">
                                 <ProofViewer freightId={f.id} proofCount={proofCount} />
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       )
                     })}
                   </tbody>

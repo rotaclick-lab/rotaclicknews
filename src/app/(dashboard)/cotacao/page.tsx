@@ -255,6 +255,24 @@ export default function CotacaoPage() {
       setSelectedOffer(null)
       setStep(4)
 
+      // Captura silenciosa para funil de vendas (fire-and-forget)
+      fetch('/api/quotes/funnel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactName: contact.name,
+          contactEmail: contact.email,
+          contactPhone: contact.phone,
+          originCep: origin,
+          destinationCep: destination,
+          originCity,
+          destinationCity,
+          taxableWeight: totals.taxableWeight,
+          invoiceValue,
+          resultsCount: offers.length,
+        }),
+      }).catch(() => {})
+
       if (offers.length === 0) {
         toast.info('Nenhuma tabela de frete encontrada para este par de CEP.')
       }
