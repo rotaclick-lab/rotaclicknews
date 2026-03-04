@@ -1,8 +1,10 @@
 import { getClienteProfile } from '@/app/actions/cliente-profile-actions'
 import { ProfileForm } from './profile-form'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { UserCircle, ArrowLeft } from 'lucide-react'
+import { AvatarPicker } from './avatar-picker'
+import { Card, CardContent } from '@/components/ui/card'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,11 +34,24 @@ export default async function PerfilPage() {
           </Card>
         ) : (
           <>
-            {/* Avatar / identificação */}
+            {/* Cabeçalho do perfil */}
             <Card className="border-0 shadow-sm">
               <CardContent className="py-5 flex items-center gap-4">
-                <div className="flex-shrink-0 w-14 h-14 rounded-full bg-brand-100 flex items-center justify-center">
-                  <UserCircle className="h-9 w-9 text-brand-500" />
+                <div className="flex-shrink-0 w-14 h-14 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center border-2 border-brand-100">
+                  {result.data!.avatar_url ? (
+                    <Image
+                      src={result.data!.avatar_url}
+                      alt="Avatar"
+                      width={56}
+                      height={56}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="text-xl font-bold text-brand-600">
+                      {result.data!.full_name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase() || '?'}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900">{result.data!.full_name || '—'}</p>
@@ -47,6 +62,11 @@ export default async function PerfilPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <AvatarPicker
+              currentAvatar={result.data!.avatar_url ?? ''}
+              userName={result.data!.full_name}
+            />
 
             <ProfileForm initialData={result.data!} />
           </>

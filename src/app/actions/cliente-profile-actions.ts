@@ -25,7 +25,7 @@ export async function getClienteProfile() {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, full_name, name, email, phone, cpf, role, created_at')
+    .select('id, full_name, name, email, phone, cpf, role, created_at, avatar_url')
     .eq('id', user.id)
     .single()
 
@@ -50,6 +50,7 @@ export async function getClienteProfile() {
       city: address.city ?? '',
       state: address.state ?? '',
       created_at: profile.created_at,
+      avatar_url: profile.avatar_url ?? meta.avatar_url ?? '',
     },
   }
 }
@@ -94,6 +95,26 @@ export async function updateClienteProfile(data: ClienteProfileData) {
   })
 
   if (metaError) return { error: 'Erro ao atualizar metadados' }
+
+  revalidatePath('/cliente/perfil')
+  revalidatePath('/cliente')
+
+  return { success: true }
+}
+
+export async function updateClienteAvatar(avatarUrl: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return { error: 'Não autenticado' }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+    .eq('id', user.id)
+
+  if (error) return { error: 'Erro ao salvar avatar' }
+
+  await supabase.auth.updateUser({ data: { avatar_url: avatarUrl } })
 
   revalidatePath('/cliente/perfil')
   revalidatePath('/cliente')

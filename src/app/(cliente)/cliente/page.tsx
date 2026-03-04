@@ -1,9 +1,11 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Package, TrendingUp, DollarSign, Truck, Plus, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle, UserCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getClienteDashboardStats } from '@/app/actions/quotes-actions'
+import { getClienteProfile } from '@/app/actions/cliente-profile-actions'
 import { ProofViewer } from './proof-viewer'
 
 export const metadata = {
@@ -51,8 +53,15 @@ function StatusBadge({ status, paymentStatus }: { status: string; paymentStatus:
 }
 
 export default async function ClientePage() {
-  const result = await getClienteDashboardStats()
+  const [result, profileResult] = await Promise.all([
+    getClienteDashboardStats(),
+    getClienteProfile(),
+  ])
   const stats = result.success ? result.data : null
+  const profile = profileResult.data ?? null
+
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'Perfil'
+  const avatarUrl = profile?.avatar_url ?? ''
 
   const maxMonthVal = Math.max(...(stats?.monthlyData.map(m => m.valor) ?? [1]), 1)
 
@@ -67,9 +76,16 @@ export default async function ClientePage() {
             <p className="text-sm text-muted-foreground mt-0.5">Acompanhe seus fretes e gastos</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" className="border-brand-200 text-brand-700 hover:bg-brand-50">
-              <Link href="/cliente/perfil">
-                <UserCircle className="h-4 w-4 mr-1.5" />Meu Perfil
+            <Button asChild variant="outline" className="border-brand-200 text-brand-700 hover:bg-brand-50 pl-2">
+              <Link href="/cliente/perfil" className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center shrink-0">
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt="Avatar" width={28} height={28} className="w-full h-full object-cover" unoptimized />
+                  ) : (
+                    <UserCircle className="h-5 w-5 text-brand-500" />
+                  )}
+                </div>
+                <span>{firstName}</span>
               </Link>
             </Button>
             <Button asChild className="bg-brand-500 hover:bg-brand-600 text-white">
