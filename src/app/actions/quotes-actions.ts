@@ -195,7 +195,7 @@ export async function listCarrierQuotes(params?: { page?: number; perPage?: numb
     // Fretes que usaram rotas desta transportadora
     let query = admin
       .from('freights')
-      .select('id, status, payment_status, carrier_name, price, origin_zip, dest_zip, deadline_days, created_at, user_id, route_id', { count: 'exact' })
+      .select('id, status, payment_status, carrier_name, price, origin_zip, dest_zip, deadline_days, created_at, user_id, route_id, proof_urls, proof_uploaded_at', { count: 'exact' })
       .in('route_id', routeIds.length ? routeIds : ['00000000-0000-0000-0000-000000000000'])
       .order('created_at', { ascending: false })
 
@@ -323,7 +323,7 @@ export async function getClienteDashboardStats() {
 
     const { data: freights, count, error } = await admin
       .from('freights')
-      .select('id, status, payment_status, carrier_name, price, origin_zip, dest_zip, deadline_days, created_at', { count: 'exact' })
+      .select('id, status, payment_status, carrier_name, price, origin_zip, dest_zip, deadline_days, created_at, proof_urls, proof_uploaded_at', { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(100)

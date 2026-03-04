@@ -3,6 +3,7 @@ import { Package, TrendingUp, DollarSign, Truck, Plus, ArrowRight, CheckCircle2,
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getClienteDashboardStats } from '@/app/actions/quotes-actions'
+import { ProofViewer } from './proof-viewer'
 
 export const metadata = {
   title: 'Meu Painel | RotaClick',
@@ -208,23 +209,35 @@ export default async function ClientePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.recentFreights.map((f) => (
-                      <tr key={f.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                        <td className="py-3 px-3 font-medium text-slate-700">
-                          {formatCep(f.origin_zip)} → {formatCep(f.dest_zip)}
-                        </td>
-                        <td className="py-3 px-3 text-slate-600">{f.carrier_name || '—'}</td>
-                        <td className="py-3 px-3 text-slate-500">
-                          {new Date(f.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="py-3 px-3">
-                          <StatusBadge status={f.status} paymentStatus={f.payment_status} />
-                        </td>
-                        <td className="py-3 px-3 text-right font-semibold text-orange-600">
-                          {formatCurrency(Number(f.price))}
-                        </td>
-                      </tr>
-                    ))}
+                    {stats.recentFreights.map((f) => {
+                      const proofCount = Array.isArray(f.proof_urls) ? f.proof_urls.length : 0
+                      return (
+                        <>
+                          <tr key={f.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <td className="py-3 px-3 font-medium text-slate-700">
+                              {formatCep(f.origin_zip)} → {formatCep(f.dest_zip)}
+                            </td>
+                            <td className="py-3 px-3 text-slate-600">{f.carrier_name || '—'}</td>
+                            <td className="py-3 px-3 text-slate-500">
+                              {new Date(f.created_at).toLocaleDateString('pt-BR')}
+                            </td>
+                            <td className="py-3 px-3">
+                              <StatusBadge status={f.status} paymentStatus={f.payment_status} />
+                            </td>
+                            <td className="py-3 px-3 text-right font-semibold text-orange-600">
+                              {formatCurrency(Number(f.price))}
+                            </td>
+                          </tr>
+                          {proofCount > 0 && (
+                            <tr key={`${f.id}-proof`} className="border-b border-slate-50 bg-emerald-50/30">
+                              <td colSpan={5} className="px-3 pb-3">
+                                <ProofViewer freightId={f.id} proofCount={proofCount} />
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

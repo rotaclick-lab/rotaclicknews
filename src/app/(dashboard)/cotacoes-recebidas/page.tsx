@@ -2,6 +2,7 @@ import { listCarrierQuotes } from '@/app/actions/quotes-actions'
 import { Card, CardContent } from '@/components/ui/card'
 import { Eye, TrendingUp, CheckCircle2, MapPin, Truck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ProofUpload } from './proof-upload'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,9 +133,17 @@ export default async function CotacoesRecebidasPage() {
                       Cliente: <span className="font-medium text-foreground">{f.client_name}</span>
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-brand-800">{f.price ? fmt(Number(f.price)) : '—'}</p>
-                    <p className="text-xs text-muted-foreground">Valor do frete</p>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-brand-800">{f.price ? fmt(Number(f.price)) : '—'}</p>
+                      <p className="text-xs text-muted-foreground">Valor do frete</p>
+                    </div>
+                    {f.payment_status === 'paid' && (
+                      <ProofUpload
+                        freightId={f.id}
+                        existingCount={Array.isArray(f.proof_urls) ? f.proof_urls.length : 0}
+                      />
+                    )}
                   </div>
                 </div>
               </CardContent>
