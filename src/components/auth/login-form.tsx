@@ -15,11 +15,29 @@ interface LoginFormProps {
   next?: string
 }
 
+function maskCpfCnpj(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1')
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1')
+}
+
 export function LoginForm({ next }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [identifierValue, setIdentifierValue] = useState('')
   const { toast } = useToast()
   
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
+  const { handleSubmit, setValue, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   })
 
@@ -54,7 +72,12 @@ export function LoginForm({ next }: LoginFormProps) {
           inputMode="numeric"
           placeholder="000.000.000-00 ou 00.000.000/0000-00"
           className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
-          {...register('identifier')}
+          value={identifierValue}
+          onChange={(e) => {
+            const masked = maskCpfCnpj(e.target.value)
+            setIdentifierValue(masked)
+            setValue('identifier', masked)
+          }}
           disabled={isLoading}
         />
         {errors.identifier && (
