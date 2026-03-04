@@ -73,7 +73,7 @@ export default async function ClientePage() {
               </Link>
             </Button>
             <Button asChild className="bg-brand-500 hover:bg-brand-600 text-white">
-              <Link href="/cotacao">
+              <Link href="/cotacao?from=cliente">
                 <Plus className="h-4 w-4 mr-1.5" />Nova Cotação
               </Link>
             </Button>
@@ -170,9 +170,9 @@ export default async function ClientePage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {[
-                { label: 'Nova cotação de frete', href: '/cotacao', icon: Plus, color: 'bg-brand-500 hover:bg-brand-600' },
+                { label: 'Nova cotação de frete', href: '/cotacao?from=cliente', icon: Plus, color: 'bg-brand-500 hover:bg-brand-600' },
                 { label: 'Ver histórico completo', href: '/cliente/historico', icon: Package, color: 'bg-slate-700 hover:bg-slate-800' },
-                { label: 'Falar com suporte', href: 'mailto:sac@rotaclick.com.br', icon: ArrowRight, color: 'bg-orange-500 hover:bg-orange-600' },
+                { label: 'Falar com suporte', href: '/cliente/suporte', icon: ArrowRight, color: 'bg-orange-500 hover:bg-orange-600' },
               ].map(({ label, href, icon: Icon, color }) => (
                 <Link
                   key={href}

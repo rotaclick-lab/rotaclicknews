@@ -64,7 +64,7 @@ function SuccessContent() {
             <Link href="/cotacao">
               <Button size="lg" className="bg-brand-500 hover:bg-brand-600 text-white">Tentar novamente</Button>
             </Link>
-            <Link href="/dashboard" className="text-brand-600 hover:underline text-sm">Voltar ao painel</Link>
+            <Link href="/cliente" className="text-brand-600 hover:underline text-sm">Voltar ao painel</Link>
           </div>
         ) : (
           <>
@@ -145,7 +145,7 @@ function SuccessContent() {
               <Button onClick={() => window.print()} variant="outline" className="flex-1 py-6 font-bold">
                 <Printer className="mr-2 h-5 w-5" /> Imprimir Comprovante
               </Button>
-              <Link href="/historico" className="flex-1">
+              <Link href="/cliente/historico" className="flex-1">
                 <Button className="w-full py-6 font-bold bg-brand-500 hover:bg-brand-600 text-white">
                   <Package className="mr-2 h-5 w-5" /> Ver Meus Fretes
                 </Button>
@@ -153,7 +153,7 @@ function SuccessContent() {
             </div>
 
             <div className="mt-6 text-center print:hidden">
-              <Link href="/dashboard" className="text-brand-600 hover:underline flex items-center justify-center gap-2 font-medium">
+              <Link href="/cliente" className="text-brand-600 hover:underline flex items-center justify-center gap-2 font-medium">
                 <ArrowLeft className="h-4 w-4" /> Voltar para o Painel
               </Link>
             </div>

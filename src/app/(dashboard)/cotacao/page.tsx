@@ -339,7 +339,7 @@ export default function CotacaoPage() {
                   </div>
                 </div>
                 <div className="flex justify-between pt-4">
-                  <Button variant="outline" onClick={() => router.push('/dashboard')} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                  <Button variant="outline" onClick={() => router.push(searchParams.get('from') === 'cliente' ? '/cliente' : '/dashboard')} className="border-brand-200 text-brand-700 hover:bg-brand-50">
                     <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                   </Button>
                   <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
