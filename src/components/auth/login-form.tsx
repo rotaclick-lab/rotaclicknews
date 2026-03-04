@@ -37,7 +37,7 @@ export function LoginForm({ next }: LoginFormProps) {
   const [identifierValue, setIdentifierValue] = useState('')
   const { toast } = useToast()
   
-  const { handleSubmit, setValue, formState: { errors } } = useForm<LoginInput>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   })
 
