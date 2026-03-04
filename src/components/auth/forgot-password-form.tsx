@@ -13,19 +13,37 @@ import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
 
+function maskCpfCnpj(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1')
+  }
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1')
+}
+
 export function ForgotPasswordForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [identifierValue, setIdentifierValue] = useState('')
   const { toast } = useToast()
   
-  const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordInput>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
   })
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     setIsLoading(true)
     const formData = new FormData()
-    formData.append('email', data.email)
+    formData.append('identifier', data.identifier)
     
     const result = await forgotPassword(formData)
     
@@ -63,17 +81,23 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="identifier">CPF ou CNPJ</Label>
         <Input
-          id="email"
-          type="email"
-          placeholder="seu@email.com"
+          id="identifier"
+          type="text"
+          inputMode="numeric"
+          placeholder="000.000.000-00 ou 00.000.000/0000-00"
           className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
-          {...register('email')}
+          value={identifierValue}
+          onChange={(e) => {
+            const masked = maskCpfCnpj(e.target.value)
+            setIdentifierValue(masked)
+            setValue('identifier', masked)
+          }}
           disabled={isLoading}
         />
-        {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
+        {errors.identifier && (
+          <p className="text-sm text-red-500">{errors.identifier.message}</p>
         )}
       </div>
 

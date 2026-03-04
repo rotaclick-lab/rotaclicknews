@@ -47,11 +47,12 @@ export function LoginForm({ next }: LoginFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="identifier">Email, CPF ou CNPJ</Label>
+        <Label htmlFor="identifier">CPF ou CNPJ</Label>
         <Input
           id="identifier"
           type="text"
-          placeholder="seu@email.com ou 000.000.000-00"
+          inputMode="numeric"
+          placeholder="000.000.000-00 ou 00.000.000/0000-00"
           className="h-12 rounded-lg border-brand-100 focus-visible:ring-brand-500"
           {...register('identifier')}
           disabled={isLoading}

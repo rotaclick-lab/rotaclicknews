@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-brand-700">Esqueceu sua senha?</CardTitle>
           <CardDescription>
-            Digite seu email e enviaremos instruções para redefinir sua senha
+            Digite seu CPF ou CNPJ e enviaremos instruções para redefinir sua senha no email cadastrado
           </CardDescription>
         </CardHeader>
         <CardContent>

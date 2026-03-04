@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  identifier: z.string().min(1, 'Informe email, CPF ou CNPJ'),
+  identifier: z.string().min(3, 'Informe seu CPF ou CNPJ'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
 })
 
@@ -22,7 +22,7 @@ export const registerSchema = z.object({
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Email inválido'),
+  identifier: z.string().min(3, 'Informe seu CPF, CNPJ'),
 })
 
 export const resetPasswordSchema = z.object({
@@ -39,4 +39,5 @@ export const resetPasswordSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+export type ForgotPasswordIdentifierInput = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

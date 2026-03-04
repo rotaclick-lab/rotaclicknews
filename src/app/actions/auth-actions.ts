@@ -135,7 +135,7 @@ export async function login(formData: FormData) {
   const resolvedEmail = await resolveLoginEmail(identifier)
 
   if (!resolvedEmail) {
-    return { error: 'Credenciais inválidas. Use email, CPF ou CNPJ válidos.' }
+    return { error: 'CPF ou CNPJ não encontrado. Verifique e tente novamente.' }
   }
 
   const data = {
@@ -360,10 +360,18 @@ export const signOut = logout
 export async function forgotPassword(formData: FormData) {
   const supabase = await createClient()
 
-  const email = formData.get('email') as string
+  const identifier = ((formData.get('identifier') as string) || (formData.get('email') as string) || '').trim()
+
+  const resolvedEmail = await resolveLoginEmail(identifier)
+
+  if (!resolvedEmail || resolvedEmail.endsWith('@rotaclick.internal')) {
+    // Transportadoras usam email sintético — não podem redefinir senha por aqui
+    // Retornamos sucesso genérico para não vazar informação
+    return { success: true, message: 'Se o CPF/CNPJ estiver cadastrado, você receberá um email de recuperação.' }
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(resolvedEmail, {
     redirectTo: `${baseUrl}/auth/callback?next=/auth/reset-password`,
   })
 
@@ -371,7 +379,7 @@ export async function forgotPassword(formData: FormData) {
     return { error: error.message }
   }
 
-  return { success: true, message: 'Email de recuperação enviado com sucesso!' }
+  return { success: true, message: 'Se o CPF/CNPJ estiver cadastrado, você receberá um email de recuperação.' }
 }
 
 export async function resetPassword(formData: FormData) {
