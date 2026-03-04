@@ -312,6 +312,60 @@ export async function getFreightBySessionId(sessionId: string) {
   }
 }
 
+// ===== STATS DO DASHBOARD DO EMBARCADOR (cliente) =====
+export async function getClienteDashboardStats() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Não autenticado', data: null }
+
+    const admin = createAdminClient()
+
+    const { data: freights, count, error } = await admin
+      .from('freights')
+      .select('id, status, payment_status, carrier_name, price, origin_zip, dest_zip, deadline_days, created_at', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error) return { success: false, error: error.message, data: null }
+
+    const all = freights ?? []
+    const paid = all.filter(f => f.payment_status === 'paid')
+    const totalSpent = paid.reduce((s, f) => s + (Number(f.price) || 0), 0)
+    const avgPrice = paid.length > 0 ? totalSpent / paid.length : 0
+
+    const now = new Date()
+    const monthlyData = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+      const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+      const monthStart = d.toISOString().slice(0, 7)
+      const monthFreights = paid.filter(f => f.created_at?.startsWith(monthStart))
+      return {
+        mes: label,
+        valor: monthFreights.reduce((s, f) => s + (Number(f.price) || 0), 0),
+        fretes: monthFreights.length,
+      }
+    })
+
+    const recent = all.slice(0, 10)
+
+    return {
+      success: true,
+      data: {
+        totalFreights: count ?? 0,
+        paidFreights: paid.length,
+        totalSpent,
+        avgPrice,
+        monthlyData,
+        recentFreights: recent,
+      },
+    }
+  } catch (e) {
+    return { success: false, error: String(e), data: null }
+  }
+}
+
 // ===== ATUALIZAR STATUS DO FRETE =====
 export async function updateFreightStatus(freightId: string, status: string) {
   try {

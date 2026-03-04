@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/app/api/rate-limit'
 import { normalizeCepToRegion } from '@/lib/shipping-regions'
+import { cepToUf, ufToRegion } from '@/lib/cep-to-uf'
 
 type QuoteRequestBody = {
   originCep: string
@@ -135,11 +136,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Erro ao consultar tabela de frete.' }, { status: 500 })
     }
 
-    // Fallback: busca por prefixo de 5 dígitos se não encontrou resultado exato
+    // Fallback 1: busca por prefixo de 5 dígitos
     if (!routes || routes.length === 0) {
       const originPrefix = originDigits.slice(0, 5)
       const destPrefix = destinationDigits.slice(0, 5)
-      console.log('Debug - Buscando por prefixo:', { originPrefix, destPrefix })
       const { data: prefixRoutes } = await admin
         .from('freight_routes')
         .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
@@ -148,7 +148,40 @@ export async function POST(request: Request) {
         .or('is_active.is.null,is_active.eq.true')
         .limit(50)
       routes = prefixRoutes ?? []
-      console.log('Debug - Rotas encontradas (prefixo):', routes?.length || 0)
+    }
+
+    // Fallback 2: busca por UF (ex: transportadora cadastrou "SP" → "RJ")
+    if (!routes || routes.length === 0) {
+      const originUf = cepToUf(originDigits)
+      const destUf = cepToUf(destinationDigits)
+      if (originUf && destUf) {
+        const { data: ufRoutes } = await admin
+          .from('freight_routes')
+          .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
+          .eq('origin_uf', originUf)
+          .eq('dest_uf', destUf)
+          .or('is_active.is.null,is_active.eq.true')
+          .limit(50)
+        routes = ufRoutes ?? []
+      }
+    }
+
+    // Fallback 3: busca por macro-região (ex: "sudeste" → "nordeste")
+    if (!routes || routes.length === 0) {
+      const originUf = cepToUf(originDigits)
+      const destUf = cepToUf(destinationDigits)
+      const originRegion = originUf ? ufToRegion(originUf) : null
+      const destRegion = destUf ? ufToRegion(destUf) : null
+      if (originRegion && destRegion) {
+        const { data: regionRoutes } = await admin
+          .from('freight_routes')
+          .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
+          .eq('origin_region', originRegion)
+          .eq('dest_region', destRegion)
+          .or('is_active.is.null,is_active.eq.true')
+          .limit(50)
+        routes = regionRoutes ?? []
+      }
     }
 
     const validRoutes = (routes ?? []) as FreightRouteRow[]
