@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
-import { Package, TrendingUp, DollarSign, Truck, Plus, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { Package, TrendingUp, DollarSign, Truck, Plus, ArrowRight, CheckCircle2, Clock, XCircle, AlertCircle, UserCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getClienteDashboardStats } from '@/app/actions/quotes-actions'
@@ -66,11 +66,18 @@ export default async function ClientePage() {
             <h1 className="text-2xl font-bold text-slate-900">Meu Painel</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Acompanhe seus fretes e gastos</p>
           </div>
-          <Button asChild className="bg-brand-500 hover:bg-brand-600 text-white">
-            <Link href="/cotacao">
-              <Plus className="h-4 w-4 mr-1.5" />Nova Cotação
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" className="border-brand-200 text-brand-700 hover:bg-brand-50">
+              <Link href="/cliente/perfil">
+                <UserCircle className="h-4 w-4 mr-1.5" />Meu Perfil
+              </Link>
+            </Button>
+            <Button asChild className="bg-brand-500 hover:bg-brand-600 text-white">
+              <Link href="/cotacao">
+                <Plus className="h-4 w-4 mr-1.5" />Nova Cotação
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* KPIs */}
