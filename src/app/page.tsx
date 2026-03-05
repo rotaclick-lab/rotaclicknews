@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar } from 'lucide-react'
+import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 interface CargoItem {
   quantity: number
@@ -108,11 +109,56 @@ function useRandomBg() {
   return { bgUrl, bgReady }
 }
 
+interface AuthUser {
+  name: string
+  email: string
+  avatarUrl: string
+  role: string
+}
+
 export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isDemoMode = searchParams.get('demo') === '1'
   const { bgUrl, bgReady } = useRandomBg()
+
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
+      if (!u) { setAuthLoading(false); return }
+      const meta = u.user_metadata ?? {}
+      supabase.from('profiles').select('full_name, avatar_url, role').eq('id', u.id).single()
+        .then(({ data: p }) => {
+          setAuthUser({
+            name: p?.full_name || meta.full_name || meta.name || u.email?.split('@')[0] || 'Usuário',
+            email: u.email ?? '',
+            avatarUrl: p?.avatar_url || meta.avatar_url || '',
+            role: p?.role || meta.role || 'cliente',
+          })
+          setAuthLoading(false)
+        })
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!headerMenuOpen) return
+    const handler = () => setHeaderMenuOpen(false)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [headerMenuOpen])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setAuthUser(null)
+    setHeaderMenuOpen(false)
+    router.refresh()
+  }
+
   const [step, setStep] = useState(1)
   const [contact, setContact] = useState({
     name: '',
@@ -381,13 +427,85 @@ export default function HomePage() {
               priority
             />
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost" className="text-brand-700 hover:text-brand-800 hover:bg-brand-50">Entrar</Button>
-            </Link>
-            <Link href="/transportadora">
-              <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold">Sou Transportadora</Button>
-            </Link>
+          <nav className="flex items-center gap-3">
+            {authLoading ? (
+              <div className="w-28 h-9 rounded-full bg-slate-100 animate-pulse" />
+            ) : authUser ? (
+              /* ── Usuário logado ── */
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+                  className="flex items-center gap-2 rounded-full border border-brand-100 bg-white pl-1.5 pr-3 py-1 hover:bg-brand-50 transition-colors shadow-sm"
+                >
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-brand-100 flex items-center justify-center shrink-0">
+                    {authUser.avatarUrl ? (
+                      <Image src={authUser.avatarUrl} alt="Avatar" width={28} height={28} className="w-full h-full object-cover" unoptimized />
+                    ) : (
+                      <UserCircle className="h-5 w-5 text-brand-500" />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-slate-700 max-w-[90px] truncate">
+                    {authUser.name.split(' ')[0]}
+                  </span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${headerMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {headerMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-100 bg-white shadow-xl py-1 z-50">
+                    {/* Info */}
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{authUser.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{authUser.email}</p>
+                      <span className={`inline-block mt-1.5 text-[10px] font-semibold rounded-full px-2.5 py-0.5 uppercase tracking-wide ${
+                        authUser.role === 'transportadora' ? 'bg-blue-50 text-blue-600'
+                        : authUser.role === 'admin' ? 'bg-red-50 text-red-600'
+                        : 'bg-brand-50 text-brand-600'
+                      }`}>
+                        {authUser.role === 'transportadora' ? 'Transportadora' : authUser.role === 'admin' ? 'Admin' : 'Embarcador'}
+                      </span>
+                    </div>
+                    {/* Links */}
+                    <Link
+                      href={authUser.role === 'transportadora' ? '/dashboard' : authUser.role === 'admin' ? '/admin' : '/cliente'}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      onClick={() => setHeaderMenuOpen(false)}
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-brand-500" />
+                      Meu Painel
+                    </Link>
+                    {authUser.role === 'cliente' && (
+                      <Link
+                        href="/cliente/perfil"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        onClick={() => setHeaderMenuOpen(false)}
+                      >
+                        <UserCircle className="h-4 w-4 text-slate-400" />
+                        Meu Perfil
+                      </Link>
+                    )}
+                    <div className="border-t border-slate-100 mt-1 pt-1">
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sair da conta
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── Visitante ── */
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-brand-700 hover:text-brand-800 hover:bg-brand-50">Entrar</Button>
+                </Link>
+                <Link href="/transportadora">
+                  <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold">Sou Transportadora</Button>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
