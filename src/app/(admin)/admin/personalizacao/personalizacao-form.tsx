@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { updatePlatformSettingsBatch } from '@/app/actions/platform-actions'
-import { Palette, Type, Globe, Settings2, Save, ImageIcon } from 'lucide-react'
+import { Palette, Type, Globe, Settings2, Save, ImageIcon, Upload, Trash2, Loader2 } from 'lucide-react'
 
 interface Props {
   settings: Record<string, string>
@@ -18,6 +18,48 @@ export function PersonalizacaoForm({ settings }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [values, setValues] = useState<Record<string, string>>(settings)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleMaintenanceImageUpload = async (file: File) => {
+    setUploadingImg(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/maintenance-image', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao fazer upload')
+      } else {
+        set('maintenance_image_url', json.url)
+        toast.success('Imagem enviada com sucesso!')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão ao fazer upload')
+    } finally {
+      setUploadingImg(false)
+    }
+  }
+
+  const handleMaintenanceImageRemove = async () => {
+    setUploadingImg(true)
+    try {
+      const res = await fetch('/api/admin/maintenance-image', { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao remover imagem')
+      } else {
+        set('maintenance_image_url', '')
+        toast.success('Imagem removida')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão')
+    } finally {
+      setUploadingImg(false)
+    }
+  }
 
   const set = (key: string, value: string) =>
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -249,12 +291,73 @@ export function PersonalizacaoForm({ settings }: Props) {
               type="textarea"
               hint="Mensagem explicativa exibida abaixo do título"
             />
-            <Field
-              label="URL da imagem"
-              settingKey="maintenance_image_url"
-              placeholder="https://..."
-              hint="Imagem exibida na página (PNG/JPG/SVG recomendado — proporção 16:9 ou quadrada)"
-            />
+            {/* Upload de imagem de manutenção */}
+            <div className="space-y-2">
+              <Label>Imagem de fundo</Label>
+              <p className="text-xs text-muted-foreground">Será exibida como fundo da página de manutenção. JPG, PNG, WebP ou SVG — máx. 10MB.</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleMaintenanceImageUpload(file)
+                  e.target.value = ''
+                }}
+              />
+              {values['maintenance_image_url'] ? (
+                <div className="relative rounded-xl overflow-hidden border border-amber-200 bg-white">
+                  <img
+                    src={values['maintenance_image_url']}
+                    alt="Fundo manutenção"
+                    className="w-full max-h-48 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImg}
+                    >
+                      <Upload className="h-4 w-4 mr-1" /> Trocar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleMaintenanceImageRemove}
+                      disabled={uploadingImg}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Remover
+                    </Button>
+                  </div>
+                  {uploadingImg && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImg}
+                  className="w-full border-2 border-dashed border-amber-300 rounded-xl p-8 text-center hover:border-amber-500 hover:bg-amber-50/50 transition-colors disabled:opacity-50"
+                >
+                  {uploadingImg ? (
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-amber-500" />
+                  ) : (
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-amber-400" />
+                  )}
+                  <p className="text-sm font-medium text-amber-700">
+                    {uploadingImg ? 'Enviando...' : 'Clique para fazer upload'}
+                  </p>
+                  <p className="text-xs text-amber-500 mt-1">JPG, PNG, WebP, SVG — máx. 10MB</p>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Preview da página de manutenção */}
