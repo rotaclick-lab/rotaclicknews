@@ -46,9 +46,7 @@ export default async function ManutencaoPage() {
 
   const year = new Date().getFullYear()
 
-  const bodyBg = imageUrl
-    ? `url('${imageUrl}') center center / 60% auto no-repeat fixed`
-    : `linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%)`
+  const bgGradient = `linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%)`
 
   return (
     <html lang="pt-BR">
@@ -60,10 +58,22 @@ export default async function ManutencaoPage() {
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            background: ${bodyBg};
+            background: ${imageUrl ? `url('${imageUrl}') center center / contain no-repeat fixed, ${bgGradient}` : bgGradient};
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+          }
+          /* Tablet */
+          @media (max-width: 1024px) {
+            body {
+              background: ${imageUrl ? `url('${imageUrl}') center center / contain no-repeat fixed, ${bgGradient}` : bgGradient};
+            }
+          }
+          /* Mobile */
+          @media (max-width: 640px) {
+            body {
+              background: ${imageUrl ? `url('${imageUrl}') center top / contain no-repeat scroll, ${bgGradient}` : bgGradient};
+            }
           }
           ${imageUrl ? `
           body::before {
