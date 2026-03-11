@@ -205,10 +205,11 @@ export default function CotacaoPage() {
   const calculateTotals = () => {
     let totalWeight = 0
     let totalCubedWeight = 0
-    
+
     items.forEach(item => {
       const weight = item.weight * item.quantity
-      const cubedWeight = (item.height * item.width * item.depth) * 300 * item.quantity
+      // Dimensões em cm → converter para metros antes de calcular cubagem
+      const cubedWeight = (item.height / 100) * (item.width / 100) * (item.depth / 100) * 300 * item.quantity
       totalWeight += weight
       totalCubedWeight += cubedWeight
     })
@@ -216,7 +217,7 @@ export default function CotacaoPage() {
     return {
       realWeight: totalWeight,
       cubedWeight: totalCubedWeight,
-      taxableWeight: Math.max(totalWeight, totalCubedWeight)
+      taxableWeight: Math.max(totalWeight, totalCubedWeight),
     }
   }
 
@@ -234,8 +235,12 @@ export default function CotacaoPage() {
         body: JSON.stringify({
           originCep: origin,
           destinationCep: destination,
-          taxableWeight: totals.taxableWeight,
+          taxableWeight: totals.realWeight,
           invoiceValue,
+          // Envia dimensões totais em cm para a API recalcular peso cubado por dentro
+          lengthCm: items.reduce((acc, i) => acc + i.depth * i.quantity, 0) / Math.max(items.length, 1),
+          widthCm: items.reduce((acc, i) => acc + i.width * i.quantity, 0) / Math.max(items.length, 1),
+          heightCm: items.reduce((acc, i) => acc + i.height * i.quantity, 0) / Math.max(items.length, 1),
         }),
       })
 
@@ -457,27 +462,33 @@ export default function CotacaoPage() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase">Alt (m)</Label>
-                          <Input 
+                          <Label className="text-[10px] uppercase">Alt (cm)</Label>
+                          <Input
+                            type="number"
+                            min={0}
                             className="text-right focus-visible:ring-brand-500"
-                            value={item.height.toFixed(2)} 
-                            onChange={(e) => updateItem(idx, 'height', Number(maskDecimal(e.target.value)))} 
+                            value={item.height || ''}
+                            onChange={(e) => updateItem(idx, 'height', Math.max(0, Number(e.target.value)))}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase">Larg (m)</Label>
-                          <Input 
+                          <Label className="text-[10px] uppercase">Larg (cm)</Label>
+                          <Input
+                            type="number"
+                            min={0}
                             className="text-right focus-visible:ring-brand-500"
-                            value={item.width.toFixed(2)} 
-                            onChange={(e) => updateItem(idx, 'width', Number(maskDecimal(e.target.value)))} 
+                            value={item.width || ''}
+                            onChange={(e) => updateItem(idx, 'width', Math.max(0, Number(e.target.value)))}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase">Prof (m)</Label>
-                          <Input 
+                          <Label className="text-[10px] uppercase">Prof (cm)</Label>
+                          <Input
+                            type="number"
+                            min={0}
                             className="text-right focus-visible:ring-brand-500"
-                            value={item.depth.toFixed(2)} 
-                            onChange={(e) => updateItem(idx, 'depth', Number(maskDecimal(e.target.value)))} 
+                            value={item.depth || ''}
+                            onChange={(e) => updateItem(idx, 'depth', Math.max(0, Number(e.target.value)))}
                           />
                         </div>
                       </div>

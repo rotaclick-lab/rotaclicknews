@@ -328,10 +328,11 @@ export default function HomePage() {
   const calculateTotals = () => {
     let totalWeight = 0
     let totalCubedWeight = 0
-    
+
     items.forEach(item => {
       const weight = item.weight * item.quantity
-      const cubedWeight = (item.height * item.width * item.depth) * 300 * item.quantity
+      // Dimensões em cm → converter para metros antes de calcular cubagem (fator NTC 300)
+      const cubedWeight = (item.height / 100) * (item.width / 100) * (item.depth / 100) * 300 * item.quantity
       totalWeight += weight
       totalCubedWeight += cubedWeight
     })
@@ -339,7 +340,7 @@ export default function HomePage() {
     return {
       realWeight: totalWeight,
       cubedWeight: totalCubedWeight,
-      taxableWeight: Math.max(totalWeight, totalCubedWeight)
+      taxableWeight: Math.max(totalWeight, totalCubedWeight),
     }
   }
 
@@ -366,8 +367,12 @@ export default function HomePage() {
         body: JSON.stringify({
           originCep: origin,
           destinationCep: destination,
-          taxableWeight: totals.taxableWeight,
+          taxableWeight: totals.realWeight,
           invoiceValue,
+          // Envia dimensões totais em cm para a API recalcular peso cubado por dentro
+          lengthCm: items.reduce((acc, i) => acc + i.depth * i.quantity, 0) / Math.max(items.length, 1),
+          widthCm: items.reduce((acc, i) => acc + i.width * i.quantity, 0) / Math.max(items.length, 1),
+          heightCm: items.reduce((acc, i) => acc + i.height * i.quantity, 0) / Math.max(items.length, 1),
         }),
       })
 

@@ -2,6 +2,37 @@ import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/app/api/rate-limit'
+import { cepToUf, ufToRegion } from '@/lib/cep-to-uf'
+
+const VALID_UFS = new Set([
+  'AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
+  'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO',
+])
+
+function parseZipField(value: string): { zip: string; uf: string | null; region: string | null } {
+  const trimmed = value.trim().toUpperCase()
+  const digits = trimmed.replace(/\D/g, '')
+
+  // UF válida (ex: "SP", "BA")
+  if (VALID_UFS.has(trimmed)) {
+    return { zip: trimmed, uf: trimmed, region: ufToRegion(trimmed) }
+  }
+
+  // CEP completo 8 dígitos
+  if (digits.length === 8) {
+    const uf = cepToUf(digits)
+    return { zip: digits, uf, region: uf ? ufToRegion(uf) : null }
+  }
+
+  // Prefixo de CEP (3–7 dígitos)
+  if (digits.length >= 3 && digits.length < 8) {
+    const padded = digits.padEnd(8, '0')
+    const uf = cepToUf(padded)
+    return { zip: digits, uf, region: uf ? ufToRegion(uf) : null }
+  }
+
+  return { zip: trimmed, uf: null, region: null }
+}
 
 type ParsedFreightRow = {
   sourceRow: number
@@ -71,12 +102,12 @@ function parseInteger(value: unknown): number | null {
   return Number.isFinite(intVal) ? intVal : null
 }
 
-/** Normaliza CEP para formato XXXXX-XXX (8 dígitos) para compatibilidade com a cotação */
+/** Retorna somente dígitos do CEP, ou o valor original se não for numérico (ex: UF) */
 function normalizeCep(value: string): string {
-  let digits = value.replace(/\D/g, '')
-  if (digits.length === 7) digits = '0' + digits
-  if (digits.length !== 8) return value.trim()
-  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+  const digits = value.replace(/\D/g, '')
+  if (digits.length === 7) return '0' + digits
+  if (digits.length >= 3) return digits
+  return value.trim().toUpperCase()
 }
 
 function findHeaderRow(rows: unknown[][]) {
@@ -274,28 +305,37 @@ export async function POST(request: Request) {
       )
     }
 
-    const payload = parsedRows.map((row) => ({
-      carrier_id: user.id,
-      origin_zip: normalizeCep(row.origin),
-      dest_zip: normalizeCep(row.destination),
-      price_per_kg: row.above101PerKg,
-      min_price: row.weight0to30,
-      deadline_days: row.deadlineDays,
-      source_file: file.name,
-      imported_at: new Date().toISOString(),
-      rate_card: {
-        weight_0_30: row.weight0to30,
-        weight_31_50: row.weight31to50,
-        weight_51_70: row.weight51to70,
-        weight_71_100: row.weight71to100,
-        above_101_per_kg: row.above101PerKg,
-        dispatch_fee: row.dispatchFee,
-        gris_percent: row.grisPercent,
-        insurance_percent: row.insurancePercent,
-        toll_per_100kg: row.tollPer100kg,
-        icms_percent: row.icmsPercent,
-      },
-    }))
+    const payload = parsedRows.map((row) => {
+      const origin = parseZipField(row.origin)
+      const dest = parseZipField(row.destination)
+      return {
+        carrier_id: user.id,
+        origin_zip: origin.zip,
+        dest_zip: dest.zip,
+        origin_uf: origin.uf,
+        dest_uf: dest.uf,
+        origin_region: origin.region,
+        dest_region: dest.region,
+        price_per_kg: row.above101PerKg,
+        min_price: row.weight0to30,
+        deadline_days: row.deadlineDays,
+        source_file: file.name,
+        imported_at: new Date().toISOString(),
+        is_active: true,
+        rate_card: {
+          weight_0_30: row.weight0to30,
+          weight_31_50: row.weight31to50,
+          weight_51_70: row.weight51to70,
+          weight_71_100: row.weight71to100,
+          above_101_per_kg: row.above101PerKg,
+          dispatch_fee: row.dispatchFee,
+          gris_percent: row.grisPercent,
+          insurance_percent: row.insurancePercent,
+          toll_per_100kg: row.tollPer100kg,
+          icms_percent: row.icmsPercent,
+        },
+      }
+    })
 
     const { error: insertError } = await supabase.from('freight_routes').insert(payload)
 

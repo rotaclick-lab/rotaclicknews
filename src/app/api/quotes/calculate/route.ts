@@ -9,6 +9,26 @@ type QuoteRequestBody = {
   destinationCep: string
   taxableWeight: number
   invoiceValue: number
+  lengthCm?: number
+  widthCm?: number
+  heightCm?: number
+}
+
+/** Fator de cubagem padrão NTC & Logística para modal rodoviário */
+const CUBAGEM_FACTOR = 300
+
+/**
+ * Retorna o peso taxável = MAX(peso real, peso cubado)
+ * Peso cubado = (C × A × L em metros) × 300
+ * Se dimensões não informadas, retorna peso real
+ */
+function calcTaxableWeight(realWeight: number, lengthCm?: number, widthCm?: number, heightCm?: number): number {
+  if (lengthCm && widthCm && heightCm && lengthCm > 0 && widthCm > 0 && heightCm > 0) {
+    const cubicMeters = (lengthCm / 100) * (widthCm / 100) * (heightCm / 100)
+    const cubedWeight = cubicMeters * CUBAGEM_FACTOR
+    return Math.max(realWeight, cubedWeight)
+  }
+  return realWeight
 }
 
 type FreightRouteRow = {
@@ -47,18 +67,22 @@ function toNumber(value: unknown, fallback = 0) {
 function calculateBaseByWeight(weight: number, route: FreightRouteRow) {
   const card = route.rate_card ?? {}
 
-  const weight0to30 = toNumber(card.weight_0_30, route.min_price ?? 0)
-  const weight31to50 = toNumber(card.weight_31_50, 0)
-  const weight51to70 = toNumber(card.weight_51_70, 0)
-  const weight71to100 = toNumber(card.weight_71_100, 0)
+  const weight0to30   = toNumber(card.weight_0_30,    route.min_price ?? 0)
+  const weight31to50  = toNumber(card.weight_31_50,   0)
+  const weight51to70  = toNumber(card.weight_51_70,   0)
+  const weight71to100 = toNumber(card.weight_71_100,  0)
   const above101PerKg = toNumber(card.above_101_per_kg, route.price_per_kg ?? 0)
 
-  if (weight <= 30) return weight0to30
-  if (weight <= 50) return weight31to50 || weight0to30
-  if (weight <= 70) return weight51to70 || weight31to50 || weight0to30
-  if (weight <= 100) return weight71to100 || weight51to70 || weight31to50 || weight0to30
+  if (weight <= 30)  return weight0to30
+  if (weight <= 50)  return weight31to50  || weight0to30
+  if (weight <= 70)  return weight51to70  || weight31to50  || weight0to30
+  if (weight <= 100) return weight71to100 || weight51to70  || weight31to50 || weight0to30
 
-  return Math.max(weight * above101PerKg, route.min_price ?? 0)
+  // Acima de 100kg: base da faixa 71-100 + excedente × preço/kg
+  // Nunca multiplica todo o peso — só o excedente acima de 100kg
+  const base100 = weight71to100 || weight51to70 || weight31to50 || weight0to30
+  const excedente = weight - 100
+  return Math.max(base100 + excedente * above101PerKg, route.min_price ?? 0)
 }
 
 function calculateFreightTotal(route: FreightRouteRow, taxableWeight: number, invoiceValue: number) {
@@ -76,7 +100,10 @@ function calculateFreightTotal(route: FreightRouteRow, taxableWeight: number, in
   const tollValue = tollPer100kg > 0 ? Math.ceil(Math.max(taxableWeight, 1) / 100) * tollPer100kg : 0
 
   const subtotal = basePrice + dispatchFee + grisValue + insuranceValue + tollValue
-  const totalWithIcms = subtotal * (1 + icmsPercent / 100)
+  // ICMS por dentro (padrão NTC): total = subtotal ÷ (1 - ICMS%)
+  // Se ICMS = 0, não altera o valor
+  const icmsFactor = icmsPercent > 0 ? (1 - icmsPercent / 100) : 1
+  const totalWithIcms = icmsFactor > 0 ? subtotal / icmsFactor : subtotal
   const total = Math.max(totalWithIcms, route.min_price ?? 0)
 
   return Number(total.toFixed(2))
@@ -91,8 +118,16 @@ export async function POST(request: Request) {
 
     const originDigits = digitsOnly(body.originCep || '')
     const destinationDigits = digitsOnly(body.destinationCep || '')
-    const taxableWeight = Number(body.taxableWeight || 0)
+    const realWeight = Number(body.taxableWeight || 0)
     const invoiceValue = Number(body.invoiceValue || 0)
+
+    // Calcula peso taxável = MAX(peso real, peso cubado)
+    const taxableWeight = calcTaxableWeight(
+      realWeight,
+      body.lengthCm,
+      body.widthCm,
+      body.heightCm,
+    )
 
     if (originDigits.length !== 8 || destinationDigits.length !== 8) {
       return NextResponse.json({ success: false, error: 'CEP de origem e destino devem ter 8 dígitos.' }, { status: 400 })
@@ -108,8 +143,23 @@ export async function POST(request: Request) {
     const originRegionCep = await normalizeCepToRegion(originDigits)
     const destRegionCep = await normalizeCepToRegion(destinationDigits)
 
-    const originVariants = Array.from(new Set([originRegionCep]))
-    const destinationVariants = Array.from(new Set([destRegionCep]))
+    // Detecta UFs a partir dos CEPs para incluir como variante na busca
+    const originUfDirect = cepToUf(originDigits)
+    const destUfDirect = cepToUf(destinationDigits)
+
+    // Inclui dígitos puros, CEP normalizado por região, e UF — máxima cobertura no nível 1
+    const originVariants = Array.from(new Set([
+      originDigits,
+      originRegionCep,
+      originRegionCep.replace(/\D/g, ''),
+      originUfDirect,
+    ].filter(Boolean) as string[]))
+    const destinationVariants = Array.from(new Set([
+      destinationDigits,
+      destRegionCep,
+      destRegionCep.replace(/\D/g, ''),
+      destUfDirect,
+    ].filter(Boolean) as string[]))
 
     console.log('Debug - Cotação:', { 
       originDigits, 
