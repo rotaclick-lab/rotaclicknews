@@ -125,6 +125,41 @@ async function resolveDefaultRedirectByRole(userId: string): Promise<string> {
   return '/dashboard'
 }
 
+export async function loginAdmin(email: string, password: string): Promise<{ error: string } | { ok: true }> {
+  const supabase = await createClient()
+
+  const normalizedEmail = email.trim().toLowerCase()
+
+  if (!normalizedEmail || !normalizedEmail.includes('@')) {
+    return { error: 'Informe um e-mail válido.' }
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
+
+  if (error) {
+    await writeAuditLog(null, 'LOGIN_FAILED', 'auth', null, `Tentativa de login admin falhou: ${normalizedEmail}`, { email: normalizedEmail })
+    return { error: getFriendlyError(error, 'login') }
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Não foi possível autenticar. Tente novamente.' }
+  }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).maybeSingle()
+
+  if (profile?.role !== 'admin') {
+    await supabase.auth.signOut()
+    return { error: 'Acesso negado. Esta conta não tem permissão de administrador.' }
+  }
+
+  await writeAuditLog(user.id, 'LOGIN', 'auth', user.id, `Login admin: ${user.email}`)
+  revalidatePath('/', 'layout')
+  return { ok: true }
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
 

@@ -3,22 +3,20 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Shield, ArrowLeft, Loader2 } from 'lucide-react'
-import { login } from '@/app/actions/auth-actions'
+import { loginAdmin } from '@/app/actions/auth-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 
-export default function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ next?: string }>
-}) {
+export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,15 +25,13 @@ export default function AdminLoginPage({
       return
     }
     setLoading(true)
-    const formData = new FormData()
-    formData.append('identifier', email)
-    formData.append('password', password)
-    formData.append('next', '/admin')
-
-    const result = await login(formData)
+    const result = await loginAdmin(email.trim(), password)
     if (result?.error) {
       toast.error(result.error)
       setLoading(false)
+    } else {
+      router.push('/admin')
+      router.refresh()
     }
   }
 
