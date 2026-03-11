@@ -1,15 +1,242 @@
-'use client'
+async function get404Settings(): Promise<{
+  title: string
+  message: string
+  imageUrl: string
+  primaryColor: string
+  logoUrl: string
+  brandName: string
+}> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/platform_settings?key=in.(notfound_title,notfound_message,notfound_image_url,brand_primary_color,brand_logo_url,brand_name)&select=key,value`,
+      {
+        headers: {
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+        cache: 'no-store',
+      }
+    )
+    if (!res.ok) throw new Error('fetch failed')
+    const rows: { key: string; value: string }[] = await res.json()
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]))
+    return {
+      title: map['notfound_title'] || 'Página não encontrada',
+      message: map['notfound_message'] || 'A página que você procura não existe ou foi movida.',
+      imageUrl: map['notfound_image_url'] || '',
+      primaryColor: map['brand_primary_color'] || '#2BBCB3',
+      logoUrl: map['brand_logo_url'] || '',
+      brandName: map['brand_name'] || 'RotaClick',
+    }
+  } catch {
+    return {
+      title: 'Página não encontrada',
+      message: 'A página que você procura não existe ou foi movida.',
+      imageUrl: '',
+      primaryColor: '#2BBCB3',
+      logoUrl: '',
+      brandName: 'RotaClick',
+    }
+  }
+}
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { title, message, imageUrl, primaryColor, logoUrl, brandName } =
+    await get404Settings()
+
+  const year = new Date().getFullYear()
+
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold mb-4">404</h1>
-        <h2 className="text-2xl mb-4">Página não encontrada</h2>
-        <a href="/" className="text-brand-600 hover:underline">
-          Voltar para o início
-        </a>
-      </div>
-    </div>
-  );
+    <html lang="pt-BR">
+      <head>
+        <meta charSet="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>404 — {brandName}</title>
+        <style>{`
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%);
+          }
+          ${imageUrl ? `
+          .bg-layer {
+            position: fixed;
+            inset: 0;
+            background-image: url('${imageUrl}');
+            background-size: 100% 100%;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: 0;
+          }
+          .bg-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1;
+          }
+          header, main, footer { position: relative; z-index: 2; }
+          ` : ''}
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-12px); }
+          }
+          @keyframes pulse-ring {
+            0%   { transform: scale(0.95); opacity: 1; }
+            70%  { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0; }
+          }
+          .icon-float { animation: float 3s ease-in-out infinite; }
+          .icon-ring {
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 3px solid ${primaryColor};
+            animation: pulse-ring 2s ease-out infinite;
+          }
+          .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: ${primaryColor};
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9375rem;
+            padding: 0.75rem 1.75rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            transition: opacity 0.15s;
+          }
+          .btn-home:hover { opacity: 0.85; }
+          .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: ${imageUrl ? 'rgba(255,255,255,0.75)' : '#64748b'};
+            font-weight: 600;
+            font-size: 0.9375rem;
+            padding: 0.75rem 1.75rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            border: 2px solid ${imageUrl ? 'rgba(255,255,255,0.3)' : '#e2e8f0'};
+            transition: opacity 0.15s;
+          }
+          .btn-back:hover { opacity: 0.75; }
+        `}</style>
+      </head>
+      <body>
+        {imageUrl && <div className="bg-layer" />}
+        {imageUrl && <div className="bg-overlay" />}
+
+        <header style={{
+          backgroundColor: imageUrl ? 'rgba(0,0,0,0.35)' : primaryColor,
+          backdropFilter: imageUrl ? 'blur(8px)' : undefined,
+          borderBottom: imageUrl ? '1px solid rgba(255,255,255,0.15)' : undefined,
+          padding: '1rem 2rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+        }}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={brandName} style={{ height: '44px', objectFit: 'contain' }} />
+          ) : (
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>
+              {brandName}
+            </span>
+          )}
+        </header>
+
+        <main style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem 1rem',
+        }}>
+          <div style={{
+            background: imageUrl ? 'rgba(255,255,255,0.12)' : '#fff',
+            backdropFilter: imageUrl ? 'blur(20px)' : undefined,
+            WebkitBackdropFilter: imageUrl ? 'blur(20px)' : undefined,
+            borderRadius: '1.5rem',
+            padding: '3rem 2.5rem',
+            maxWidth: '540px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: imageUrl ? '0 8px 48px rgba(0,0,0,0.3)' : '0 8px 48px rgba(0,0,0,0.10)',
+            border: imageUrl ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
+          }}>
+
+            <div style={{ position: 'relative', width: '88px', height: '88px', margin: '0 auto 1.5rem' }}>
+              <div className="icon-ring" />
+              <div className="icon-float" style={{
+                width: '88px',
+                height: '88px',
+                borderRadius: '50%',
+                backgroundColor: imageUrl ? 'rgba(255,255,255,0.15)' : `${primaryColor}20`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2.5rem',
+              }}>
+                🗺️
+              </div>
+            </div>
+
+            <div style={{
+              fontSize: '5rem',
+              fontWeight: 900,
+              lineHeight: 1,
+              marginBottom: '0.5rem',
+              color: imageUrl ? 'rgba(255,255,255,0.2)' : `${primaryColor}40`,
+              letterSpacing: '-0.04em',
+            }}>
+              404
+            </div>
+
+            <h1 style={{
+              fontSize: '1.625rem',
+              fontWeight: 800,
+              color: imageUrl ? '#fff' : '#0f172a',
+              marginBottom: '0.875rem',
+              lineHeight: 1.2,
+              textShadow: imageUrl ? '0 2px 8px rgba(0,0,0,0.4)' : undefined,
+            }}>
+              {title}
+            </h1>
+
+            <p style={{
+              color: imageUrl ? 'rgba(255,255,255,0.8)' : '#64748b',
+              lineHeight: 1.75,
+              fontSize: '1rem',
+              maxWidth: '380px',
+              margin: '0 auto 2rem',
+            }}>
+              {message}
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="/" className="btn-home">← Ir para o início</a>
+              <a href="javascript:history.back()" className="btn-back">Voltar</a>
+            </div>
+          </div>
+        </main>
+
+        <footer style={{
+          padding: '1.25rem',
+          textAlign: 'center',
+          color: imageUrl ? 'rgba(255,255,255,0.6)' : '#94a3b8',
+          fontSize: '0.8125rem',
+          borderTop: imageUrl ? '1px solid rgba(255,255,255,0.15)' : '1px solid #e2e8f0',
+          background: imageUrl ? 'rgba(0,0,0,0.25)' : '#fff',
+          backdropFilter: imageUrl ? 'blur(8px)' : undefined,
+        }}>
+          © {year} {brandName}. Todos os direitos reservados.
+        </footer>
+      </body>
+    </html>
+  )
 }

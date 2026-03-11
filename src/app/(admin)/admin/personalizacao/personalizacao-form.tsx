@@ -20,6 +20,8 @@ export function PersonalizacaoForm({ settings }: Props) {
   const [values, setValues] = useState<Record<string, string>>(settings)
   const [uploadingImg, setUploadingImg] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingImg404, setUploadingImg404] = useState(false)
+  const fileInputRef404 = useRef<HTMLInputElement>(null)
 
   const handleMaintenanceImageUpload = async (file: File) => {
     setUploadingImg(true)
@@ -39,6 +41,46 @@ export function PersonalizacaoForm({ settings }: Props) {
       toast.error('Erro de conexão ao fazer upload')
     } finally {
       setUploadingImg(false)
+    }
+  }
+
+  const handleNotFoundImageUpload = async (file: File) => {
+    setUploadingImg404(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/notfound-image', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao fazer upload')
+      } else {
+        set('notfound_image_url', json.url)
+        toast.success('Imagem enviada com sucesso!')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão ao fazer upload')
+    } finally {
+      setUploadingImg404(false)
+    }
+  }
+
+  const handleNotFoundImageRemove = async () => {
+    setUploadingImg404(true)
+    try {
+      const res = await fetch('/api/admin/notfound-image', { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao remover imagem')
+      } else {
+        set('notfound_image_url', '')
+        toast.success('Imagem removida')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão')
+    } finally {
+      setUploadingImg404(false)
     }
   }
 
@@ -401,6 +443,139 @@ export function PersonalizacaoForm({ settings }: Props) {
           >
             <Save className="h-4 w-4 mr-2" />
             {loading ? 'Salvando...' : 'Salvar modo manutenção'}
+          </Button>
+        </CardContent>
+      </Card>
+      {/* Página 404 */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <ImageIcon className="h-5 w-5" />
+            Página de Erro 404
+          </CardTitle>
+          <CardDescription>
+            Personaliza a página exibida quando um usuário acessa uma rota inexistente
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <Field
+              label="Título da página"
+              settingKey="notfound_title"
+              placeholder="Página não encontrada"
+              hint="Título exibido em destaque na página 404"
+            />
+            <Field
+              label="Mensagem"
+              settingKey="notfound_message"
+              placeholder="A página que você procura não existe ou foi movida."
+              type="textarea"
+              hint="Mensagem explicativa exibida abaixo do título"
+            />
+            {/* Upload de imagem 404 */}
+            <div className="space-y-2">
+              <Label>Imagem de fundo</Label>
+              <p className="text-xs text-muted-foreground">Será exibida como fundo da página 404. JPG, PNG, WebP ou SVG — máx. 10MB.</p>
+              <input
+                ref={fileInputRef404}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleNotFoundImageUpload(file)
+                  e.target.value = ''
+                }}
+              />
+              {values['notfound_image_url'] ? (
+                <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white">
+                  <img
+                    src={values['notfound_image_url']}
+                    alt="Fundo 404"
+                    className="w-full max-h-28 object-contain"
+                  />
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => fileInputRef404.current?.click()}
+                      disabled={uploadingImg404}
+                    >
+                      <Upload className="h-4 w-4 mr-1" /> Trocar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleNotFoundImageRemove}
+                      disabled={uploadingImg404}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Remover
+                    </Button>
+                  </div>
+                  {uploadingImg404 && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                      <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef404.current?.click()}
+                  disabled={uploadingImg404}
+                  className="w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-slate-500 hover:bg-slate-50/50 transition-colors disabled:opacity-50"
+                >
+                  {uploadingImg404 ? (
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-slate-400" />
+                  ) : (
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+                  )}
+                  <p className="text-sm font-medium text-slate-600">
+                    {uploadingImg404 ? 'Enviando...' : 'Clique para fazer upload'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">JPG, PNG, WebP, SVG — máx. 10MB</p>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Preview */}
+          {(values['notfound_title'] || values['notfound_message'] || values['notfound_image_url']) && (
+            <div className="rounded-xl overflow-hidden border border-slate-200 mt-2">
+              <div className="text-xs text-slate-600 bg-slate-100 px-3 py-1.5 flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" /> Preview da página 404
+              </div>
+              <div className="bg-white p-4 text-center space-y-3">
+                {values['notfound_image_url'] ? (
+                  <img
+                    src={values['notfound_image_url']}
+                    alt="preview 404"
+                    className="mx-auto max-h-32 object-contain rounded-lg"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ) : (
+                  <div className="text-3xl">🗺️</div>
+                )}
+                <div className="text-4xl font-black" style={{ color: `${values['brand_primary_color'] ?? '#2BBCB3'}40` }}>404</div>
+                <p className="font-bold text-slate-800 text-sm">
+                  {values['notfound_title'] || 'Página não encontrada'}
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {values['notfound_message'] || 'A página que você procura não existe ou foi movida.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <Button
+            onClick={() => handleSave(['notfound_title', 'notfound_message', 'notfound_image_url'])}
+            disabled={loading}
+            className="w-full md:w-auto"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {loading ? 'Salvando...' : 'Salvar página 404'}
           </Button>
         </CardContent>
       </Card>
