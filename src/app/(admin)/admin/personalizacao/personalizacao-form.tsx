@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { updatePlatformSettingsBatch } from '@/app/actions/platform-actions'
-import { Palette, Type, Globe, Settings2, Save, ImageIcon, Upload, Trash2, Loader2 } from 'lucide-react'
+import { Palette, Type, Globe, Settings2, Save, ImageIcon, Upload, Trash2, Loader2, Truck } from 'lucide-react'
 
 interface Props {
   settings: Record<string, string>
@@ -22,6 +22,8 @@ export function PersonalizacaoForm({ settings }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadingImg404, setUploadingImg404] = useState(false)
   const fileInputRef404 = useRef<HTMLInputElement>(null)
+  const [uploadingImgCarrier, setUploadingImgCarrier] = useState(false)
+  const fileInputRefCarrier = useRef<HTMLInputElement>(null)
 
   const handleMaintenanceImageUpload = async (file: File) => {
     setUploadingImg(true)
@@ -62,6 +64,46 @@ export function PersonalizacaoForm({ settings }: Props) {
       toast.error('Erro de conexão ao fazer upload')
     } finally {
       setUploadingImg404(false)
+    }
+  }
+
+  const handleCarrierPlaceholderUpload = async (file: File) => {
+    setUploadingImgCarrier(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/carrier-placeholder-image', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao fazer upload')
+      } else {
+        set('carrier_placeholder_image_url', json.url)
+        toast.success('Imagem enviada com sucesso!')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão ao fazer upload')
+    } finally {
+      setUploadingImgCarrier(false)
+    }
+  }
+
+  const handleCarrierPlaceholderRemove = async () => {
+    setUploadingImgCarrier(true)
+    try {
+      const res = await fetch('/api/admin/carrier-placeholder-image', { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao remover imagem')
+      } else {
+        set('carrier_placeholder_image_url', '')
+        toast.success('Imagem removida')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão')
+    } finally {
+      setUploadingImgCarrier(false)
     }
   }
 
@@ -446,6 +488,84 @@ export function PersonalizacaoForm({ settings }: Props) {
           </Button>
         </CardContent>
       </Card>
+      {/* Imagem placeholder transportadora */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-slate-800">
+            <Truck className="h-5 w-5 text-brand-500" />
+            Imagem Placeholder de Transportadora
+          </CardTitle>
+          <CardDescription>
+            Exibida no card de oferta quando a transportadora não tiver logo cadastrado
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">JPG, PNG, WebP ou SVG — máx. 10MB. Recomendado: ícone ou ilustração de caminhão/transportadora.</p>
+          <input
+            ref={fileInputRefCarrier}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleCarrierPlaceholderUpload(file)
+              e.target.value = ''
+            }}
+          />
+          {values['carrier_placeholder_image_url'] ? (
+            <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-white">
+              <img
+                src={values['carrier_placeholder_image_url']}
+                alt="Placeholder transportadora"
+                className="w-full max-h-28 object-contain p-4"
+              />
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => fileInputRefCarrier.current?.click()}
+                  disabled={uploadingImgCarrier}
+                >
+                  <Upload className="h-4 w-4 mr-1" /> Trocar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleCarrierPlaceholderRemove}
+                  disabled={uploadingImgCarrier}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Remover
+                </Button>
+              </div>
+              {uploadingImgCarrier && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRefCarrier.current?.click()}
+              disabled={uploadingImgCarrier}
+              className="w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-brand-400 hover:bg-brand-50/30 transition-colors disabled:opacity-50"
+            >
+              {uploadingImgCarrier ? (
+                <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-brand-400" />
+              ) : (
+                <Truck className="h-8 w-8 mx-auto mb-2 text-slate-400" />
+              )}
+              <p className="text-sm font-medium text-slate-600">
+                {uploadingImgCarrier ? 'Enviando...' : 'Clique para fazer upload'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">JPG, PNG, WebP, SVG — máx. 10MB</p>
+            </button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Página 404 */}
       <Card className="border-slate-200">
         <CardHeader>

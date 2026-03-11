@@ -233,6 +233,18 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<QuoteResult | null>(null)
   const [demoPaymentDone, setDemoPaymentDone] = useState(false)
+  const [carrierPlaceholderUrl, setCarrierPlaceholderUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/platform-settings')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.success && data.data?.carrier_placeholder_image_url) {
+          setCarrierPlaceholderUrl(data.data.carrier_placeholder_image_url)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const savePendingCheckout = useCallback((offer: QuoteResult) => {
     sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(offer))
@@ -719,27 +731,33 @@ export default function HomePage() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] uppercase">Alt (m)</Label>
-                            <Input 
+                            <Label className="text-[10px] uppercase">Alt (cm)</Label>
+                            <Input
+                              type="number"
+                              min={0}
                               className="text-right focus-visible:ring-brand-500"
-                              value={item.height.toFixed(2)} 
-                              onChange={(e) => updateItem(idx, 'height', Number(maskDecimal(e.target.value)))} 
+                              value={item.height || ''}
+                              onChange={(e) => updateItem(idx, 'height', Math.max(0, Number(e.target.value)))}
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] uppercase">Larg (m)</Label>
-                            <Input 
+                            <Label className="text-[10px] uppercase">Larg (cm)</Label>
+                            <Input
+                              type="number"
+                              min={0}
                               className="text-right focus-visible:ring-brand-500"
-                              value={item.width.toFixed(2)} 
-                              onChange={(e) => updateItem(idx, 'width', Number(maskDecimal(e.target.value)))} 
+                              value={item.width || ''}
+                              onChange={(e) => updateItem(idx, 'width', Math.max(0, Number(e.target.value)))}
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[10px] uppercase">Prof (m)</Label>
-                            <Input 
+                            <Label className="text-[10px] uppercase">Prof (cm)</Label>
+                            <Input
+                              type="number"
+                              min={0}
                               className="text-right focus-visible:ring-brand-500"
-                              value={item.depth.toFixed(2)} 
-                              onChange={(e) => updateItem(idx, 'depth', Number(maskDecimal(e.target.value)))} 
+                              value={item.depth || ''}
+                              onChange={(e) => updateItem(idx, 'depth', Math.max(0, Number(e.target.value)))}
                             />
                           </div>
                         </div>
@@ -786,16 +804,26 @@ export default function HomePage() {
             {step === 3 && (
               <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setStep(2)
+                        if (isDemoMode) setDemoPaymentDone(false)
+                      }}
+                      className="border-brand-200 text-brand-700 hover:bg-brand-50"
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                    </Button>
+                    <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
+                  </div>
                   <Button
                     variant="ghost"
                     onClick={() => {
                       setStep(2)
-                      if (isDemoMode) {
-                        setDemoPaymentDone(false)
-                      }
+                      if (isDemoMode) setDemoPaymentDone(false)
                     }}
-                    className="text-brand-600 hover:text-brand-700 hover:bg-brand-50"
+                    className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm"
                   >
                     Alterar Dados
                   </Button>
@@ -834,6 +862,8 @@ export default function HomePage() {
                       )}>
                         {offer.logoUrl ? (
                           <Image src={offer.logoUrl} alt={offer.carrier} width={56} height={56} className="w-full h-full object-contain p-1" />
+                        ) : carrierPlaceholderUrl ? (
+                          <Image src={carrierPlaceholderUrl} alt="Transportadora" width={56} height={56} className="w-full h-full object-contain p-2" />
                         ) : (
                           <Truck className="h-7 w-7" />
                         )}

@@ -99,6 +99,18 @@ export default function CotacaoPage() {
   const [results, setResults] = useState<QuoteResult[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedOffer, setSelectedOffer] = useState<QuoteResult | null>(null)
+  const [carrierPlaceholderUrl, setCarrierPlaceholderUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/admin/platform-settings')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.success && data.data?.carrier_placeholder_image_url) {
+          setCarrierPlaceholderUrl(data.data.carrier_placeholder_image_url)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const savePendingCheckout = useCallback((offer: QuoteResult) => {
     sessionStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(offer))
@@ -563,6 +575,8 @@ export default function CotacaoPage() {
                         )}>
                           {offer.logoUrl ? (
                             <Image src={offer.logoUrl} alt={offer.carrier} width={64} height={64} className="w-full h-full object-contain p-1" />
+                          ) : carrierPlaceholderUrl ? (
+                            <Image src={carrierPlaceholderUrl} alt="Transportadora" width={64} height={64} className="w-full h-full object-contain p-2" />
                           ) : (
                             <Truck className={cn("h-8 w-8", offer.type.includes('Pesada') ? "h-10 w-10" : "h-8 w-8")} />
                           )}
