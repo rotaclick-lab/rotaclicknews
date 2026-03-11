@@ -66,7 +66,7 @@ export default async function ManutencaoPage() {
             position: fixed;
             inset: 0;
             background-image: url('${imageUrl}');
-            background-size: cover;
+            background-size: 100% 100%;
             background-position: center center;
             background-repeat: no-repeat;
             z-index: 0;
@@ -76,13 +76,6 @@ export default async function ManutencaoPage() {
             inset: 0;
             background: rgba(0,0,0,0.45);
             z-index: 1;
-          }
-          /* Mobile: usa scroll em vez de fixed para evitar bug iOS */
-          @media (max-width: 640px) {
-            .bg-layer {
-              position: fixed;
-              background-attachment: scroll;
-            }
           }
           header, main, footer { position: relative; z-index: 2; }
           ` : ''}
