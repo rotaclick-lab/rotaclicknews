@@ -47,7 +47,7 @@ export default async function ManutencaoPage() {
   const year = new Date().getFullYear()
 
   const bodyBg = imageUrl
-    ? `url('${imageUrl}') center center / cover no-repeat fixed`
+    ? `url('${imageUrl}') center center / 60% auto no-repeat fixed`
     : `linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%)`
 
   return (
