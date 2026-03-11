@@ -41,7 +41,7 @@ async function getMaintenanceSettings(): Promise<{
 }
 
 export default async function ManutencaoPage() {
-  const { title, message, imageUrl, primaryColor, logoUrl, brandName } =
+  const { imageUrl, primaryColor, logoUrl, brandName } =
     await getMaintenanceSettings()
 
   const year = new Date().getFullYear()
@@ -51,7 +51,7 @@ export default async function ManutencaoPage() {
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>{title} — {brandName}</title>
+        <title>Sistema em Manutenção — {brandName}</title>
         <style>{`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
@@ -127,88 +127,7 @@ export default async function ManutencaoPage() {
           )}
         </header>
 
-        {/* Main */}
-        <main style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem 1rem',
-        }}>
-          <div style={{
-            background: imageUrl ? 'rgba(255,255,255,0.12)' : '#fff',
-            backdropFilter: imageUrl ? 'blur(20px)' : undefined,
-            WebkitBackdropFilter: imageUrl ? 'blur(20px)' : undefined,
-            borderRadius: '1.5rem',
-            padding: '3rem 2.5rem',
-            maxWidth: '540px',
-            width: '100%',
-            textAlign: 'center',
-            boxShadow: imageUrl ? '0 8px 48px rgba(0,0,0,0.3)' : '0 8px 48px rgba(0,0,0,0.10)',
-            border: imageUrl ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
-          }}>
-
-            {/* Ícone animado */}
-            <div style={{
-              position: 'relative',
-              width: '88px',
-              height: '88px',
-              margin: '0 auto 2rem',
-            }}>
-              <div className="icon-ring" />
-              <div style={{
-                width: '88px',
-                height: '88px',
-                borderRadius: '50%',
-                backgroundColor: imageUrl ? 'rgba(255,255,255,0.15)' : `${primaryColor}20`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2.5rem',
-              }}>
-                🔧
-              </div>
-            </div>
-
-            {/* Título */}
-            <h1 style={{
-              fontSize: '1.75rem',
-              fontWeight: 800,
-              color: imageUrl ? '#fff' : '#0f172a',
-              marginBottom: '1rem',
-              lineHeight: 1.2,
-              textShadow: imageUrl ? '0 2px 8px rgba(0,0,0,0.4)' : undefined,
-            }}>
-              {title}
-            </h1>
-
-            {/* Mensagem */}
-            <p style={{
-              color: imageUrl ? 'rgba(255,255,255,0.85)' : '#64748b',
-              lineHeight: 1.75,
-              fontSize: '1rem',
-              maxWidth: '380px',
-              margin: '0 auto 2.25rem',
-            }}>
-              {message}
-            </p>
-
-            {/* Barra de progresso */}
-            <div style={{
-              background: imageUrl ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
-              borderRadius: '9999px',
-              height: '6px',
-              overflow: 'hidden',
-              marginBottom: '1.75rem',
-            }}>
-              <div className="progress-bar" />
-            </div>
-
-            <p style={{ fontSize: '0.8125rem', color: imageUrl ? 'rgba(255,255,255,0.6)' : '#94a3b8' }}>
-              Agradecemos a sua compreensão 🙏
-            </p>
-          </div>
-        </main>
+        <main style={{ flex: 1 }} />
 
         {/* Footer */}
         <footer style={{
