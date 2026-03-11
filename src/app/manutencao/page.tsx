@@ -41,7 +41,7 @@ async function getMaintenanceSettings(): Promise<{
 }
 
 export default async function ManutencaoPage() {
-  const { imageUrl, primaryColor, logoUrl, brandName } =
+  const { imageUrl, primaryColor, brandName } =
     await getMaintenanceSettings()
 
   const year = new Date().getFullYear()
@@ -107,26 +107,6 @@ export default async function ManutencaoPage() {
       <body>
         {imageUrl && <div className="bg-layer" />}
         {imageUrl && <div className="bg-overlay" />}
-        {/* Header */}
-        <header style={{
-          backgroundColor: imageUrl ? 'rgba(0,0,0,0.35)' : primaryColor,
-          backdropFilter: imageUrl ? 'blur(8px)' : undefined,
-          borderBottom: imageUrl ? '1px solid rgba(255,255,255,0.15)' : undefined,
-          padding: '1rem 2rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-        }}>
-          {logoUrl ? (
-            <img src={logoUrl} alt={brandName} style={{ height: '44px', objectFit: 'contain' }} />
-          ) : (
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>
-              {brandName}
-            </span>
-          )}
-        </header>
-
         <main style={{ flex: 1 }} />
 
         {/* Footer */}
