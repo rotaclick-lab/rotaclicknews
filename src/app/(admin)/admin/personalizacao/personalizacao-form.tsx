@@ -311,7 +311,7 @@ export function PersonalizacaoForm({ settings }: Props) {
                   <img
                     src={values['maintenance_image_url']}
                     alt="Fundo manutenção"
-                    className="w-full max-h-48 object-cover"
+                    className="w-full max-h-28 object-contain"
                   />
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
                     <Button
