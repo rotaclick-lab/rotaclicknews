@@ -153,76 +153,11 @@ export default async function NotFound() {
         <main style={{
           flex: 1,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-end',
           justifyContent: 'center',
-          padding: '2rem 1rem',
+          padding: '0 1rem 4rem',
         }}>
-          <div style={{
-            background: imageUrl ? 'rgba(255,255,255,0.12)' : '#fff',
-            backdropFilter: imageUrl ? 'blur(20px)' : undefined,
-            WebkitBackdropFilter: imageUrl ? 'blur(20px)' : undefined,
-            borderRadius: '1.5rem',
-            padding: '3rem 2.5rem',
-            maxWidth: '540px',
-            width: '100%',
-            textAlign: 'center',
-            boxShadow: imageUrl ? '0 8px 48px rgba(0,0,0,0.3)' : '0 8px 48px rgba(0,0,0,0.10)',
-            border: imageUrl ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e2e8f0',
-          }}>
-
-            <div style={{ position: 'relative', width: '88px', height: '88px', margin: '0 auto 1.5rem' }}>
-              <div className="icon-ring" />
-              <div className="icon-float" style={{
-                width: '88px',
-                height: '88px',
-                borderRadius: '50%',
-                backgroundColor: imageUrl ? 'rgba(255,255,255,0.15)' : `${primaryColor}20`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2.5rem',
-              }}>
-                🗺️
-              </div>
-            </div>
-
-            <div style={{
-              fontSize: '5rem',
-              fontWeight: 900,
-              lineHeight: 1,
-              marginBottom: '0.5rem',
-              color: imageUrl ? 'rgba(255,255,255,0.2)' : `${primaryColor}40`,
-              letterSpacing: '-0.04em',
-            }}>
-              404
-            </div>
-
-            <h1 style={{
-              fontSize: '1.625rem',
-              fontWeight: 800,
-              color: imageUrl ? '#fff' : '#0f172a',
-              marginBottom: '0.875rem',
-              lineHeight: 1.2,
-              textShadow: imageUrl ? '0 2px 8px rgba(0,0,0,0.4)' : undefined,
-            }}>
-              {title}
-            </h1>
-
-            <p style={{
-              color: imageUrl ? 'rgba(255,255,255,0.8)' : '#64748b',
-              lineHeight: 1.75,
-              fontSize: '1rem',
-              maxWidth: '380px',
-              margin: '0 auto 2rem',
-            }}>
-              {message}
-            </p>
-
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/" className="btn-home">← Ir para o início</a>
-              <a href="javascript:history.back()" className="btn-back">Voltar</a>
-            </div>
-          </div>
+          <a href="javascript:history.back()" className="btn-back">← Voltar</a>
         </main>
 
         <footer style={{
