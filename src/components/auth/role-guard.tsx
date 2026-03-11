@@ -15,6 +15,9 @@ export async function RoleGuard({ children, allowedRole }: RoleGuardProps) {
   if (!user) {
     const headersList = await headers()
     const pathname = headersList.get('x-pathname') ?? `/${allowedRole === 'admin' ? 'admin' : 'dashboard'}`
+    if (allowedRole === 'admin') {
+      redirect(`/admin-login?next=${encodeURIComponent(pathname)}`)
+    }
     redirect(`/login?next=${encodeURIComponent(pathname)}`)
   }
 
