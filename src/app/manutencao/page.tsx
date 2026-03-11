@@ -46,8 +46,6 @@ export default async function ManutencaoPage() {
 
   const year = new Date().getFullYear()
 
-  const bgGradient = `linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%)`
-
   return (
     <html lang="pt-BR">
       <head>
@@ -58,32 +56,35 @@ export default async function ManutencaoPage() {
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body {
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            background: ${imageUrl ? `url('${imageUrl}') center center / contain no-repeat fixed, ${bgGradient}` : bgGradient};
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-          }
-          /* Tablet */
-          @media (max-width: 1024px) {
-            body {
-              background: ${imageUrl ? `url('${imageUrl}') center center / contain no-repeat fixed, ${bgGradient}` : bgGradient};
-            }
-          }
-          /* Mobile */
-          @media (max-width: 640px) {
-            body {
-              background: ${imageUrl ? `url('${imageUrl}') center top / contain no-repeat scroll, ${bgGradient}` : bgGradient};
-            }
+            background: linear-gradient(135deg, #f0fdfa 0%, #f8fafc 50%, #fef3c7 100%);
           }
           ${imageUrl ? `
-          body::before {
-            content: '';
+          .bg-layer {
+            position: fixed;
+            inset: 0;
+            background-image: url('${imageUrl}');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: 0;
+          }
+          .bg-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.45);
-            z-index: 0;
+            z-index: 1;
           }
-          header, main, footer { position: relative; z-index: 1; }
+          /* Mobile: usa scroll em vez de fixed para evitar bug iOS */
+          @media (max-width: 640px) {
+            .bg-layer {
+              position: fixed;
+              background-attachment: scroll;
+            }
+          }
+          header, main, footer { position: relative; z-index: 2; }
           ` : ''}
           @keyframes progress {
             0%   { transform: translateX(-100%); }
@@ -111,6 +112,8 @@ export default async function ManutencaoPage() {
         `}</style>
       </head>
       <body>
+        {imageUrl && <div className="bg-layer" />}
+        {imageUrl && <div className="bg-overlay" />}
         {/* Header */}
         <header style={{
           backgroundColor: imageUrl ? 'rgba(0,0,0,0.35)' : primaryColor,
