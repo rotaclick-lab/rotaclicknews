@@ -27,11 +27,10 @@ async function get404Settings() {
 }
 
 export default async function NotFound() {
-  const { imageUrl, primaryColor, logoUrl, brandName } = await get404Settings()
+  const { imageUrl, primaryColor } = await get404Settings()
 
   return (
     <>
-      {/* Camada de fundo */}
       {imageUrl && (
         <div style={{
           position: 'fixed',
@@ -51,32 +50,6 @@ export default async function NotFound() {
           zIndex: -1,
         }} />
       )}
-
-      {/* Header */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: imageUrl ? 'rgba(0,0,0,0.35)' : primaryColor,
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        borderBottom: '1px solid rgba(255,255,255,0.15)',
-        padding: '1rem 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-        zIndex: 10,
-      }}>
-        {logoUrl ? (
-          <img src={logoUrl} alt={brandName} style={{ height: '44px', objectFit: 'contain' }} />
-        ) : (
-          <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>
-            {brandName}
-          </span>
-        )}
-      </div>
 
       {/* Botão Voltar */}
       <div style={{
