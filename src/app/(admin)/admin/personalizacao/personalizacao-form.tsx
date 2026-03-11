@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { updatePlatformSettingsBatch } from '@/app/actions/platform-actions'
-import { Palette, Type, Globe, Settings2, Save } from 'lucide-react'
+import { Palette, Type, Globe, Settings2, Save, ImageIcon } from 'lucide-react'
 
 interface Props {
   settings: Record<string, string>
@@ -209,10 +209,11 @@ export function PersonalizacaoForm({ settings }: Props) {
             Modo Manutenção
           </CardTitle>
           <CardDescription className="text-amber-700">
-            Quando ativado, exibe uma mensagem de manutenção para todos os usuários não-admin
+            Quando ativado, exibe a página de manutenção para todos os usuários não-admin
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Toggle on/off */}
           <div className="flex items-center gap-4">
             <Label className="text-amber-800">Status atual:</Label>
             <button
@@ -232,14 +233,65 @@ export function PersonalizacaoForm({ settings }: Props) {
               {values['maintenance_mode'] === 'true' ? 'ATIVADO' : 'Desativado'}
             </span>
           </div>
-          <Field
-            label="Mensagem de manutenção"
-            settingKey="maintenance_message"
-            placeholder="Estamos em manutenção. Voltamos em breve!"
-            type="textarea"
-          />
+
+          {/* Campos de personalização */}
+          <div className="grid grid-cols-1 gap-4 pt-2 border-t border-amber-200">
+            <Field
+              label="Título da página"
+              settingKey="maintenance_title"
+              placeholder="Sistema em Manutenção"
+              hint="Título exibido em destaque na página"
+            />
+            <Field
+              label="Mensagem"
+              settingKey="maintenance_message"
+              placeholder="Estamos realizando melhorias. Voltamos em breve!"
+              type="textarea"
+              hint="Mensagem explicativa exibida abaixo do título"
+            />
+            <Field
+              label="URL da imagem"
+              settingKey="maintenance_image_url"
+              placeholder="https://..."
+              hint="Imagem exibida na página (PNG/JPG/SVG recomendado — proporção 16:9 ou quadrada)"
+            />
+          </div>
+
+          {/* Preview da página de manutenção */}
+          {(values['maintenance_title'] || values['maintenance_message'] || values['maintenance_image_url']) && (
+            <div className="rounded-xl overflow-hidden border border-amber-200 mt-2">
+              <div className="text-xs text-amber-700 bg-amber-100 px-3 py-1.5 flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" /> Preview da página de manutenção
+              </div>
+              <div className="bg-white p-4 text-center space-y-3">
+                {values['maintenance_image_url'] ? (
+                  <img
+                    src={values['maintenance_image_url']}
+                    alt="preview"
+                    className="mx-auto max-h-32 object-contain rounded-lg"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ) : (
+                  <div className="text-3xl">🔧</div>
+                )}
+                <p className="font-bold text-slate-800 text-sm">
+                  {values['maintenance_title'] || 'Sistema em Manutenção'}
+                </p>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {values['maintenance_message'] || 'Estamos realizando melhorias. Voltamos em breve!'}
+                </p>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full w-1/3 rounded-full"
+                    style={{ backgroundColor: values['brand_primary_color'] ?? '#2BBCB3' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <Button
-            onClick={() => handleSave(['maintenance_mode', 'maintenance_message'])}
+            onClick={() => handleSave(['maintenance_mode', 'maintenance_title', 'maintenance_message', 'maintenance_image_url'])}
             disabled={loading}
             variant={values['maintenance_mode'] === 'true' ? 'destructive' : 'default'}
             className="w-full md:w-auto"
