@@ -23,6 +23,7 @@ interface FormData {
 
 interface AiChatWidgetProps {
   onFillForm: (data: FormData) => void
+  inline?: boolean
 }
 
 const WELCOME = 'Olá! Sou a Rota, assistente de cotação de frete da RotaClick. 👋\n\nPode me dizer seu **nome completo** para começarmos?'
@@ -79,7 +80,7 @@ function maskCurrency(v: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 }
 
-export function AiChatWidget({ onFillForm }: AiChatWidgetProps) {
+export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: WELCOME },
@@ -177,112 +178,123 @@ export function AiChatWidget({ onFillForm }: AiChatWidgetProps) {
     setInput('')
   }
 
+  const chatPanel = open ? (
+    <div className={cn(
+      'flex flex-col rounded-2xl shadow-2xl border border-orange-100 bg-white overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300',
+      inline
+        ? 'absolute bottom-full left-0 mb-2 w-[360px] max-w-[calc(100vw-2rem)] z-50'
+        : 'fixed bottom-20 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)]'
+    )}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
+          <Bot className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm leading-tight">Rota — Assistente IA</p>
+          <p className="text-xs text-orange-100">Cotação inteligente de frete</p>
+        </div>
+        {done && (
+          <button onClick={handleReset} className="text-xs underline text-orange-100 hover:text-white">
+            Reiniciar
+          </button>
+        )}
+        <button onClick={() => setOpen(false)} className="ml-1 text-orange-100 hover:text-white">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      {/* Mensagens */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[380px] min-h-[200px] bg-gray-50">
+        {messages.map((msg, i) => (
+          <div key={i} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+            {msg.role === 'assistant' && (
+              <div className="flex items-end gap-2 max-w-[85%]">
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center mb-1">
+                  <Bot className="h-3.5 w-3.5 text-white" />
+                </div>
+                <div
+                  className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 text-sm text-gray-800 shadow-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
+                />
+              </div>
+            )}
+            {msg.role === 'user' && (
+              <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-sm bg-orange-500 text-white text-sm leading-relaxed">
+                {msg.content}
+              </div>
+            )}
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="flex items-end gap-2">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                <Bot className="h-3.5 w-3.5 text-white" />
+              </div>
+              <div className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 shadow-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="flex gap-2 p-3 border-t border-gray-100 bg-white">
+        <Input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={done ? 'Preenchendo formulário...' : getPlaceholder(inputMode)}
+          disabled={loading || done}
+          inputMode={inputMode === 'phone' || inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : 'text'}
+          className="flex-1 text-sm border-gray-200 focus-visible:ring-orange-400"
+        />
+        <Button
+          size="icon"
+          onClick={() => sendMessage(input)}
+          disabled={!input.trim() || loading || done}
+          className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  ) : null
+
+  const triggerButton = (
+    <button
+      onClick={() => setOpen((v) => !v)}
+      className={cn(
+        'flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm transition-all duration-200 shadow-md',
+        open
+          ? 'bg-gray-600 text-white hover:bg-gray-700'
+          : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 hover:scale-105'
+      )}
+    >
+      <Sparkles className="h-4 w-4" />
+      Cotar com IA
+    </button>
+  )
+
+  if (inline) {
+    return (
+      <div className="relative">
+        {chatPanel}
+        {triggerButton}
+      </div>
+    )
+  }
+
   return (
     <>
-      {/* Botão flutuante */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full shadow-2xl font-semibold text-sm transition-all duration-300',
-          open
-            ? 'bg-gray-700 text-white'
-            : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 hover:scale-105'
-        )}
-        aria-label="Assistente de cotação IA"
-      >
-        {open ? (
-          <><X className="h-4 w-4" /> Fechar</>
-        ) : (
-          <><Sparkles className="h-4 w-4" /> Cotar com IA</>
-        )}
-      </button>
-
-      {/* Janela do chat */}
-      {open && (
-        <div className="fixed bottom-20 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] flex flex-col rounded-2xl shadow-2xl border border-orange-100 bg-white overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
-              <Bot className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm leading-tight">Rota — Assistente IA</p>
-              <p className="text-xs text-orange-100">Cotação inteligente de frete</p>
-            </div>
-            {done && (
-              <button onClick={handleReset} className="text-xs underline text-orange-100 hover:text-white">
-                Reiniciar
-              </button>
-            )}
-          </div>
-
-          {/* Mensagens */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[380px] min-h-[200px] bg-gray-50">
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'flex',
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                )}
-              >
-                {msg.role === 'assistant' && (
-                  <div className="flex items-end gap-2 max-w-[85%]">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center mb-1">
-                      <Bot className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <div
-                      className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 text-sm text-gray-800 shadow-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-                    />
-                  </div>
-                )}
-                {msg.role === 'user' && (
-                  <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-sm bg-orange-500 text-white text-sm leading-relaxed">
-                    {msg.content}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex justify-start">
-                <div className="flex items-end gap-2">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
-                    <Bot className="h-3.5 w-3.5 text-white" />
-                  </div>
-                  <div className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Input */}
-          <div className="flex gap-2 p-3 border-t border-gray-100 bg-white">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={done ? 'Preenchendo formulário...' : getPlaceholder(inputMode)}
-              disabled={loading || done}
-              inputMode={inputMode === 'phone' || inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : 'text'}
-              className="flex-1 text-sm border-gray-200 focus-visible:ring-orange-400"
-            />
-            <Button
-              size="icon"
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || loading || done}
-              className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {chatPanel}
+      <div className="fixed bottom-6 right-6 z-50">
+        {triggerButton}
+      </div>
     </>
   )
 }

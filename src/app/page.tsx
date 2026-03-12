@@ -695,7 +695,29 @@ export default function HomePage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-end pt-4">
+                  <div className="flex items-center justify-between pt-4">
+                    <AiChatWidget
+                      inline
+                      onFillForm={(data) => {
+                        setContact({
+                          name: data.name,
+                          email: data.email,
+                          phone: data.phone,
+                        })
+                        const fmt = (cep: string) => {
+                          const d = cep.replace(/\D/g, '').slice(0, 8)
+                          return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
+                        }
+                        setOrigin(fmt(data.originCep))
+                        setDestination(fmt(data.destCep))
+                        setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
+                        setCargo((prev) => ({
+                          ...prev,
+                          invoiceValue: data.invoiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                        }))
+                        setStep(2)
+                      }}
+                    />
                     <Button
                       className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
                       onClick={() => { if (validateContact()) setStep(2) }}
@@ -1080,28 +1102,6 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-
-      <AiChatWidget
-        onFillForm={(data) => {
-          setContact({
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-          })
-          const fmt = (cep: string) => {
-            const d = cep.replace(/\D/g, '').slice(0, 8)
-            return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
-          }
-          setOrigin(fmt(data.originCep))
-          setDestination(fmt(data.destCep))
-          setItems([{ quantity: 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
-          setCargo((prev) => ({
-            ...prev,
-            invoiceValue: data.invoiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-          }))
-          setStep(2)
-        }}
-      />
 
       {/* Footer */}
       <footer className="border-t border-brand-100 py-6 bg-white">
