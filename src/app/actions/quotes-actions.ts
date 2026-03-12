@@ -334,6 +334,7 @@ export async function getClienteDashboardStats() {
     const paid = all.filter(f => f.payment_status === 'paid')
     const totalSpent = paid.reduce((s, f) => s + (Number(f.price) || 0), 0)
     const avgPrice = paid.length > 0 ? totalSpent / paid.length : 0
+    const inTransitFreights = paid.filter(f => f.status === 'in_transit').length
 
     const now = new Date()
     const monthlyData = Array.from({ length: 6 }, (_, i) => {
@@ -355,6 +356,7 @@ export async function getClienteDashboardStats() {
       data: {
         totalFreights: count ?? 0,
         paidFreights: paid.length,
+        inTransitFreights,
         totalSpent,
         avgPrice,
         monthlyData,

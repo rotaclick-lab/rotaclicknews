@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { ArrowLeft, MessageCircle, Mail, Phone, ChevronDown, ChevronUp, HelpCircle, Clock, Package, CreditCard, Truck, FileText } from 'lucide-react'
+import { MessageCircle, Mail, ChevronDown, ChevronUp, HelpCircle, Clock, Package, CreditCard, Truck, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -103,18 +102,13 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export default function SuportePage() {
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+    <div className="py-8 px-4 md:px-8 pb-24 md:pb-8">
+      <div className="max-w-2xl space-y-6">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/cliente" className="text-slate-400 hover:text-brand-600 transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Central de Suporte</h1>
-            <p className="text-sm text-slate-500">Tire suas dúvidas ou fale com nossa equipe</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Central de Suporte</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Tire suas dúvidas ou fale com nossa equipe</p>
         </div>
 
         {/* Canais de contato */}

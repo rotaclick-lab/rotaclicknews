@@ -630,42 +630,106 @@ export default function CotacaoPage() {
               </div>
 
               {selectedOffer && (
-                <div className="fixed bottom-0 left-0 w-full bg-background border-t border-brand-200 p-6 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
-                  <div className="max-w-[1000px] mx-auto flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Selecionado: <span className="font-bold text-foreground">{selectedOffer.carrier}</span></p>
-                      <p className="text-xl font-black text-orange-500">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
-                      </p>
+                <>
+                  {/* Resumo da oferta selecionada */}
+                  <Card className="border-brand-200 bg-brand-50/40 shadow-sm">
+                    <CardContent className="p-5">
+                      <p className="text-xs font-semibold text-brand-700 uppercase tracking-widest mb-3">Resumo da contratação</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Transportadora</p>
+                          <p className="font-semibold text-slate-800">{selectedOffer.carrier}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Rota</p>
+                          <p className="font-semibold text-slate-800">
+                            {origin.replace(/\D/g, '').length === 8
+                              ? `${origin.replace(/\D/g, '').slice(0,5)}-${origin.replace(/\D/g, '').slice(5)}`
+                              : origin}
+                            {' → '}
+                            {destination.replace(/\D/g, '').length === 8
+                              ? `${destination.replace(/\D/g, '').slice(0,5)}-${destination.replace(/\D/g, '').slice(5)}`
+                              : destination}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Prazo estimado</p>
+                          <p className="font-semibold text-slate-800 flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5 text-brand-500" /> {selectedOffer.deadline}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Peso taxável</p>
+                          <p className="font-semibold text-slate-800">{calculateTotals().taxableWeight.toFixed(1)} kg</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Valor da NF</p>
+                          <p className="font-semibold text-slate-800">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseCurrencyInput(cargo.invoiceValue))}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Seguro</p>
+                          <p className="font-semibold text-green-700 flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Incluso
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Modalidade</p>
+                          <p className="font-semibold text-slate-800">{selectedOffer.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Valor total</p>
+                          <p className="font-black text-xl text-orange-500">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Barra fixa de pagamento */}
+                  <div className="fixed bottom-0 left-0 w-full bg-background border-t border-brand-200 p-4 shadow-2xl animate-in slide-in-from-bottom-full duration-500 z-50">
+                    <div className="max-w-[1000px] mx-auto flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedOffer.carrier} · {selectedOffer.deadline}
+                        </p>
+                        <p className="text-xl font-black text-orange-500">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedOffer.price)}
+                        </p>
+                      </div>
+                      <Button
+                        size="lg"
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-8 font-bold shrink-0"
+                        onClick={async () => {
+                          if (!selectedOffer) return
+                          setLoading(true)
+                          const result = await createCheckoutSession(selectedOffer, undefined, '/cotacao?resumeCheckout=1')
+
+                          if (result.requiresAuth && result.loginUrl) {
+                            savePendingCheckout(selectedOffer)
+                            window.location.href = result.loginUrl
+                            return
+                          }
+
+                          if (result.success && result.url) {
+                            clearPendingCheckout()
+                            window.location.href = result.url
+                          } else {
+                            toast.error(result.error || 'Erro ao processar pagamento')
+                            setLoading(false)
+                          }
+                        }}
+                        disabled={loading}
+                      >
+                        <CreditCard className="mr-2 h-5 w-5" /> {loading ? 'Processando...' : 'PAGAR AGORA'}
+                      </Button>
                     </div>
-                    <Button 
-                      size="lg" 
-                      className="bg-orange-500 hover:bg-orange-600 text-white px-10 font-bold"
-                      onClick={async () => {
-                        if (!selectedOffer) return
-                        setLoading(true)
-                        const result = await createCheckoutSession(selectedOffer, undefined, '/cotacao?resumeCheckout=1')
-
-                        if (result.requiresAuth && result.loginUrl) {
-                          savePendingCheckout(selectedOffer)
-                          window.location.href = result.loginUrl
-                          return
-                        }
-
-                        if (result.success && result.url) {
-                          clearPendingCheckout()
-                          window.location.href = result.url
-                        } else {
-                          toast.error(result.error || 'Erro ao processar pagamento')
-                          setLoading(false)
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      <CreditCard className="mr-2 h-5 w-5" /> {loading ? 'Processando...' : 'PAGAR E FINALIZAR AGORA'}
-                    </Button>
                   </div>
-                </div>
+                  {/* Espaço para não sobrepor o conteúdo com a barra fixa */}
+                  <div className="h-24" />
+                </>
               )}
             </div>
           )}
