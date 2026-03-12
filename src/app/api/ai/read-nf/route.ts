@@ -41,24 +41,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Imagem muito grande (máx 10MB)' }, { status: 400 })
     }
 
-    const rawMime = file.type || ''
+    const rawMime = file.type || 'image/png'
     console.log('[AI Read NF] file:', file.name, 'raw mime:', rawMime, 'size:', file.size)
 
-    if (rawMime === 'application/pdf') {
-      return NextResponse.json({ error: 'PDF não suportado. Tire uma foto ou screenshot da NF e envie como imagem (JPG ou PNG).' }, { status: 400 })
-    }
-
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-    const mimeType = allowedTypes.includes(rawMime) ? rawMime : 'image/jpeg'
+    const mimeType = allowedTypes.includes(rawMime) ? rawMime : 'image/png'
 
     const bytes = await file.arrayBuffer()
-
-    // Detectar PDF pelos magic bytes mesmo que o tipo esteja errado
-    const header = Buffer.from(bytes.slice(0, 4))
-    if (header.toString('ascii').startsWith('%PDF')) {
-      return NextResponse.json({ error: 'PDF não suportado. Tire uma foto ou screenshot da NF e envie como imagem (JPG ou PNG).' }, { status: 400 })
-    }
-
     const base64 = Buffer.from(bytes).toString('base64')
     console.log('[AI Read NF] Processing as:', mimeType)
 

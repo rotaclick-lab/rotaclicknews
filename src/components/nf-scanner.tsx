@@ -5,6 +5,28 @@ import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+async function pdfToImageBlob(file: File): Promise<Blob> {
+  const pdfjsLib = await import('pdfjs-dist')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+
+  const arrayBuffer = await file.arrayBuffer()
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const page = await pdf.getPage(1)
+
+  const scale = 2
+  const viewport = page.getViewport({ scale })
+  const canvas = document.createElement('canvas')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+  const ctx = canvas.getContext('2d')!
+
+  await page.render({ canvasContext: ctx, viewport }).promise
+
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/png', 0.95)
+  )
+}
+
 interface NfData {
   weight: number | null
   invoiceValue: number | null
@@ -25,28 +47,42 @@ export function NfScanner({ onExtracted }: NfScannerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMsg('PDF não suportado. Tire uma foto ou screenshot da NF e envie como JPG ou PNG.')
-      setState('error')
-      return
-    }
-    if (!file.type.startsWith('image/')) {
-      setErrorMsg('Formato não suportado. Envie uma imagem JPG ou PNG da nota fiscal.')
-      setState('error')
-      return
-    }
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    const isImage = file.type.startsWith('image/')
 
-    const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target?.result as string)
-    reader.readAsDataURL(file)
+    if (!isPdf && !isImage) {
+      setErrorMsg('Formato não suportado. Envie um PDF ou imagem JPG/PNG da nota fiscal.')
+      setState('error')
+      return
+    }
 
     setState('loading')
     setErrorMsg('')
     setResult(null)
 
+    let uploadFile: File | Blob = file
+
+    if (isPdf) {
+      try {
+        setPreview(null)
+        const blob = await pdfToImageBlob(file)
+        uploadFile = blob
+        const url = URL.createObjectURL(blob)
+        setPreview(url)
+      } catch {
+        setErrorMsg('Não foi possível converter o PDF. Tente enviar uma foto da NF.')
+        setState('error')
+        return
+      }
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => setPreview(e.target?.result as string)
+      reader.readAsDataURL(file)
+    }
+
     try {
       const fd = new FormData()
-      fd.append('file', file)
+      fd.append('file', uploadFile, isPdf ? 'nf.png' : file.name)
 
       const res = await fetch('/api/ai/read-nf', { method: 'POST', body: fd })
       const data = await res.json()
@@ -99,11 +135,11 @@ export function NfScanner({ onExtracted }: NfScannerProps) {
           <p className="text-sm text-gray-500 group-hover:text-gray-700">
             <span className="font-medium text-orange-500">Clique</span> ou arraste a foto da NF
           </p>
-          <p className="text-xs text-gray-400 mt-1">JPG ou PNG • máx 10MB</p>
+          <p className="text-xs text-gray-400 mt-1">PDF, JPG ou PNG • máx 10MB</p>
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf"
             className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
           />
