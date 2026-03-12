@@ -38,13 +38,11 @@ type InputMode = 'text' | 'phone' | 'cep' | 'number' | 'currency' | 'email'
 
 function detectInputMode(lastAssistantMsg: string): InputMode {
   const msg = lastAssistantMsg.toLowerCase()
-  if (msg.includes('telefone') || msg.includes('whatsapp') || msg.includes('celular')) return 'phone'
-  if (msg.includes('cep de origem')) return 'cep'
-  if (msg.includes('cep de destino')) return 'cep'
-  if (msg.includes('cep')) return 'cep'
-  if (msg.includes('peso')) return 'number'
-  if (msg.includes('valor') || msg.includes('nota fiscal') || msg.includes('nf')) return 'currency'
   if (msg.includes('e-mail') || msg.includes('email')) return 'email'
+  if (msg.includes('telefone') || msg.includes('whatsapp') || msg.includes('celular')) return 'phone'
+  if (msg.includes('cep de origem') || msg.includes('cep de destino') || msg.includes('cep')) return 'cep'
+  if (msg.includes('peso')) return 'number'
+  if (msg.includes('nota fiscal') || msg.includes('valor da nf') || msg.includes('valor total')) return 'currency'
   return 'text'
 }
 
