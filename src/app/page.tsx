@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { AiChatWidget } from '@/components/ai-chat-widget'
+import { NfScanner } from '@/components/nf-scanner'
 
 interface CargoItem {
   quantity: number
@@ -758,6 +759,20 @@ export default function HomePage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <NfScanner
+                      onExtracted={(data) => {
+                        if (data.weight != null) {
+                          setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
+                        }
+                        if (data.invoiceValue != null) {
+                          setCargo((prev) => ({
+                            ...prev,
+                            invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                          }))
+                        }
+                      }}
+                    />
+                    <div className="border-t border-brand-100 pt-4" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Categoria</Label>
