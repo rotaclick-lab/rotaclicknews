@@ -167,6 +167,36 @@ export default function HomePage() {
     email: '',
     phone: '',
   })
+  const [contactErrors, setContactErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  })
+
+  const validateContact = () => {
+    const errors = { name: '', email: '', phone: '' }
+    let valid = true
+
+    if (!contact.name.trim() || contact.name.trim().split(' ').length < 2) {
+      errors.name = 'Informe seu nome completo (nome e sobrenome)'
+      valid = false
+    }
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!contact.email.trim() || !emailRe.test(contact.email.trim())) {
+      errors.email = 'Informe um e-mail válido'
+      valid = false
+    }
+
+    const phoneDigits = contact.phone.replace(/\D/g, '')
+    if (!phoneDigits || phoneDigits.length < 10 || phoneDigits.length > 11) {
+      errors.phone = 'Informe um telefone/WhatsApp válido com DDD'
+      valid = false
+    }
+
+    setContactErrors(errors)
+    return valid
+  }
 
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -611,25 +641,63 @@ export default function HomePage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Nome Completo</Label>
-                      <Input placeholder="Seu nome" className="focus-visible:ring-brand-500" value={contact.name} onChange={(e) => setContact({...contact, name: e.target.value})} />
+                      <Label>Nome Completo <span className="text-red-500">*</span></Label>
+                      <Input
+                        placeholder="Nome e Sobrenome"
+                        className={`focus-visible:ring-brand-500 ${contactErrors.name ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                        value={contact.name}
+                        onChange={(e) => {
+                          setContact({...contact, name: e.target.value})
+                          if (contactErrors.name) setContactErrors({...contactErrors, name: ''})
+                        }}
+                      />
+                      {contactErrors.name && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> {contactErrors.name}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input type="email" placeholder="email@exemplo.com" className="focus-visible:ring-brand-500" value={contact.email} onChange={(e) => setContact({...contact, email: e.target.value})} />
+                      <Label>E-mail <span className="text-red-500">*</span></Label>
+                      <Input
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        className={`focus-visible:ring-brand-500 ${contactErrors.email ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                        value={contact.email}
+                        onChange={(e) => {
+                          setContact({...contact, email: e.target.value})
+                          if (contactErrors.email) setContactErrors({...contactErrors, email: ''})
+                        }}
+                      />
+                      {contactErrors.email && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> {contactErrors.email}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label>Telefone / WhatsApp</Label>
-                      <Input 
-                        placeholder="(00) 00000-0000" 
-                        className="focus-visible:ring-brand-500"
-                        value={contact.phone} 
-                        onChange={(e) => setContact({...contact, phone: maskPhone(e.target.value)})} 
+                      <Label>Telefone / WhatsApp <span className="text-red-500">*</span></Label>
+                      <Input
+                        placeholder="(00) 00000-0000"
+                        className={`focus-visible:ring-brand-500 ${contactErrors.phone ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                        value={contact.phone}
+                        onChange={(e) => {
+                          setContact({...contact, phone: maskPhone(e.target.value)})
+                          if (contactErrors.phone) setContactErrors({...contactErrors, phone: ''})
+                        }}
                       />
+                      {contactErrors.phone && (
+                        <p className="text-xs text-red-500 flex items-center gap-1">
+                          <span>⚠</span> {contactErrors.phone}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex justify-end pt-4">
-                    <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold" onClick={() => setStep(2)} disabled={!contact.name || !contact.email}>
+                    <Button
+                      className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
+                      onClick={() => { if (validateContact()) setStep(2) }}
+                    >
                       Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
