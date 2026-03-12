@@ -114,10 +114,15 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const cleanForSend = (text: string): string => {
+    if (inputMode === 'cep') return text.replace(/\D/g, '')
+    return text.trim()
+  }
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading || done) return
 
-    const userMsg: Message = { role: 'user', content: text.trim() }
+    const userMsg: Message = { role: 'user', content: cleanForSend(text) }
     const newMessages = [...messages, userMsg]
     setMessages(newMessages)
     setInput('')
