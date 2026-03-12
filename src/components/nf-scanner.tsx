@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 
 async function pdfToImageBlob(file: File): Promise<Blob> {
   const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
@@ -18,9 +18,7 @@ async function pdfToImageBlob(file: File): Promise<Blob> {
   const canvas = document.createElement('canvas')
   canvas.width = viewport.width
   canvas.height = viewport.height
-  const ctx = canvas.getContext('2d')!
-
-  await page.render({ canvasContext: ctx, viewport }).promise
+  await page.render({ canvas, viewport }).promise
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/png', 0.95)
