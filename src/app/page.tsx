@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { AiChatWidget } from '@/components/ai-chat-widget'
 
 interface CargoItem {
   quantity: number
@@ -1064,6 +1065,28 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      <AiChatWidget
+        onFillForm={(data) => {
+          setContact({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+          })
+          const fmt = (cep: string) => {
+            const d = cep.replace(/\D/g, '').slice(0, 8)
+            return d.length === 8 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
+          }
+          setOrigin(fmt(data.originCep))
+          setDestination(fmt(data.destCep))
+          setItems([{ quantity: 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
+          setCargo((prev) => ({
+            ...prev,
+            invoiceValue: data.invoiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+          }))
+          setStep(2)
+        }}
+      />
 
       {/* Footer */}
       <footer className="border-t border-brand-100 py-6 bg-white">

@@ -1,0 +1,85 @@
+import { NextResponse } from 'next/server'
+import OpenAI from 'openai'
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+const SYSTEM_PROMPT = `Você é a assistente de cotação de frete da RotaClick, uma plataforma brasileira de logística. Seu nome é "Rota" e você é simpática, objetiva e eficiente.
+
+Seu objetivo é coletar as informações necessárias para fazer uma cotação de frete e retornar esses dados de forma estruturada.
+
+## Informações que você precisa coletar (em ordem):
+1. **Nome completo** do remetente
+2. **E-mail** do remetente
+3. **Telefone/WhatsApp** com DDD (formato: (XX) XXXXX-XXXX)
+4. **CEP de origem** (apenas números, 8 dígitos)
+5. **CEP de destino** (apenas números, 8 dígitos)
+6. **Peso da carga** em kg
+7. **Valor da nota fiscal** em reais
+
+## Regras importantes:
+- Colete UMA informação por vez, de forma conversacional e natural
+- Quando o usuário fornecer múltiplas informações de uma vez, aceite todas
+- Valide os dados: CEP deve ter 8 dígitos, e-mail deve ter @, telefone deve ter DDD
+- Se o dado for inválido, peça novamente de forma gentil
+- Seja breve nas perguntas — máximo 2 linhas
+- Após coletar TODAS as 7 informações, retorne um JSON estruturado no campo "action"
+
+## Formato de resposta:
+Sempre responda em JSON com este formato:
+{
+  "message": "sua mensagem para o usuário",
+  "action": null | {
+    "type": "fill_form",
+    "data": {
+      "name": "Nome Completo",
+      "email": "email@exemplo.com",
+      "phone": "(11) 99999-9999",
+      "originCep": "01310100",
+      "destCep": "30130110",
+      "weight": 10.5,
+      "invoiceValue": 1500.00
+    }
+  }
+}
+
+Só inclua "action" com os dados quando tiver coletado TODAS as 7 informações com sucesso.
+Nunca inclua markdown fora do JSON. Responda APENAS com o JSON válido.`
+
+export async function POST(request: Request) {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: 'IA não configurada' }, { status: 500 })
+  }
+
+  try {
+    const { messages } = await request.json() as {
+      messages: Array<{ role: 'user' | 'assistant'; content: string }>
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...messages,
+      ],
+      temperature: 0.4,
+      max_tokens: 500,
+      response_format: { type: 'json_object' },
+    })
+
+    const raw = completion.choices[0]?.message?.content ?? '{}'
+
+    let parsed: { message: string; action: null | { type: string; data: Record<string, unknown> } }
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      parsed = { message: 'Desculpe, tive um problema. Pode repetir?', action: null }
+    }
+
+    return NextResponse.json({ success: true, ...parsed })
+  } catch (error: unknown) {
+    console.error('[AI Chat]', error)
+    const msg = error instanceof Error ? error.message : 'Erro desconhecido'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+  }
+}
