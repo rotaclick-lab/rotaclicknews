@@ -841,6 +841,23 @@ export default function HomePage() {
                   </Card>
                 )}
                 
+                {results.length === 0 && (
+                  <div className="text-center py-12 space-y-3">
+                    <div className="text-5xl">😔</div>
+                    <p className="font-bold text-slate-700 text-lg">Nenhum frete encontrado</p>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                      Não encontramos tabelas de frete disponíveis para esta rota. Tente alterar os CEPs ou entre em contato conosco.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setStep(2)}
+                      className="border-brand-200 text-brand-700 hover:bg-brand-50 mt-2"
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" /> Alterar dados da rota
+                    </Button>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-3">
                   {results.map((offer, index) => (
                     <div
