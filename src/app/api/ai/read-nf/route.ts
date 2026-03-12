@@ -41,17 +41,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Imagem muito grande (máx 10MB)' }, { status: 400 })
     }
 
+    const mimeType = file.type || 'image/jpeg'
+
+    if (mimeType === 'application/pdf') {
+      return NextResponse.json({ error: 'PDF não suportado. Envie uma imagem (JPG, PNG ou WebP).' }, { status: 400 })
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(mimeType)) {
+      return NextResponse.json({ error: 'Formato não suportado. Use JPG, PNG ou WebP.' }, { status: 400 })
+    }
+
     const bytes = await file.arrayBuffer()
     const base64 = Buffer.from(bytes).toString('base64')
-    const mimeType = file.type || 'image/jpeg'
+
+    console.log('[AI Read NF] Processing file:', file.name, 'type:', mimeType, 'size:', file.size)
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT,
-        },
         {
           role: 'user',
           content: [
@@ -64,17 +72,23 @@ export async function POST(request: Request) {
             },
             {
               type: 'text',
-              text: 'Extraia os dados desta nota fiscal.',
+              text: `${SYSTEM_PROMPT}\n\nExtraia os dados desta nota fiscal e responda APENAS com o JSON.`,
             },
           ],
         },
       ],
       temperature: 0.1,
-      max_tokens: 300,
-      response_format: { type: 'json_object' },
+      max_tokens: 400,
     })
 
-    const raw = completion.choices[0]?.message?.content ?? '{}'
+    const raw = (completion.choices[0]?.message?.content ?? '').trim()
+    console.log('[AI Read NF] raw response:', raw)
+
+    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      console.error('[AI Read NF] no JSON found in response:', raw)
+      return NextResponse.json({ error: 'Não foi possível interpretar a imagem' }, { status: 422 })
+    }
 
     let parsed: {
       weight: number | null
@@ -85,14 +99,15 @@ export async function POST(request: Request) {
     }
 
     try {
-      parsed = JSON.parse(raw)
+      parsed = JSON.parse(jsonMatch[0])
     } catch {
+      console.error('[AI Read NF] JSON parse failed:', jsonMatch[0])
       return NextResponse.json({ error: 'Não foi possível interpretar a imagem' }, { status: 422 })
     }
 
     return NextResponse.json({ success: true, data: parsed })
   } catch (error: unknown) {
-    console.error('[AI Read NF]', error)
+    console.error('[AI Read NF] error:', error)
     const msg = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
