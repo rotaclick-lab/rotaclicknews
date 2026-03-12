@@ -110,11 +110,6 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
   }, [open])
 
   useEffect(() => {
-    setInput('')
-    setTimeout(() => inputRef.current?.focus(), 80)
-  }, [inputMode])
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
@@ -250,7 +245,7 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
           onKeyDown={handleKeyDown}
           placeholder={done ? 'Preenchendo formulário...' : getPlaceholder(inputMode)}
           disabled={loading || done}
-          inputMode={inputMode === 'phone' || inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : 'text'}
+          inputMode={inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : inputMode === 'phone' ? 'tel' : inputMode === 'email' ? 'email' : 'text'}
           className="flex-1 text-sm border-gray-200 focus-visible:ring-orange-400"
         />
         <Button
