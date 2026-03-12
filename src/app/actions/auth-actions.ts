@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { emailBoasVindasEmbarcador } from '@/lib/email'
 import { getFriendlyError } from '@/lib/error-utils'
 
 async function writeAuditLog(
@@ -371,6 +372,8 @@ export async function signupCustomer(formData: FormData) {
     if (profileError) {
       console.error('Erro ao atualizar perfil de cliente:', profileError)
     }
+
+    void emailBoasVindasEmbarcador({ to: email, name: fullName })
   }
 
   revalidatePath('/', 'layout')

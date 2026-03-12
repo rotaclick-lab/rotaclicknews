@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { emailTransportadoraAprovada, emailTransportadoraRejeitada } from '@/lib/email'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -495,7 +496,7 @@ export async function approveCarrier(companyId: string, paymentTermDays: 7 | 21 
   // Buscar dados da empresa e perfil antes de aprovar
   const [{ data: company }, { data: profile }] = await Promise.all([
     admin.from('companies').select('id, name, razao_social, nome_fantasia, rntrc, rntrc_number').eq('id', companyId).single(),
-    admin.from('profiles').select('id, name').eq('company_id', companyId).eq('role', 'transportadora').single(),
+    admin.from('profiles').select('id, name, email').eq('company_id', companyId).eq('role', 'transportadora').single(),
   ])
 
   const { error } = await admin
@@ -539,6 +540,13 @@ export async function approveCarrier(companyId: string, paymentTermDays: 7 | 21 
       type: 'system',
       is_read: false,
     })
+    if (profile.email) {
+      void emailTransportadoraAprovada({
+        to: profile.email,
+        name: profile.name ?? '',
+        companyName: company?.nome_fantasia || company?.razao_social || company?.name || '',
+      })
+    }
   }
 
   void admin.from('audit_logs').insert({
@@ -568,22 +576,36 @@ export async function rejectCarrier(companyId: string, reason: string) {
   if (error) return { success: false as const, error: error.message }
 
   // Notificar o usuário da transportadora
-  const { data: profile } = await admin
+  const { data: rejectProfile } = await admin
     .from('profiles')
-    .select('id, name')
+    .select('id, name, email, company_id')
     .eq('company_id', companyId)
     .eq('role', 'transportadora')
     .single()
 
-  if (profile) {
+  const { data: rejectCompany } = await admin
+    .from('companies')
+    .select('name, razao_social, nome_fantasia')
+    .eq('id', companyId)
+    .single()
+
+  if (rejectProfile) {
     void admin.from('notifications').insert({
-      user_id: profile.id,
+      user_id: rejectProfile.id,
       company_id: companyId,
       title: 'Cadastro não aprovado',
-      message: `Olá ${profile.name ?? ''}. Infelizmente seu cadastro não foi aprovado. Motivo: ${reason}. Entre em contato com suporte@rotaclick.com.br para mais informações.`,
+      message: `Olá ${rejectProfile.name ?? ''}. Infelizmente seu cadastro não foi aprovado. Motivo: ${reason}. Entre em contato com suporte@rotaclick.com.br para mais informações.`,
       type: 'system',
       is_read: false,
     })
+    if (rejectProfile.email) {
+      void emailTransportadoraRejeitada({
+        to: rejectProfile.email,
+        name: rejectProfile.name ?? '',
+        companyName: rejectCompany?.nome_fantasia || rejectCompany?.razao_social || rejectCompany?.name || '',
+        reason,
+      })
+    }
   }
 
   void admin.from('audit_logs').insert({

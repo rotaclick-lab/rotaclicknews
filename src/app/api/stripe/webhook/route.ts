@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { upsertFreightFromCheckout } from '@/app/actions/quotes-actions'
 import { notifyEmbarcadorFretePago, notifyTransportadoraNovoFrete } from '@/lib/zapi'
+import { emailEmbarcadorFretePago, emailTransportadoraNovoFrete } from '@/lib/email'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -192,11 +193,29 @@ export async function POST(request: Request) {
             })
           }
 
+          // Email para embarcador
+          const { data: embarcadorFull } = await admin
+            .from('profiles')
+            .select('full_name, name, email')
+            .eq('id', userId)
+            .maybeSingle()
+          if (embarcadorFull?.email) {
+            void emailEmbarcadorFretePago({
+              to: embarcadorFull.email,
+              name: embarcadorFull.full_name || embarcadorFull.name || 'Cliente',
+              carrierName,
+              originZip,
+              destZip,
+              price,
+              deadlineDays,
+            })
+          }
+
           // Transportadora (busca pelo carrierId)
           if (carrierId) {
             const { data: carrierProfile } = await admin
               .from('profiles')
-              .select('phone')
+              .select('phone, full_name, name, email')
               .eq('id', carrierId)
               .maybeSingle()
 
@@ -204,6 +223,17 @@ export async function POST(request: Request) {
             if (carrierPhone && carrierPhone.length >= 10) {
               void notifyTransportadoraNovoFrete({
                 phone: carrierPhone,
+                originZip,
+                destZip,
+                price,
+                deadlineDays,
+                taxableWeight,
+              })
+            }
+            if (carrierProfile?.email) {
+              void emailTransportadoraNovoFrete({
+                to: carrierProfile.email,
+                name: carrierProfile.full_name || carrierProfile.name || 'Transportadora',
                 originZip,
                 destZip,
                 price,
