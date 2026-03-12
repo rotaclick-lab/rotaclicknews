@@ -20,6 +20,7 @@ import {
   ScrollText,
   Plug,
   ImageIcon,
+  Mail,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -105,6 +106,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: 'Integrações', href: '/admin/integracoes', icon: Plug, description: 'TMS negociados por transportadora' },
   { title: 'Auditoria', href: '/admin/auditoria', icon: Shield, description: 'Logs de auditoria' },
   { title: 'Logs Completos', href: '/admin/logs-completos', icon: ScrollText, description: 'Todos os logs da plataforma' },
+  { title: 'E-mail Templates', href: '/admin/email-templates', icon: Mail, description: 'Editar layout dos e-mails transacionais' },
   { title: 'Configurações', href: '/admin/configuracoes', icon: Settings, description: 'Parâmetros gerais' },
 ]
 
