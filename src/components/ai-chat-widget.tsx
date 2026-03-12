@@ -1,64 +1,40 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Bot, X, Send, Sparkles, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Bot, X, Sparkles, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-interface FormData {
+interface WizardData {
   name: string
   email: string
   phone: string
   originCep: string
   destCep: string
-  weight: number
-  invoiceValue: number
+  weight: string
+  invoiceValue: string
 }
 
 interface AiChatWidgetProps {
-  onFillForm: (data: FormData) => void
+  onFillForm: (data: {
+    name: string; email: string; phone: string
+    originCep: string; destCep: string; weight: number; invoiceValue: number
+    quantity?: number
+  }) => void
   inline?: boolean
 }
 
-const WELCOME = 'Olá! Sou a Rota, assistente de cotação de frete da RotaClick. 👋\n\nPode me dizer seu **nome completo** para começarmos?'
-
-function formatMessage(text: string) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br/>')
-}
-
-type InputMode = 'text' | 'phone' | 'cep' | 'number' | 'currency' | 'email'
-
-function fieldToInputMode(field: string | null | undefined): InputMode {
-  switch (field) {
-    case 'name': return 'text'
-    case 'email': return 'email'
-    case 'phone': return 'phone'
-    case 'originCep':
-    case 'destCep': return 'cep'
-    case 'weight': return 'number'
-    case 'invoiceValue': return 'currency'
-    default: return 'text'
-  }
-}
-
-function getPlaceholder(mode: InputMode): string {
-  switch (mode) {
-    case 'phone': return '(11) 99999-9999'
-    case 'cep': return '00000-000'
-    case 'number': return 'Ex: 10.5'
-    case 'currency': return 'Ex: 1500,00'
-    case 'email': return 'email@exemplo.com'
-    default: return 'Digite sua resposta...'
-  }
-}
+const STEPS = [
+  { field: 'name' as keyof WizardData, label: 'Nome completo', placeholder: 'Ex: João da Silva', type: 'text', hint: 'Nome e sobrenome' },
+  { field: 'email' as keyof WizardData, label: 'E-mail', placeholder: 'email@exemplo.com', type: 'email', hint: '' },
+  { field: 'phone' as keyof WizardData, label: 'Telefone / WhatsApp', placeholder: '(11) 99999-9999', type: 'tel', hint: 'Com DDD' },
+  { field: 'originCep' as keyof WizardData, label: 'CEP de Origem', placeholder: '00000-000', type: 'text', hint: '' },
+  { field: 'destCep' as keyof WizardData, label: 'CEP de Destino', placeholder: '00000-000', type: 'text', hint: '' },
+  { field: 'weight' as keyof WizardData, label: 'Peso da carga (kg)', placeholder: 'Ex: 10.5', type: 'text', hint: 'Peso total em kg' },
+  { field: 'invoiceValue' as keyof WizardData, label: 'Valor da Nota Fiscal (R$)', placeholder: 'Ex: 1500,00', type: 'text', hint: 'Valor total da NF' },
+]
 
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 11)
@@ -81,198 +57,151 @@ function maskCurrency(v: string) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 }
 
+function applyMask(field: keyof WizardData, v: string): string {
+  if (field === 'phone') return maskPhone(v)
+  if (field === 'originCep' || field === 'destCep') return maskCEP(v)
+  if (field === 'invoiceValue') return maskCurrency(v)
+  return v
+}
+
+function validate(field: keyof WizardData, value: string): string {
+  const v = value.trim()
+  if (!v) return 'Campo obrigatório'
+  if (field === 'name' && v.split(' ').filter(Boolean).length < 2) return 'Informe nome e sobrenome'
+  if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'E-mail inválido'
+  if (field === 'phone' && v.replace(/\D/g, '').length < 10) return 'Telefone inválido — mínimo 10 dígitos com DDD'
+  if ((field === 'originCep' || field === 'destCep') && v.replace(/\D/g, '').length !== 8) return 'CEP deve ter 8 dígitos'
+  if (field === 'weight' && (isNaN(Number(v.replace(',', '.'))) || Number(v.replace(',', '.')) <= 0)) return 'Peso inválido'
+  if (field === 'invoiceValue' && Number(v.replace(/\./g, '').replace(',', '.')) <= 0) return 'Valor inválido'
+  return ''
+}
+
+const EMPTY: WizardData = { name: '', email: '', phone: '', originCep: '', destCep: '', weight: '', invoiceValue: '' }
+
 export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: WELCOME },
-  ])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState(0)
+  const [data, setData] = useState<WizardData>(EMPTY)
+  const [error, setError] = useState('')
   const [done, setDone] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  const [currentField, setCurrentField] = useState<string | null>('name')
-  const inputMode: InputMode = done ? 'text' : fieldToInputMode(currentField)
+  const current = STEPS[step]!
 
-  const handleInputChange = (v: string) => {
-    switch (inputMode) {
-      case 'phone': setInput(maskPhone(v)); break
-      case 'cep': setInput(maskCEP(v)); break
-      case 'currency': setInput(maskCurrency(v)); break
-      default: setInput(v)
-    }
+  const handleChange = (v: string) => {
+    setError('')
+    setData((prev) => ({ ...prev, [current.field]: applyMask(current.field, v) }))
   }
 
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 100)
-    }
-  }, [open])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
-
-  const cleanForSend = (text: string): string => {
-    if (inputMode === 'cep') return text.replace(/\D/g, '')
-    if (inputMode === 'phone') return text.replace(/\D/g, '')
-    if (inputMode === 'currency') return text.replace(/\./g, '').replace(',', '.')
-    return text.trim()
-  }
-
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || loading || done) return
-
-    const userMsg: Message = { role: 'user', content: cleanForSend(text) }
-    const newMessages = [...messages, userMsg]
-    setMessages(newMessages)
-    setInput('')
-    setLoading(true)
-
-    try {
-      const res = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-        }),
+  const handleNext = () => {
+    const err = validate(current.field, data[current.field])
+    if (err) { setError(err); return }
+    if (step < STEPS.length - 1) {
+      setStep(step + 1)
+      setError('')
+    } else {
+      const raw = data.invoiceValue.replace(/\./g, '').replace(',', '.')
+      onFillForm({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        phone: data.phone,
+        originCep: data.originCep.replace(/\D/g, ''),
+        destCep: data.destCep.replace(/\D/g, ''),
+        weight: Number(data.weight.replace(',', '.')),
+        invoiceValue: Number(raw),
+        quantity: 1,
       })
-
-      const data = await res.json()
-
-      if (!data.success) {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: 'Desculpe, tive um problema técnico. Tente novamente.' },
-        ])
-        return
-      }
-
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.message }])
-      if (data.field !== undefined) setCurrentField(data.field)
-
-      if (data.action?.type === 'fill_form' && data.action?.data) {
-        setDone(true)
-        setTimeout(() => {
-          onFillForm(data.action.data as FormData)
-          setOpen(false)
-        }, 1800)
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'Erro de conexão. Verifique sua internet e tente novamente.' },
-      ])
-    } finally {
-      setLoading(false)
+      setDone(true)
+      setTimeout(() => { setOpen(false); setDone(false); setStep(0); setData(EMPTY) }, 1500)
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage(input)
-    }
+    if (e.key === 'Enter') { e.preventDefault(); handleNext() }
   }
 
-  const handleReset = () => {
-    setMessages([{ role: 'assistant', content: WELCOME }])
-    setDone(false)
-    setInput('')
-    setCurrentField('name')
-  }
-
-  const chatPanel = open ? (
+  const panel = open ? (
     <div className={cn(
-      'flex flex-col rounded-2xl shadow-2xl border border-orange-100 bg-white overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300',
+      'flex flex-col rounded-2xl shadow-2xl border border-orange-100 bg-white overflow-hidden animate-in fade-in duration-200',
       inline
-        ? 'absolute bottom-full left-0 mb-2 w-[360px] max-w-[calc(100vw-2rem)] z-50'
-        : 'fixed bottom-20 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)]'
+        ? 'absolute bottom-full left-0 mb-2 w-[340px] max-w-[calc(100vw-2rem)] z-50'
+        : 'fixed bottom-20 right-6 z-50 w-[340px] max-w-[calc(100vw-2rem)]'
     )}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20">
-          <Bot className="h-5 w-5" />
+          <Bot className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm leading-tight">Rota — Assistente IA</p>
-          <p className="text-xs text-orange-100">Cotação inteligente de frete</p>
+          <p className="font-semibold text-sm leading-tight">Cotar com IA</p>
+          {!done && <p className="text-xs text-orange-100">Passo {step + 1} de {STEPS.length}</p>}
         </div>
-        {done && (
-          <button onClick={handleReset} className="text-xs underline text-orange-100 hover:text-white">
-            Reiniciar
-          </button>
-        )}
-        <button onClick={() => setOpen(false)} className="ml-1 text-orange-100 hover:text-white">
+        <button onClick={() => setOpen(false)} className="text-orange-100 hover:text-white">
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Mensagens */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[380px] min-h-[200px] bg-gray-50">
-        {messages.map((msg, i) => (
-          <div key={i} className={cn('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-            {msg.role === 'assistant' && (
-              <div className="flex items-end gap-2 max-w-[85%]">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center mb-1">
-                  <Bot className="h-3.5 w-3.5 text-white" />
-                </div>
-                <div
-                  className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 text-sm text-gray-800 shadow-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-                />
-              </div>
-            )}
-            {msg.role === 'user' && (
-              <div className="max-w-[85%] px-3 py-2 rounded-2xl rounded-br-sm bg-orange-500 text-white text-sm leading-relaxed">
-                {msg.content}
-              </div>
-            )}
+      {/* Barra de progresso */}
+      <div className="h-1 bg-orange-100">
+        <div
+          className="h-1 bg-orange-500 transition-all duration-300"
+          style={{ width: `${((step + (done ? 1 : 0)) / STEPS.length) * 100}%` }}
+        />
+      </div>
+
+      <div className="p-5">
+        {done ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <CheckCircle2 className="h-10 w-10 text-green-500" />
+            <p className="font-semibold text-gray-800">Preenchendo o formulário...</p>
           </div>
-        ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="flex items-end gap-2">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
-                <Bot className="h-3.5 w-3.5 text-white" />
-              </div>
-              <div className="px-3 py-2 rounded-2xl rounded-bl-sm bg-white border border-gray-100 shadow-sm">
-                <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-              </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-semibold text-gray-700">{current.label}</Label>
+              {current.hint && <p className="text-xs text-gray-400 mt-0.5">{current.hint}</p>}
+            </div>
+            <Input
+              autoFocus
+              type={current.type}
+              value={data[current.field]}
+              onChange={(e) => handleChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={current.placeholder}
+              className={cn('text-sm', error ? 'border-red-400 focus-visible:ring-red-400' : 'focus-visible:ring-orange-400')}
+              inputMode={
+                current.field === 'phone' ? 'tel' :
+                current.field === 'originCep' || current.field === 'destCep' ? 'numeric' :
+                current.field === 'weight' || current.field === 'invoiceValue' ? 'decimal' :
+                current.field === 'email' ? 'email' : 'text'
+              }
+            />
+            {error && <p className="text-xs text-red-500 flex items-center gap-1">⚠ {error}</p>}
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={() => { if (step > 0) { setStep(step - 1); setError('') } }}
+                className={cn('flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600', step === 0 && 'invisible')}
+              >
+                <ChevronLeft className="h-4 w-4" /> Voltar
+              </button>
+              <Button
+                size="sm"
+                onClick={handleNext}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {step === STEPS.length - 1 ? 'Preencher' : 'Próximo'}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="flex gap-2 p-3 border-t border-gray-100 bg-white">
-        <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={done ? 'Preenchendo formulário...' : getPlaceholder(inputMode)}
-          disabled={loading || done}
-          inputMode={inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : inputMode === 'phone' ? 'tel' : inputMode === 'email' ? 'email' : 'text'}
-          className="flex-1 text-sm border-gray-200 focus-visible:ring-orange-400"
-        />
-        <Button
-          size="icon"
-          onClick={() => sendMessage(input)}
-          disabled={!input.trim() || loading || done}
-          className="bg-orange-500 hover:bg-orange-600 text-white shrink-0"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   ) : null
 
-  const triggerButton = (
+  const trigger = (
     <button
-      onClick={() => setOpen((v) => !v)}
+      onClick={() => { setOpen((v) => !v); if (!open) { setStep(0); setData(EMPTY); setError(''); setDone(false) } }}
       className={cn(
         'flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm transition-all duration-200 shadow-md',
         open
@@ -288,18 +217,16 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
   if (inline) {
     return (
       <div className="relative">
-        {chatPanel}
-        {triggerButton}
+        {panel}
+        {trigger}
       </div>
     )
   }
 
   return (
     <>
-      {chatPanel}
-      <div className="fixed bottom-6 right-6 z-50">
-        {triggerButton}
-      </div>
+      {panel}
+      <div className="fixed bottom-6 right-6 z-50">{trigger}</div>
     </>
   )
 }
