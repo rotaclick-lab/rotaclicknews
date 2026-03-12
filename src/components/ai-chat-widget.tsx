@@ -36,14 +36,17 @@ function formatMessage(text: string) {
 
 type InputMode = 'text' | 'phone' | 'cep' | 'number' | 'currency' | 'email'
 
-function detectInputMode(lastAssistantMsg: string): InputMode {
-  const msg = lastAssistantMsg.toLowerCase()
-  if (msg.includes('telefone') || msg.includes('whatsapp') || msg.includes('celular') || msg.includes('número') || msg.includes('fone')) return 'phone'
-  if (msg.includes('e-mail') || msg.includes('email') || msg.includes('endereço eletrônico')) return 'email'
-  if (msg.includes('cep de origem') || msg.includes('cep de destino') || msg.includes('cep')) return 'cep'
-  if (msg.includes('peso')) return 'number'
-  if (msg.includes('nota fiscal') || msg.includes('valor da nf') || msg.includes('valor total')) return 'currency'
-  return 'text'
+function fieldToInputMode(field: string | null | undefined): InputMode {
+  switch (field) {
+    case 'name': return 'text'
+    case 'email': return 'email'
+    case 'phone': return 'phone'
+    case 'originCep':
+    case 'destCep': return 'cep'
+    case 'weight': return 'number'
+    case 'invoiceValue': return 'currency'
+    default: return 'text'
+  }
 }
 
 function getPlaceholder(mode: InputMode): string {
@@ -89,8 +92,8 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content ?? ''
-  const inputMode: InputMode = done ? 'text' : detectInputMode(lastAssistantMsg)
+  const [currentField, setCurrentField] = useState<string | null>('name')
+  const inputMode: InputMode = done ? 'text' : fieldToInputMode(currentField)
 
   const handleInputChange = (v: string) => {
     switch (inputMode) {
@@ -140,6 +143,7 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
       }
 
       setMessages((prev) => [...prev, { role: 'assistant', content: data.message }])
+      if (data.field !== undefined) setCurrentField(data.field)
 
       if (data.action?.type === 'fill_form' && data.action?.data) {
         setDone(true)
@@ -169,6 +173,7 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
     setMessages([{ role: 'assistant', content: WELCOME }])
     setDone(false)
     setInput('')
+    setCurrentField('name')
   }
 
   const chatPanel = open ? (

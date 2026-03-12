@@ -29,6 +29,7 @@ Seu objetivo é coletar as informações necessárias para fazer uma cotação d
 Sempre responda em JSON com este formato:
 {
   "message": "sua mensagem para o usuário",
+  "field": "name" | "email" | "phone" | "originCep" | "destCep" | "weight" | "invoiceValue" | null,
   "action": null | {
     "type": "fill_form",
     "data": {
@@ -43,6 +44,7 @@ Sempre responda em JSON com este formato:
   }
 }
 
+O campo "field" indica qual informação você está coletando AGORA. Use null quando não estiver coletando nada.
 Só inclua "action" com os dados quando tiver coletado TODAS as 7 informações com sucesso.
 Nunca inclua markdown fora do JSON. Responda APENAS com o JSON válido.`
 
