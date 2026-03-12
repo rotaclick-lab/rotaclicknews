@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Save, Eye, EyeOff, RotateCcw, Mail, CheckCircle2, AlertCircle, Loader2, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Save, Eye, EyeOff, RotateCcw, Mail, CheckCircle2, AlertCircle, Loader2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,6 +45,23 @@ export default function EmailTemplatesPage() {
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
   const [dirty, setDirty] = useState(false)
+  const [testEmail, setTestEmail] = useState('')
+  const [sendingTest, setSendingTest] = useState(false)
+  const [testStatus, setTestStatus] = useState<'idle' | 'sent' | 'error'>('idle')
+
+  const handleSendTest = async () => {
+    if (!selected || !testEmail.trim()) return
+    setSendingTest(true)
+    setTestStatus('idle')
+    const res = await fetch('/api/admin/email-templates/send-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: testEmail.trim(), subject: editSubject, html: editHtml }),
+    })
+    setTestStatus(res.ok ? 'sent' : 'error')
+    setSendingTest(false)
+    setTimeout(() => setTestStatus('idle'), 4000)
+  }
 
   useEffect(() => {
     fetch('/api/admin/email-templates')
@@ -184,6 +201,42 @@ export default function EmailTemplatesPage() {
                     placeholder="Assunto do e-mail"
                   />
                 </div>
+                {/* Envio de teste */}
+                <div>
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Enviar e-mail de teste</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      placeholder="email@exemplo.com"
+                      className="text-sm flex-1"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSendTest()}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleSendTest}
+                      disabled={sendingTest || !testEmail.trim()}
+                      className={cn(
+                        'shrink-0 border',
+                        testStatus === 'sent' && 'border-green-400 text-green-600',
+                        testStatus === 'error' && 'border-red-400 text-red-600',
+                      )}
+                    >
+                      {sendingTest ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : testStatus === 'sent' ? (
+                        <><CheckCircle2 className="h-4 w-4 mr-1" /> Enviado!</>
+                      ) : testStatus === 'error' ? (
+                        <><AlertCircle className="h-4 w-4 mr-1" /> Erro</>
+                      ) : (
+                        <><Send className="h-4 w-4 mr-1" /> Enviar</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
                 {selected.variables.length > 0 && (
                   <div>
                     <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Variáveis disponíveis</Label>
