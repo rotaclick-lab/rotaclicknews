@@ -41,21 +41,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Imagem muito grande (máx 10MB)' }, { status: 400 })
     }
 
-    const mimeType = file.type || 'image/jpeg'
+    const rawMime = file.type || ''
+    console.log('[AI Read NF] file:', file.name, 'raw mime:', rawMime, 'size:', file.size)
 
-    if (mimeType === 'application/pdf') {
-      return NextResponse.json({ error: 'PDF não suportado. Envie uma imagem (JPG, PNG ou WebP).' }, { status: 400 })
+    if (rawMime === 'application/pdf') {
+      return NextResponse.json({ error: 'PDF não suportado. Tire uma foto ou screenshot da NF e envie como imagem (JPG ou PNG).' }, { status: 400 })
     }
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-    if (!allowedTypes.includes(mimeType)) {
-      return NextResponse.json({ error: 'Formato não suportado. Use JPG, PNG ou WebP.' }, { status: 400 })
-    }
+    const mimeType = allowedTypes.includes(rawMime) ? rawMime : 'image/jpeg'
 
     const bytes = await file.arrayBuffer()
-    const base64 = Buffer.from(bytes).toString('base64')
 
-    console.log('[AI Read NF] Processing file:', file.name, 'type:', mimeType, 'size:', file.size)
+    // Detectar PDF pelos magic bytes mesmo que o tipo esteja errado
+    const header = Buffer.from(bytes.slice(0, 4))
+    if (header.toString('ascii').startsWith('%PDF')) {
+      return NextResponse.json({ error: 'PDF não suportado. Tire uma foto ou screenshot da NF e envie como imagem (JPG ou PNG).' }, { status: 400 })
+    }
+
+    const base64 = Buffer.from(bytes).toString('base64')
+    console.log('[AI Read NF] Processing as:', mimeType)
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',

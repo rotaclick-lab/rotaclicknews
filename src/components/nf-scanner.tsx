@@ -25,8 +25,13 @@ export function NfScanner({ onExtracted }: NfScannerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      setErrorMsg('Envie uma imagem (JPG, PNG) ou PDF da nota fiscal.')
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      setErrorMsg('PDF não suportado. Tire uma foto ou screenshot da NF e envie como JPG ou PNG.')
+      setState('error')
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Formato não suportado. Envie uma imagem JPG ou PNG da nota fiscal.')
       setState('error')
       return
     }
@@ -94,11 +99,11 @@ export function NfScanner({ onExtracted }: NfScannerProps) {
           <p className="text-sm text-gray-500 group-hover:text-gray-700">
             <span className="font-medium text-orange-500">Clique</span> ou arraste a foto da NF
           </p>
-          <p className="text-xs text-gray-400 mt-1">JPG, PNG ou PDF • máx 10MB</p>
+          <p className="text-xs text-gray-400 mt-1">JPG ou PNG • máx 10MB</p>
           <input
             ref={inputRef}
             type="file"
-            accept="image/*,application/pdf"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
             className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
           />
