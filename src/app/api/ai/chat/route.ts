@@ -71,12 +71,15 @@ export async function POST(request: Request) {
     })
 
     const raw = completion.choices[0]?.message?.content ?? '{}'
+    console.log('[AI Chat] raw response:', raw)
 
-    let parsed: { message: string; action: null | { type: string; data: Record<string, unknown> } }
+    let parsed: { message: string; field?: string | null; action: null | { type: string; data: Record<string, unknown> } }
     try {
       parsed = JSON.parse(raw)
+      console.log('[AI Chat] field:', parsed.field, '| message:', parsed.message?.slice(0, 80))
     } catch {
-      parsed = { message: 'Desculpe, tive um problema. Pode repetir?', action: null }
+      console.error('[AI Chat] JSON parse failed:', raw)
+      parsed = { message: 'Desculpe, tive um problema. Pode repetir?', field: null, action: null }
     }
 
     return NextResponse.json({ success: true, ...parsed })
