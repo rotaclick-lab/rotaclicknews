@@ -33,6 +33,52 @@ function formatMessage(text: string) {
     .replace(/\n/g, '<br/>')
 }
 
+type InputMode = 'text' | 'phone' | 'cep' | 'number' | 'currency' | 'email'
+
+function detectInputMode(lastAssistantMsg: string): InputMode {
+  const msg = lastAssistantMsg.toLowerCase()
+  if (msg.includes('telefone') || msg.includes('whatsapp') || msg.includes('celular')) return 'phone'
+  if (msg.includes('cep de origem')) return 'cep'
+  if (msg.includes('cep de destino')) return 'cep'
+  if (msg.includes('cep')) return 'cep'
+  if (msg.includes('peso')) return 'number'
+  if (msg.includes('valor') || msg.includes('nota fiscal') || msg.includes('nf')) return 'currency'
+  if (msg.includes('e-mail') || msg.includes('email')) return 'email'
+  return 'text'
+}
+
+function getPlaceholder(mode: InputMode): string {
+  switch (mode) {
+    case 'phone': return '(11) 99999-9999'
+    case 'cep': return '00000-000'
+    case 'number': return 'Ex: 10.5'
+    case 'currency': return 'Ex: 1500,00'
+    case 'email': return 'email@exemplo.com'
+    default: return 'Digite sua resposta...'
+  }
+}
+
+function maskPhone(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 2) return d
+  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
+}
+
+function maskCEP(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 8)
+  if (d.length <= 5) return d
+  return `${d.slice(0,5)}-${d.slice(5)}`
+}
+
+function maskCurrency(v: string) {
+  const d = v.replace(/\D/g, '')
+  if (!d) return ''
+  const n = Number(d) / 100
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+}
+
 export function AiChatWidget({ onFillForm }: AiChatWidgetProps) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
@@ -44,11 +90,28 @@ export function AiChatWidget({ onFillForm }: AiChatWidgetProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content ?? ''
+  const inputMode: InputMode = done ? 'text' : detectInputMode(lastAssistantMsg)
+
+  const handleInputChange = (v: string) => {
+    switch (inputMode) {
+      case 'phone': setInput(maskPhone(v)); break
+      case 'cep': setInput(maskCEP(v)); break
+      case 'currency': setInput(maskCurrency(v)); break
+      default: setInput(v)
+    }
+  }
+
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [open])
+
+  useEffect(() => {
+    setInput('')
+    setTimeout(() => inputRef.current?.focus(), 80)
+  }, [inputMode])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -202,10 +265,11 @@ export function AiChatWidget({ onFillForm }: AiChatWidgetProps) {
             <Input
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={done ? 'Preenchendo formulário...' : 'Digite sua resposta...'}
+              placeholder={done ? 'Preenchendo formulário...' : getPlaceholder(inputMode)}
               disabled={loading || done}
+              inputMode={inputMode === 'phone' || inputMode === 'cep' || inputMode === 'number' || inputMode === 'currency' ? 'numeric' : 'text'}
               className="flex-1 text-sm border-gray-200 focus-visible:ring-orange-400"
             />
             <Button
