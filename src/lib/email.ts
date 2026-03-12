@@ -1,6 +1,5 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'RotaClick <noreply@notificacao.rotaclick.com.br>'
 const REPLY_TO = 'suporte@rotaclick.com.br'
 
@@ -9,10 +8,12 @@ async function send(opts: {
   subject: string
   html: string
 }): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
     console.warn('[Email] RESEND_API_KEY não configurado — email não enviado')
     return false
   }
+  const resend = new Resend(apiKey)
   try {
     const { error } = await resend.emails.send({
       from: FROM,
