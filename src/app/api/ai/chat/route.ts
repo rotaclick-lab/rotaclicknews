@@ -70,12 +70,19 @@ export async function POST(request: Request) {
       response_format: { type: 'json_object' },
     })
 
-    const raw = completion.choices[0]?.message?.content ?? '{}'
+    const raw = (completion.choices[0]?.message?.content ?? '').trim()
     console.log('[AI Chat] raw response:', raw)
 
     let parsed: { message: string; field?: string | null; action: null | { type: string; data: Record<string, unknown> } }
+
+    if (!raw) {
+      console.error('[AI Chat] empty response from OpenAI')
+      return NextResponse.json({ success: true, message: 'Desculpe, não recebi resposta. Pode repetir?', field: null, action: null })
+    }
+
     try {
       parsed = JSON.parse(raw)
+      if (!parsed.message) throw new Error('missing message field')
       console.log('[AI Chat] field:', parsed.field, '| message:', parsed.message?.slice(0, 80))
     } catch {
       console.error('[AI Chat] JSON parse failed:', raw)

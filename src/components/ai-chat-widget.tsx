@@ -116,6 +116,8 @@ export function AiChatWidget({ onFillForm, inline = false }: AiChatWidgetProps) 
 
   const cleanForSend = (text: string): string => {
     if (inputMode === 'cep') return text.replace(/\D/g, '')
+    if (inputMode === 'phone') return text.replace(/\D/g, '')
+    if (inputMode === 'currency') return text.replace(/\./g, '').replace(',', '.')
     return text.trim()
   }
 
