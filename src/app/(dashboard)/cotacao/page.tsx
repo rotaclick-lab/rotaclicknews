@@ -542,15 +542,17 @@ export default function CotacaoPage() {
           {/* Step 4: Offers & Results */}
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" onClick={() => setStep(3)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-                  </Button>
-                  <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
+              {results.length > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => setStep(3)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                      <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                    </Button>
+                    <h2 className="text-2xl font-bold text-brand-800">Melhores Ofertas Encontradas</h2>
+                  </div>
+                  <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm">Alterar Dados</Button>
                 </div>
-                <Button variant="ghost" onClick={() => setStep(3)} className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm">Alterar Dados</Button>
-              </div>
+              )}
               
               {results.length === 0 && (
                 <div className="text-center py-12 space-y-3">

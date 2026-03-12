@@ -803,31 +803,33 @@ export default function HomePage() {
             {/* Step 3: Offers & Results */}
             {step === 3 && (
               <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                {results.length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setStep(2)
+                          if (isDemoMode) setDemoPaymentDone(false)
+                        }}
+                        className="border-brand-200 text-brand-700 hover:bg-brand-50"
+                      >
+                        <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                      </Button>
+                      <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
+                    </div>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       onClick={() => {
                         setStep(2)
                         if (isDemoMode) setDemoPaymentDone(false)
                       }}
-                      className="border-brand-200 text-brand-700 hover:bg-brand-50"
+                      className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm"
                     >
-                      <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                      Alterar Dados
                     </Button>
-                    <h2 className="text-2xl font-bold text-brand-800">Melhor Oferta Encontrada</h2>
                   </div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setStep(2)
-                      if (isDemoMode) setDemoPaymentDone(false)
-                    }}
-                    className="text-brand-600 hover:text-brand-700 hover:bg-brand-50 text-sm"
-                  >
-                    Alterar Dados
-                  </Button>
-                </div>
+                )}
 
                 {isDemoMode && (
                   <Card className={cn('border', demoPaymentDone ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50')}>
