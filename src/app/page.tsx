@@ -802,7 +802,7 @@ export default function HomePage() {
 
             {/* Step 3: Offers & Results */}
             {step === 3 && (
-              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/60">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <Button
