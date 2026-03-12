@@ -5,7 +5,7 @@ import { MessageCircle, Mail, ChevronDown, ChevronUp, HelpCircle, Clock, Package
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-const WHATSAPP_NUMBER = '5511999999999'
+const WHATSAPP_NUMBER = '551135142933'
 const SUPPORT_EMAIL = 'sac@rotaclick.com.br'
 
 const faqs = [

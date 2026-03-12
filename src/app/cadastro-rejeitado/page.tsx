@@ -66,8 +66,8 @@ export default async function CadastroRejeitadoPage() {
           </p>
           <p className="flex items-center justify-center gap-2">
             <Phone className="h-4 w-4" />
-            <a href="tel:+5511999999999" className="text-brand-600 hover:underline">
-              (11) 99999-9999
+            <a href="tel:+551135142933" className="text-brand-600 hover:underline">
+              (11) 3514-2933
             </a>
           </p>
         </div>
