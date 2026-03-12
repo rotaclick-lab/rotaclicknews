@@ -33,7 +33,16 @@ function resolveAppBaseUrl() {
  * @param connectedAccountId ID da conta Stripe da transportadora (opcional para teste)
  */
 export async function createCheckoutSession(
-  offer: { carrier: string, price: number, id: string },
+  offer: {
+    carrier: string
+    price: number
+    id: string
+    originZip?: string
+    destZip?: string
+    deadlineDays?: number | null
+    taxableWeight?: number | null
+    carrierId?: string | null
+  },
   connectedAccountId?: string,
   nextPath = '/cotacao?resumeCheckout=1'
 ) {
@@ -81,7 +90,12 @@ export async function createCheckoutSession(
       metadata: {
         offer_id: offer.id,
         user_id: user.id,
-        carrier_name: offer.carrier
+        carrier_name: offer.carrier,
+        carrier_id: offer.carrierId ?? '',
+        origin_zip: offer.originZip ?? '',
+        dest_zip: offer.destZip ?? '',
+        deadline_days: offer.deadlineDays != null ? String(offer.deadlineDays) : '',
+        taxable_weight: offer.taxableWeight != null ? String(offer.taxableWeight) : '',
       },
       payment_intent_data: {
         metadata: {

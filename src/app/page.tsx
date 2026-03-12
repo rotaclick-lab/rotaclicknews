@@ -27,9 +27,11 @@ const PENDING_CHECKOUT_KEY = 'rotaclick_pending_checkout_offer'
 interface QuoteResult {
   id: string
   carrier: string
+  carrierId?: string | null
   logoUrl?: string | null
   price: number
   deadline: string
+  deadlineDays?: number | null
   type: string
 }
 
@@ -956,7 +958,17 @@ export default function HomePage() {
                           }
 
                           setLoading(true)
-                          const result = await createCheckoutSession(selectedOffer, undefined, '/?resumeCheckout=1')
+                          const totals = calculateTotals()
+                          const result = await createCheckoutSession(
+                            {
+                              ...selectedOffer,
+                              originZip: origin.replace(/\D/g, ''),
+                              destZip: destination.replace(/\D/g, ''),
+                              taxableWeight: totals.taxableWeight,
+                            },
+                            undefined,
+                            '/?resumeCheckout=1'
+                          )
 
                           if (result.requiresAuth && result.loginUrl) {
                             savePendingCheckout(selectedOffer)

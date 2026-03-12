@@ -2,6 +2,11 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  notifyEmbarcadorEmTransito,
+  notifyEmbarcadorEntregue,
+  notifyEmbarcadorCancelado,
+} from '@/lib/zapi'
 
 // ===== REGISTRAR COTAÇÃO =====
 export async function registerQuote(data: {
@@ -376,6 +381,14 @@ export async function updateFreightStatus(freightId: string, status: string) {
     if (!user) return { success: false, error: 'Não autenticado' }
 
     const admin = createAdminClient()
+
+    // Buscar dados do frete antes de atualizar (para notificação)
+    const { data: freight } = await admin
+      .from('freights')
+      .select('id, user_id, carrier_name, origin_zip, dest_zip, deadline_days')
+      .eq('id', freightId)
+      .maybeSingle()
+
     const { error } = await admin
       .from('freights')
       .update({ status, updated_at: new Date().toISOString() })
@@ -390,6 +403,29 @@ export async function updateFreightStatus(freightId: string, status: string) {
       resource_id: freightId,
       description: `Status do frete atualizado para: ${status}`,
     })
+
+    // Notificações WhatsApp Z-API (fire-and-forget)
+    if (freight?.user_id) {
+      const { data: profile } = await admin
+        .from('profiles')
+        .select('phone')
+        .eq('id', freight.user_id)
+        .maybeSingle()
+
+      const phone = profile?.phone?.replace(/\D/g, '')
+      if (phone && phone.length >= 10) {
+        const params = {
+          phone,
+          carrierName: freight.carrier_name ?? 'Transportadora',
+          originZip: freight.origin_zip ?? '',
+          destZip: freight.dest_zip ?? '',
+          deadlineDays: freight.deadline_days ?? null,
+        }
+        if (status === 'in_transit') void notifyEmbarcadorEmTransito(params)
+        else if (status === 'delivered') void notifyEmbarcadorEntregue(params)
+        else if (status === 'cancelled') void notifyEmbarcadorCancelado({ phone, carrierName: params.carrierName })
+      }
+    }
 
     return { success: true }
   } catch (e) {

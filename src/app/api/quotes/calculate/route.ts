@@ -285,9 +285,11 @@ export async function POST(request: Request) {
         const offer = {
           id: route.id,
           carrier: carrierName,
+          carrierId: route.carrier_id ?? null,
           logoUrl: (company?.logo_url as string | null) ?? null,
           price: calculateFreightTotal(route, taxableWeight, invoiceValue),
           deadline: route.deadline_days ? `${route.deadline_days} dias úteis` : 'Prazo sob consulta',
+          deadlineDays: route.deadline_days ?? null,
           type: 'Tabela Importada',
         }
 

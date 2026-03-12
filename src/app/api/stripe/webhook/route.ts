@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { upsertFreightFromCheckout } from '@/app/actions/quotes-actions'
+import { notifyEmbarcadorFretePago, notifyTransportadoraNovoFrete } from '@/lib/zapi'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -135,6 +136,10 @@ export async function POST(request: Request) {
         const userId = session.metadata?.user_id ?? ''
         const carrierName = session.metadata?.carrier_name ?? 'Transportadora'
         const carrierId = session.metadata?.carrier_id ?? undefined
+        const originZip = session.metadata?.origin_zip ?? ''
+        const destZip = session.metadata?.dest_zip ?? ''
+        const deadlineDays = session.metadata?.deadline_days ? Number(session.metadata.deadline_days) : null
+        const taxableWeight = session.metadata?.taxable_weight ? Number(session.metadata.taxable_weight) : null
         const paymentIntentId =
           typeof session.payment_intent === 'string' ? session.payment_intent : undefined
         const price = (session.amount_total ?? 0) / 100
@@ -163,6 +168,52 @@ export async function POST(request: Request) {
             stripe_updated_at: new Date().toISOString(),
           })
         }
+
+        // Notificações WhatsApp Z-API (fire-and-forget)
+        if (userId) {
+          const admin = createAdminClient()
+
+          // Embarcador
+          const { data: embarcadorProfile } = await admin
+            .from('profiles')
+            .select('phone')
+            .eq('id', userId)
+            .maybeSingle()
+
+          const embarcadorPhone = embarcadorProfile?.phone?.replace(/\D/g, '')
+          if (embarcadorPhone && embarcadorPhone.length >= 10) {
+            void notifyEmbarcadorFretePago({
+              phone: embarcadorPhone,
+              carrierName,
+              originZip,
+              destZip,
+              deadlineDays,
+              price,
+            })
+          }
+
+          // Transportadora (busca pelo carrierId)
+          if (carrierId) {
+            const { data: carrierProfile } = await admin
+              .from('profiles')
+              .select('phone')
+              .eq('id', carrierId)
+              .maybeSingle()
+
+            const carrierPhone = carrierProfile?.phone?.replace(/\D/g, '')
+            if (carrierPhone && carrierPhone.length >= 10) {
+              void notifyTransportadoraNovoFrete({
+                phone: carrierPhone,
+                originZip,
+                destZip,
+                price,
+                deadlineDays,
+                taxableWeight,
+              })
+            }
+          }
+        }
+
         break
       }
 
