@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import {
   Upload, Sparkles, Loader2, CheckCircle2, TrendingUp, TrendingDown,
   Minus, Save, RotateCcw, ChevronLeft, AlertTriangle, Info,
+  FileSpreadsheet, FileText, FileImage,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -264,7 +265,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
               )}
             </div>
             <div className="space-y-2">
-              <Label>Arquivo da tabela (imagem, PDF convertido em imagem, ou screenshot)</Label>
+              <Label>Arquivo da tabela</Label>
               <div
                 className="border-2 border-dashed border-orange-200 rounded-lg p-4 text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/30 transition-all"
                 onClick={() => fileInputRef.current?.click()}
@@ -274,12 +275,20 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
                     <CheckCircle2 className="h-4 w-4" /> {file.name}
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-400">Clique para selecionar ou arraste aqui</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-center gap-3 text-gray-300">
+                      <FileSpreadsheet className="h-6 w-6" />
+                      <FileText className="h-6 w-6" />
+                      <FileImage className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm text-gray-400">Clique para selecionar ou arraste aqui</p>
+                    <p className="text-xs text-gray-300">Excel · CSV · TXT · PDF · Imagem</p>
+                  </div>
                 )}
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*,.pdf"
+                  accept=".xlsx,.xls,.csv,.txt,.tsv,.ods,image/*,.pdf"
                   className="hidden"
                   onChange={handleFileChange}
                 />

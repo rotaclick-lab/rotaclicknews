@@ -1,29 +1,13 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import * as XLSX from 'xlsx'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const EXTRACT_PROMPT = `Você é um especialista em tabelas de frete brasileiras.
-Analise a imagem desta tabela de frete e extraia TODAS as linhas/faixas de preço.
-
-Para cada linha extraia:
-- origin_zip: CEP inicial de origem (8 dígitos, sem traço). Se for UF/cidade, use o CEP central.
-- origin_zip_end: CEP final de origem (se for faixa). Pode ser null.
-- dest_zip: CEP inicial de destino (8 dígitos, sem traço).
-- dest_zip_end: CEP final de destino (se for faixa). Pode ser null.
-- origin_label: texto original de origem (ex: "SP Capital", "01000-099")
-- dest_label: texto original de destino (ex: "MG", "Belo Horizonte")
-- price_per_kg: preço por kg em reais (número decimal). Se não encontrar, use null.
-- min_price: valor mínimo de frete em reais (número decimal). Se não encontrar, use null.
-- deadline_days: prazo em dias úteis (inteiro). Se não encontrar, use 3.
-- weight_min: peso mínimo em kg para esta faixa. Pode ser null.
-- weight_max: peso máximo em kg para esta faixa. Pode ser null.
-
-Responda APENAS com JSON válido neste formato:
-{
-  "carrier_name": "nome da transportadora se visível na tabela, ou null",
+const JSON_SCHEMA = `{
+  "carrier_name": "nome da transportadora se visível, ou null",
   "rows": [
     {
       "origin_zip": "01000000",
@@ -39,12 +23,70 @@ Responda APENAS com JSON válido neste formato:
       "weight_max": null
     }
   ],
-  "confidence": "high" | "medium" | "low",
+  "confidence": "high",
   "notes": "observação opcional"
+}`
+
+const BASE_PROMPT = `Você é um especialista em tabelas de frete brasileiras.
+Analise esta tabela de frete e extraia TODAS as linhas/faixas de preço.
+
+Para cada linha extraia:
+- origin_zip: CEP inicial de origem (8 dígitos, sem traço). Se for UF/região, use o CEP central representativo.
+- origin_zip_end: CEP final de origem (se for faixa). Pode ser null.
+- dest_zip: CEP inicial de destino (8 dígitos, sem traço).
+- dest_zip_end: CEP final de destino (se for faixa). Pode ser null.
+- origin_label: texto original de origem (ex: "SP Capital", "01000-099")
+- dest_label: texto original de destino (ex: "MG", "Belo Horizonte")
+- price_per_kg: preço por kg em reais (número decimal). Se não encontrar, use null.
+- min_price: valor mínimo de frete em reais (número decimal). Se não encontrar, use null.
+- deadline_days: prazo em dias úteis (inteiro). Se não encontrar, use 3.
+- weight_min: peso mínimo em kg para esta faixa. Pode ser null.
+- weight_max: peso máximo em kg para esta faixa. Pode ser null.
+
+Responda APENAS com JSON válido neste formato:
+${JSON_SCHEMA}
+
+Se não conseguir extrair uma linha, omita-a. Nunca invente dados. Responda APENAS com o JSON.`
+
+function isImageType(mime: string, name: string): boolean {
+  if (mime.startsWith('image/')) return true
+  const ext = name.split('.').pop()?.toLowerCase()
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext ?? '')
 }
 
-Se não conseguir extrair uma linha, omita-a.
-Nunca invente dados. Responda APENAS com o JSON.`
+function isPdfType(mime: string, name: string): boolean {
+  if (mime === 'application/pdf') return true
+  return name.split('.').pop()?.toLowerCase() === 'pdf'
+}
+
+function isSpreadsheetType(mime: string, name: string): boolean {
+  const ext = name.split('.').pop()?.toLowerCase()
+  return ['xls', 'xlsx', 'csv', 'txt', 'tsv', 'ods'].includes(ext ?? '') ||
+    mime.includes('spreadsheet') || mime.includes('excel') || mime === 'text/csv' || mime === 'text/plain'
+}
+
+function spreadsheetToText(buffer: Buffer, filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase()
+
+  if (ext === 'csv' || ext === 'txt' || ext === 'tsv') {
+    return buffer.toString('utf-8')
+  }
+
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true })
+  const lines: string[] = []
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName]
+    if (!sheet) continue
+    const csv = XLSX.utils.sheet_to_csv(sheet, { FS: '\t', blankrows: false })
+    if (csv.trim()) {
+      lines.push(`=== Aba: ${sheetName} ===`)
+      lines.push(csv)
+    }
+  }
+
+  return lines.join('\n')
+}
 
 export async function POST(request: Request) {
   try {
@@ -61,24 +103,64 @@ export async function POST(request: Request) {
     if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
 
     const bytes = await file.arrayBuffer()
-    const base64 = Buffer.from(bytes).toString('base64')
-    const mimeType = file.type || 'image/png'
+    const buffer = Buffer.from(bytes)
+    const mimeType = file.type || ''
+    const fileName = file.name || ''
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: EXTRACT_PROMPT },
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
-          ],
-        },
-      ],
-      max_tokens: 4000,
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
-    })
+    let completion
+
+    if (isSpreadsheetType(mimeType, fileName)) {
+      const tableText = spreadsheetToText(buffer, fileName)
+      if (!tableText.trim()) {
+        return NextResponse.json({ error: 'Arquivo vazio ou não foi possível ler o conteúdo' }, { status: 422 })
+      }
+
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `${BASE_PROMPT}\n\nDados da tabela:\n\`\`\`\n${tableText.slice(0, 30000)}\n\`\`\``,
+          },
+        ],
+        max_tokens: 4000,
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+      })
+    } else if (isImageType(mimeType, fileName) || isPdfType(mimeType, fileName)) {
+      const base64 = buffer.toString('base64')
+      const imageMime = isPdfType(mimeType, fileName) ? 'image/png' : (mimeType || 'image/png')
+
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: BASE_PROMPT },
+              { type: 'image_url', image_url: { url: `data:${imageMime};base64,${base64}`, detail: 'high' } },
+            ],
+          },
+        ],
+        max_tokens: 4000,
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+      })
+    } else {
+      const tableText = buffer.toString('utf-8')
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: `${BASE_PROMPT}\n\nDados da tabela:\n\`\`\`\n${tableText.slice(0, 30000)}\n\`\`\``,
+          },
+        ],
+        max_tokens: 4000,
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+      })
+    }
 
     const raw = (completion.choices[0]?.message?.content ?? '').trim()
     let extracted: {
