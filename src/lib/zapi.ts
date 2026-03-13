@@ -8,7 +8,11 @@ async function sendText(phone: string, message: string): Promise<boolean> {
     return false
   }
 
-  const cleanPhone = phone.replace(/\D/g, '')
+  let cleanPhone = phone.replace(/\D/g, '')
+  // Z-API exige código do país: garante prefixo 55 (Brasil)
+  if (cleanPhone.length <= 11 && !cleanPhone.startsWith('55')) {
+    cleanPhone = '55' + cleanPhone
+  }
 
   try {
     const res = await fetch(`${BASE_URL}/send-text`, {
