@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { updatePlatformSettingsBatch } from '@/app/actions/platform-actions'
-import { Palette, Type, Globe, Settings2, Save, ImageIcon, Upload, Trash2, Loader2, Truck } from 'lucide-react'
+import { Palette, Type, Globe, Settings2, Save, ImageIcon, Upload, Trash2, Loader2, Truck, CheckCircle2 } from 'lucide-react'
 
 interface Props {
   settings: Record<string, string>
@@ -24,6 +24,8 @@ export function PersonalizacaoForm({ settings }: Props) {
   const fileInputRef404 = useRef<HTMLInputElement>(null)
   const [uploadingImgCarrier, setUploadingImgCarrier] = useState(false)
   const fileInputRefCarrier = useRef<HTMLInputElement>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const fileInputRefLogo = useRef<HTMLInputElement>(null)
 
   const handleMaintenanceImageUpload = async (file: File) => {
     setUploadingImg(true)
@@ -64,6 +66,46 @@ export function PersonalizacaoForm({ settings }: Props) {
       toast.error('Erro de conexão ao fazer upload')
     } finally {
       setUploadingImg404(false)
+    }
+  }
+
+  const handleLogoUpload = async (file: File) => {
+    setUploadingLogo(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/admin/brand-logo', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao fazer upload do logo')
+      } else {
+        set('brand_logo_url', json.url)
+        toast.success('Logotipo atualizado com sucesso!')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão ao fazer upload')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  const handleLogoRemove = async () => {
+    setUploadingLogo(true)
+    try {
+      const res = await fetch('/api/admin/brand-logo', { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? 'Erro ao remover logo')
+      } else {
+        set('brand_logo_url', '')
+        toast.success('Logotipo removido')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Erro de conexão')
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -224,12 +266,75 @@ export function PersonalizacaoForm({ settings }: Props) {
           <CardDescription>Cores, logo e nome da plataforma</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Upload do Logotipo */}
+          <div className="space-y-2">
+            <Label>Logotipo da plataforma</Label>
+            <p className="text-xs text-muted-foreground">PNG, SVG ou WebP com fundo transparente — máx. 5MB. Recomendado: altura mínima 80px.</p>
+            <input
+              ref={fileInputRefLogo}
+              type="file"
+              accept="image/png,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleLogoUpload(file)
+                e.target.value = ''
+              }}
+            />
+            {values['brand_logo_url'] ? (
+              <div className="relative rounded-xl overflow-hidden border-2 border-indigo-200 bg-indigo-950">
+                <div className="flex items-center justify-center p-6 min-h-[100px]">
+                  <img
+                    src={values['brand_logo_url']}
+                    alt="Logotipo"
+                    className="max-h-16 max-w-[240px] object-contain"
+                  />
+                </div>
+                <div className="absolute top-2 right-2 flex gap-1.5">
+                  <span className="flex items-center gap-1 bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="h-3 w-3" /> Ativo
+                  </span>
+                </div>
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
+                  <Button type="button" size="sm" variant="secondary" onClick={() => fileInputRefLogo.current?.click()} disabled={uploadingLogo}>
+                    <Upload className="h-4 w-4 mr-1" /> Trocar
+                  </Button>
+                  <Button type="button" size="sm" variant="destructive" onClick={handleLogoRemove} disabled={uploadingLogo}>
+                    <Trash2 className="h-4 w-4 mr-1" /> Remover
+                  </Button>
+                </div>
+                {uploadingLogo && (
+                  <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRefLogo.current?.click()}
+                disabled={uploadingLogo}
+                className="w-full border-2 border-dashed border-indigo-200 rounded-xl p-8 text-center hover:border-indigo-400 hover:bg-indigo-50/40 transition-colors disabled:opacity-50 bg-slate-50"
+              >
+                {uploadingLogo ? (
+                  <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-indigo-500" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 mx-auto mb-2 text-indigo-300" />
+                )}
+                <p className="text-sm font-medium text-indigo-700">
+                  {uploadingLogo ? 'Enviando logotipo...' : 'Clique para fazer upload do logo'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">PNG, SVG, WebP — máx. 5MB</p>
+              </button>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Nome da plataforma" settingKey="brand_name" placeholder="RotaClick" />
             <Field label="Slogan" settingKey="brand_tagline" placeholder="Conectando cargas e transportadoras" />
             <Field label="Cor primária" settingKey="brand_primary_color" type="color" placeholder="#2BBCB3" hint="Cor principal dos botões e destaques" />
             <Field label="Cor secundária" settingKey="brand_secondary_color" type="color" placeholder="#F5921B" hint="Cor de acentuação e CTAs secundários" />
-            <Field label="URL do Logo" settingKey="brand_logo_url" placeholder="https://..." hint="Link direto para a imagem do logo (PNG/SVG)" />
+            <Field label="URL do Logo (opcional)" settingKey="brand_logo_url" placeholder="https://..." hint="Ou cole uma URL externa do logo" />
             <Field label="URL do Favicon" settingKey="brand_favicon_url" placeholder="https://..." hint="Ícone exibido na aba do navegador" />
           </div>
 
@@ -263,7 +368,7 @@ export function PersonalizacaoForm({ settings }: Props) {
           </div>
 
           <Button
-            onClick={() => handleSave(['brand_name', 'brand_tagline', 'brand_primary_color', 'brand_secondary_color', 'brand_logo_url', 'brand_favicon_url'])}
+            onClick={() => handleSave(['brand_name', 'brand_tagline', 'brand_primary_color', 'brand_secondary_color', 'brand_favicon_url'])}
             disabled={loading}
             className="w-full md:w-auto"
           >
