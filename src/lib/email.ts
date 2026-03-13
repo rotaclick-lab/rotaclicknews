@@ -236,3 +236,46 @@ export async function emailInternaNovaCotacao(params: {
   `)
   return send({ to, subject: `📋 Nova cotação — ${clientName}`, html })
 }
+
+// ─── Transportadora: enviar template de tabela de frete ───────────────────────
+
+export async function emailTransportadoraTemplateTabela(params: {
+  to: string
+  name: string
+  companyName: string
+  cnpj: string
+}) {
+  const { to, name, companyName, cnpj } = params
+  const cnpjClean = cnpj.replace(/\D/g, '')
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rotaclick.com.br'
+  const templateUrl = `${appUrl}/api/admin/freight-routes/template?cnpj=${cnpjClean}`
+
+  const html = base(`
+    <h2 style="margin:0 0 8px;color:#111827;font-size:20px;">📋 Envie sua tabela de frete</h2>
+    <p style="color:#6b7280;margin:0 0 20px;">Olá, <strong>${name}</strong>! Seu cadastro da empresa <strong>${companyName}</strong> foi recebido pela RotaClick e está em análise.</p>
+    <p style="color:#374151;margin:0 0 16px;font-size:14px;">Para avançarmos com sua aprovação, precisamos da sua <strong>tabela de frete</strong> no nosso modelo padrão.</p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;margin-bottom:24px;">
+      <tr><td style="padding:16px 20px;">
+        <p style="margin:0 0 10px;font-size:14px;color:#374151;font-weight:bold;">Como enviar:</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;">1️⃣ Baixe o modelo abaixo — <strong>seus dados já estão preenchidos</strong></p>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;">2️⃣ Preencha as rotas, preços e prazos</p>
+        <p style="margin:0 0 8px;font-size:14px;color:#374151;">3️⃣ Envie o arquivo para um dos canais:</p>
+        <p style="margin:0 0 4px;font-size:14px;color:#374151;">&nbsp;&nbsp;&nbsp;📧 <a href="mailto:frete@rotaclick.com.br" style="color:#f97316;">frete@rotaclick.com.br</a></p>
+        <p style="margin:0;font-size:14px;color:#374151;">&nbsp;&nbsp;&nbsp;📱 WhatsApp: <a href="https://wa.me/551135142933" style="color:#f97316;">(11) 3514-2933</a></p>
+      </td></tr>
+    </table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:24px;">
+      <tr><td style="padding:12px 20px;">
+        <p style="margin:0;font-size:13px;color:#374151;">🔒 O modelo já contém seu CNPJ (<strong>${cnpjClean}</strong>) e nome da empresa. Não altere essas informações — elas identificam sua empresa automaticamente.</p>
+      </td></tr>
+    </table>
+
+    ${btn(templateUrl, '⬇️ Baixar Modelo de Tabela de Frete')}
+
+    <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;text-align:center;">Dúvidas? Entre em contato: <a href="mailto:frete@rotaclick.com.br" style="color:#f97316;">frete@rotaclick.com.br</a> | (11) 3514-2933</p>
+  `)
+
+  return send({ to, subject: `📋 ${companyName} — Envie sua tabela de frete para a RotaClick`, html })
+}

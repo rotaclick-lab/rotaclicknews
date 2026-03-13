@@ -19,6 +19,12 @@ import {
 } from '@/components/ui/select'
 import { AnalyzingOverlay } from './analyzing-overlay'
 
+interface DetectedCarrier {
+  id: string
+  name: string
+  user_id: string | null
+}
+
 interface Carrier {
   id: string
   name: string
@@ -73,21 +79,20 @@ function MarketBadge({ row }: { row: EditableRow }) {
   return <Badge className="bg-gray-100 text-gray-600 border-gray-200 text-[10px]"><Minus className="h-3 w-3 mr-1" />na média</Badge>
 }
 
-export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
+export function FreightTableAnalyzer({ carriers: _carriers }: { carriers: Carrier[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
-  const [carrierId, setCarrierId] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [rows, setRows] = useState<EditableRow[]>([])
   const [carrierName, setCarrierName] = useState<string | null>(null)
+  const [detectedCarrier, setDetectedCarrier] = useState<DetectedCarrier | null>(null)
+  const [carrierCnpj, setCarrierCnpj] = useState<string | null>(null)
   const [confidence, setConfidence] = useState<string | null>(null)
   const [notes, setNotes] = useState<string | null>(null)
   const [globalMargin, setGlobalMargin] = useState('')
   const [globalMarginType, setGlobalMarginType] = useState<'markup' | 'discount'>('markup')
   const [saved, setSaved] = useState(false)
-
-  const selectedCarrier = carriers.find(c => c.id === carrierId)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
@@ -98,9 +103,10 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
 
   const handleAnalyze = async () => {
     if (!file) { toast.error('Selecione um arquivo'); return }
-    if (!carrierId) { toast.error('Selecione a transportadora'); return }
     setAnalyzing(true)
     setSaved(false)
+    setDetectedCarrier(null)
+    setCarrierCnpj(null)
     try {
       const fd = new FormData()
       fd.append('file', file)
@@ -111,6 +117,8 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
         return
       }
       setCarrierName(json.carrier_name)
+      setDetectedCarrier(json.detected_carrier ?? null)
+      setCarrierCnpj(json.carrier_cnpj ?? null)
       setConfidence(json.confidence)
       setNotes(json.notes)
       const editable: EditableRow[] = (json.rows as AnalyzedRow[]).map(r => {
@@ -123,7 +131,13 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
         return row
       })
       setRows(editable)
-      toast.success(`${editable.length} faixas extraídas com sucesso!`)
+      if (json.detected_carrier) {
+        toast.success(`${editable.length} faixas extraídas — transportadora identificada: ${json.detected_carrier.name}`)
+      } else if (json.carrier_cnpj) {
+        toast.warning(`CNPJ ${json.carrier_cnpj} não encontrado no sistema. Revise antes de salvar.`)
+      } else {
+        toast.success(`${editable.length} faixas extraídas com sucesso!`)
+      }
     } catch {
       toast.error('Erro de conexão. Tente novamente.')
     } finally {
@@ -156,12 +170,12 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
   }
 
   const handleSave = async () => {
-    if (!carrierId) { toast.error('Selecione a transportadora'); return }
+    if (!detectedCarrier) { toast.error('Transportadora não identificada — verifique o CNPJ no arquivo'); return }
+    if (!detectedCarrier.user_id) { toast.error('Transportadora sem usuário vinculado no sistema'); return }
     const enabledRows = rows.filter(r => r.enabled)
     if (!enabledRows.length) { toast.error('Nenhuma linha habilitada'); return }
 
-    const carrier = carriers.find(c => c.id === carrierId)
-    if (!carrier?.user_id) { toast.error('Transportadora sem usuário vinculado'); return }
+    const carrier = detectedCarrier
 
     setSaving(true)
     try {
@@ -192,7 +206,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
       const res = await fetch('/api/admin/freight-routes/bulk-save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ carrier_id: carrier.user_id, rows: payload }),
+        body: JSON.stringify({ carrier_id: detectedCarrier.user_id, rows: payload }),
       })
       const json = await res.json()
       if (!res.ok || !json.success) {
@@ -212,6 +226,8 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
     setFile(null)
     setRows([])
     setCarrierName(null)
+    setDetectedCarrier(null)
+    setCarrierCnpj(null)
     setConfidence(null)
     setNotes(null)
     setSaved(false)
@@ -250,21 +266,32 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Transportadora</Label>
-              <Select value={carrierId} onValueChange={setCarrierId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a transportadora..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {carriers.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {carrierId && !selectedCarrier?.user_id && (
-                <p className="text-xs text-amber-600 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" /> Transportadora sem usuário vinculado
-                </p>
-              )}
+              <div className={cn(
+                'rounded-lg border px-4 py-3 text-sm',
+                detectedCarrier
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : carrierCnpj
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-gray-50 border-gray-200 text-gray-400'
+              )}>
+                {detectedCarrier ? (
+                  <span className="flex items-center gap-2 font-medium">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                    {detectedCarrier.name}
+                    {carrierCnpj && <span className="font-normal text-green-600 text-xs">CNPJ {carrierCnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')}</span>}
+                  </span>
+                ) : carrierCnpj ? (
+                  <span className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                    CNPJ {carrierCnpj} não cadastrado
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Info className="h-4 w-4 shrink-0" />
+                    Identificada automaticamente pelo CNPJ do arquivo
+                  </span>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Arquivo da tabela</Label>
@@ -300,7 +327,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
           <div className="flex gap-3">
             <Button
               onClick={handleAnalyze}
-              disabled={analyzing || !file || !carrierId}
+              disabled={analyzing || !file}
               className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               {analyzing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
@@ -325,7 +352,12 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
             </Badge>
             <span className="text-sm text-gray-600">{rows.length} faixas extraídas</span>
             <span className="text-sm text-gray-600">{rows.filter(r => r.enabled).length} habilitadas</span>
-            {carrierName && <span className="text-sm text-gray-500">Transportadora detectada: <strong>{carrierName}</strong></span>}
+            {detectedCarrier && (
+            <span className="text-sm text-green-700 flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" /> {detectedCarrier.name}
+            </span>
+          )}
+          {!detectedCarrier && carrierName && <span className="text-sm text-gray-500">Detectada: <strong>{carrierName}</strong></span>}
             {notes && (
               <span className="text-xs text-gray-400 flex items-center gap-1">
                 <Info className="h-3 w-3" /> {notes}
@@ -474,7 +506,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
           {/* Ações finais */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              {rows.filter(r => r.enabled).length} de {rows.length} faixas serão salvas para <strong>{selectedCarrier?.name}</strong>
+              {rows.filter(r => r.enabled).length} de {rows.length} faixas serão salvas para <strong>{detectedCarrier?.name ?? '—'}</strong>
             </p>
             <div className="flex gap-3">
               {saved && (
@@ -484,7 +516,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
               )}
               <Button
                 onClick={handleSave}
-                disabled={saving || rows.filter(r => r.enabled).length === 0 || !selectedCarrier?.user_id}
+                disabled={saving || rows.filter(r => r.enabled).length === 0 || !detectedCarrier?.user_id}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}

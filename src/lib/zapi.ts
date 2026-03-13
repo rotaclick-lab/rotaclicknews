@@ -140,3 +140,28 @@ export async function notifyTransportadoraComprovanteRequerido(params: {
     `https://rotaclick.com.br/dashboard`
   return sendText(phone, msg)
 }
+
+export async function notifyTransportadoraEnviarTabela(params: {
+  phone: string
+  name: string
+  companyName: string
+  cnpj: string
+}) {
+  const { phone, name, companyName, cnpj } = params
+  const cnpjClean = cnpj.replace(/\D/g, '')
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rotaclick.com.br'
+  const templateUrl = `${appUrl}/api/admin/freight-routes/template?cnpj=${cnpjClean}`
+  const msg =
+    `🎉 Olá *${name}*! Cadastro da *${companyName}* recebido na RotaClick!\n\n` +
+    `Para avançarmos com sua aprovação, precisamos da sua *tabela de frete* no nosso modelo padrão.\n\n` +
+    `📋 *Como enviar:*\n` +
+    `1️⃣ Baixe o modelo com seus dados já preenchidos:\n` +
+    `${templateUrl}\n\n` +
+    `2️⃣ Preencha as rotas, preços e prazos\n\n` +
+    `3️⃣ Envie o arquivo preenchido para:\n` +
+    `📧 frete@rotaclick.com.br\n` +
+    `📱 WhatsApp: (11) 3514-2933\n\n` +
+    `⚠️ Não altere o CNPJ no arquivo — ele identifica sua empresa automaticamente.\n\n` +
+    `Dúvidas? Estamos aqui! 😊`
+  return sendText(phone, msg)
+}

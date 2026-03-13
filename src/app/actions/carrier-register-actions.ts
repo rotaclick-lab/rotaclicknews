@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getFriendlyError } from '@/lib/error-utils'
+import { emailTransportadoraTemplateTabela } from '@/lib/email'
+import { notifyTransportadoraEnviarTabela } from '@/lib/zapi'
 
 interface CarrierRegistrationData {
   // Responsável
@@ -365,6 +367,22 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
         type: 'system',
         is_read: false,
       })
+
+    // Disparar e-mail + WhatsApp com template pré-preenchido (fire-and-forget)
+    void emailTransportadoraTemplateTabela({
+      to: data.email,
+      name: data.nomeCompleto,
+      companyName: data.razaoSocial,
+      cnpj: data.cnpj,
+    })
+    if (data.telefone) {
+      void notifyTransportadoraEnviarTabela({
+        phone: data.telefone,
+        name: data.nomeCompleto,
+        companyName: data.razaoSocial,
+        cnpj: data.cnpj,
+      })
+    }
 
     return { 
       success: true, 

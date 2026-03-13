@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/app/api/rate-limit'
-import { normalizeCepToRegion } from '@/lib/shipping-regions'
 import { cepToUf, ufToRegion } from '@/lib/cep-to-uf'
 
 type QuoteRequestBody = {
@@ -139,68 +138,22 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
 
-    // Normalizar CEPs para regiões antes de buscar
-    const originRegionCep = await normalizeCepToRegion(originDigits)
-    const destRegionCep = await normalizeCepToRegion(destinationDigits)
+    // ── Busca primária: RPC match_freight_routes (range lookup definitivo) ────
+    // A função SQL verifica: origin_zip <= CEP <= origin_zip_end
+    // Cobre CEPs exatos, faixas de CEP e UFs completos corretamente.
+    const { data: rpcRoutes, error: rpcError } = await admin
+      .rpc('match_freight_routes', {
+        p_origin_zip: originDigits,
+        p_dest_zip: destinationDigits,
+      })
 
-    // Detecta UFs a partir dos CEPs para incluir como variante na busca
-    const originUfDirect = cepToUf(originDigits)
-    const destUfDirect = cepToUf(destinationDigits)
+    let routes: typeof rpcRoutes = rpcRoutes ?? []
 
-    // Inclui dígitos puros, CEP normalizado por região, e UF — máxima cobertura no nível 1
-    const originVariants = Array.from(new Set([
-      originDigits,
-      originRegionCep,
-      originRegionCep.replace(/\D/g, ''),
-      originUfDirect,
-    ].filter(Boolean) as string[]))
-    const destinationVariants = Array.from(new Set([
-      destinationDigits,
-      destRegionCep,
-      destRegionCep.replace(/\D/g, ''),
-      destUfDirect,
-    ].filter(Boolean) as string[]))
-
-    console.log('Debug - Cotação:', { 
-      originDigits, 
-      destinationDigits, 
-      originRegionCep, 
-      destRegionCep, 
-      originVariants, 
-      destinationVariants 
-    })
-
-    // Busca exata primeiro
-    let { data: routes, error: routesError } = await admin
-      .from('freight_routes')
-      .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
-      .in('origin_zip', originVariants)
-      .in('dest_zip', destinationVariants)
-      .or('is_active.is.null,is_active.eq.true')
-
-    console.log('Debug - Rotas encontradas (busca exata):', routes?.length || 0, routesError)
-    console.log('Debug - Exemplo de rotas no banco:', routes?.slice(0, 2))
-
-    if (routesError) {
-      console.error('Erro ao consultar freight_routes:', routesError)
-      return NextResponse.json({ success: false, error: 'Erro ao consultar tabela de frete.' }, { status: 500 })
+    if (rpcError) {
+      console.error('Erro RPC match_freight_routes:', rpcError)
     }
 
-    // Fallback 1: busca por prefixo de 5 dígitos
-    if (!routes || routes.length === 0) {
-      const originPrefix = originDigits.slice(0, 5)
-      const destPrefix = destinationDigits.slice(0, 5)
-      const { data: prefixRoutes } = await admin
-        .from('freight_routes')
-        .select('id, carrier_id, origin_zip, dest_zip, min_price, price_per_kg, deadline_days, rate_card')
-        .like('origin_zip', `${originPrefix}%`)
-        .like('dest_zip', `${destPrefix}%`)
-        .or('is_active.is.null,is_active.eq.true')
-        .limit(50)
-      routes = prefixRoutes ?? []
-    }
-
-    // Fallback 2: busca por UF (ex: transportadora cadastrou "SP" → "RJ")
+    // ── Fallback 1: busca por UF (rotas cadastradas só com origin_uf/dest_uf) ─
     if (!routes || routes.length === 0) {
       const originUf = cepToUf(originDigits)
       const destUf = cepToUf(destinationDigits)
@@ -216,7 +169,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // Fallback 3: busca por macro-região (ex: "sudeste" → "nordeste")
+    // ── Fallback 2: busca por macro-região ────────────────────────────────────
     if (!routes || routes.length === 0) {
       const originUf = cepToUf(originDigits)
       const destUf = cepToUf(destinationDigits)
