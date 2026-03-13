@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Building2, Mail, MapPin, Phone, ShieldCheck, UserRound } from 'lucide-react'
+import { Mail, MapPin, Phone, ShieldCheck, UserRound } from 'lucide-react'
+import { Logo } from '@/components/ui/logo'
 
 type PersonType = 'pf' | 'pj'
 
@@ -503,11 +504,8 @@ export default function CadastroUsuarioPage() {
     <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10">
       <div className="mx-auto w-full max-w-[900px] flex flex-col items-center">
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="size-10 bg-brand-500 rounded-lg flex items-center justify-center text-white">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <h2 className="text-[#11211f] text-3xl font-bold tracking-tight">RotaClick</h2>
+          <div className="flex justify-center mb-6">
+            <Logo width={200} height={64} className="h-14 w-auto object-contain" priority />
           </div>
           <h1 className="text-[#11211f] text-3xl md:text-4xl font-extrabold leading-tight mb-2">Cadastro de Usuário</h1>
           <p className="text-[#4a5568] text-lg font-medium">Crie sua conta para acessar a plataforma de logística</p>
