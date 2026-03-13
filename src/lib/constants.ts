@@ -21,6 +21,7 @@ import {
   Plug,
   ImageIcon,
   Mail,
+  Sparkles,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -99,6 +100,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
   { title: 'Aprovações', href: '/admin/aprovacoes', icon: ClipboardCheck, description: 'Fila de aprovação de cadastros' },
   { title: 'Repasses', href: '/admin/repasses', icon: Banknote, description: 'Pagamentos às transportadoras' },
   { title: 'Tabelas de Frete', href: '/admin/tabela-frete', icon: DollarSign, description: 'Rotas por transportador' },
+  { title: 'Analisar Tabela com IA', href: '/admin/analisar-tabela', icon: Sparkles, description: 'Extrai faixas e sugere margens com IA' },
   { title: 'Campanhas', href: '/admin/campanhas', icon: Megaphone, description: 'Banners e destaques na home' },
   { title: 'Imagens de Fundo', href: '/admin/bg-images', icon: ImageIcon, description: 'Imagens de fundo da home por dispositivo' },
   { title: 'Personalização', href: '/admin/personalizacao', icon: Paintbrush, description: 'Cores, logo e textos' },
