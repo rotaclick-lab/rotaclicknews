@@ -10,6 +10,7 @@ interface CarrierRegistrationData {
   nomeCompleto: string
   cpf: string
   telefone: string
+  whatsapp: string
   // Empresa
   razaoSocial: string
   cnpj: string
@@ -375,9 +376,10 @@ async function _registerCarrierImpl(data: CarrierRegistrationData) {
       companyName: data.razaoSocial,
       cnpj: data.cnpj,
     })
-    if (data.telefone) {
+    const whatsappPhone = data.whatsapp || data.telefone
+    if (whatsappPhone) {
       void notifyTransportadoraEnviarTabela({
-        phone: data.telefone,
+        phone: whatsappPhone,
         name: data.nomeCompleto,
         companyName: data.razaoSocial,
         cnpj: data.cnpj,

@@ -54,6 +54,7 @@ interface FormData {
   nomeCompleto: string
   cpf: string
   telefone: string
+  whatsapp: string
   razaoSocial: string
   cnpj: string
   logoFile: File | null
@@ -90,6 +91,8 @@ interface FormData {
 
 interface FieldErrors {
   cpf?: string | undefined
+  telefone?: string | undefined
+  whatsapp?: string | undefined
   cep?: string | undefined
   inscricaoEstadual?: string | undefined
   rntrc?: string | undefined
@@ -111,7 +114,7 @@ export default function RegistroPage() {
   const [cepLoading, setCepLoading] = useState(false)
   const [cepValid, setCepValid] = useState<boolean | null>(null)
   const [form, setForm] = useState<FormData>({
-    nomeCompleto: '', cpf: '', telefone: '',
+    nomeCompleto: '', cpf: '', telefone: '', whatsapp: '',
     razaoSocial: '', cnpj: '', logoFile: null, inscricaoEstadual: '', rntrc: '',
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '',
     tipoVeiculo: '', tipoCarroceria: '', capacidadeCarga: '', raioOperacao: '',
@@ -267,6 +270,14 @@ export default function RegistroPage() {
   const validateStep1 = (): boolean => {
     const newErrors: FieldErrors = {}
     const cpfClean = form.cpf.replace(/\D/g, '')
+    const telefoneClean = form.telefone.replace(/\D/g, '')
+    if (!telefoneClean || telefoneClean.length < 10) {
+      newErrors.telefone = 'Telefone obrigatório e deve ter DDD + número.'
+    }
+    const whatsappClean = form.whatsapp.replace(/\D/g, '')
+    if (!whatsappClean || whatsappClean.length < 10) {
+      newErrors.whatsapp = 'WhatsApp obrigatório e deve ter DDD + número.'
+    }
     if (cpfClean.length === 11 && !validateCPF(form.cpf)) {
       newErrors.cpf = 'CPF inválido. Verifique os dígitos.'
     }
@@ -356,6 +367,7 @@ export default function RegistroPage() {
         nomeCompleto: form.nomeCompleto,
         cpf: form.cpf,
         telefone: form.telefone,
+        whatsapp: form.whatsapp,
         // Empresa
         razaoSocial: form.razaoSocial,
         cnpj: form.cnpj,
@@ -503,14 +515,34 @@ export default function RegistroPage() {
                       {form.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && successIndicator(true)}
                     </div>
                     <div>
-                      <label className="block text-[18px] font-medium text-slate-700 mb-2">Telefone</label>
+                      <label className="block text-[18px] font-medium text-slate-700 mb-2">
+                        Telefone <span className="text-red-500">*</span>
+                      </label>
                       <input
-                        className={inputClass()}
+                        className={inputClass(!!errors.telefone)}
                         placeholder="(00) 00000-0000"
                         value={form.telefone}
                         onChange={e => set('telefone', maskPhone(e.target.value))}
                         maxLength={15}
                       />
+                      {errorMessage('telefone')}
+                    </div>
+                    <div>
+                      <label className="block text-[18px] font-medium text-slate-700 mb-2">
+                        WhatsApp <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-500 text-lg">📱</span>
+                        <input
+                          className={`${inputClass(!!errors.whatsapp)} pl-9`}
+                          placeholder="(00) 00000-0000"
+                          value={form.whatsapp}
+                          onChange={e => set('whatsapp', maskPhone(e.target.value))}
+                          maxLength={15}
+                        />
+                      </div>
+                      {errorMessage('whatsapp')}
+                      <p className="text-xs text-slate-400 mt-1">Usado para envio do modelo de tabela e comunicações</p>
                     </div>
                   </div>
                 </div>
