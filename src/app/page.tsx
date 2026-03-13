@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut, Sparkles } from 'lucide-react'
+import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut, Sparkles, FileText, MessageSquare, PenLine, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
 import { toast } from 'sonner'
@@ -135,14 +135,21 @@ export default function HomePage() {
     supabase.auth.getUser().then(({ data: { user: u } }) => {
       if (!u) { setAuthLoading(false); return }
       const meta = u.user_metadata ?? {}
-      supabase.from('profiles').select('full_name, avatar_url, role').eq('id', u.id).single()
+      supabase.from('profiles').select('full_name, avatar_url, role, phone').eq('id', u.id).single()
         .then(({ data: p }) => {
+          const name = p?.full_name || meta.full_name || meta.name || u.email?.split('@')[0] || 'Usuário'
+          const email = u.email ?? ''
+          const phone = p?.phone || meta.phone || ''
           setAuthUser({
-            name: p?.full_name || meta.full_name || meta.name || u.email?.split('@')[0] || 'Usuário',
-            email: u.email ?? '',
+            name,
+            email,
             avatarUrl: p?.avatar_url || meta.avatar_url || '',
             role: p?.role || meta.role || 'cliente',
           })
+          setContact({ name, email, phone })
+          if (name && email) {
+            setStep(2)
+          }
           setAuthLoading(false)
         })
     })
@@ -199,6 +206,49 @@ export default function HomePage() {
     setContactErrors(errors)
     return valid
   }
+
+  const saveLead = (name: string, email: string, phone: string) => {
+    fetch('/api/quotes/funnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contactName: name, contactEmail: email, contactPhone: phone }),
+    }).catch(() => {})
+  }
+
+  const handleAiFill = async () => {
+    if (!aiText.trim()) return
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/ai/parse-freight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ freeText: aiText }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        toast.error('Não foi possível interpretar. Tente novamente.')
+        return
+      }
+      const d = json.data
+      const fmt = (cep: string) => { const c = cep.replace(/\D/g, '').slice(0, 8); return c.length === 8 ? `${c.slice(0, 5)}-${c.slice(5)}` : c }
+      if (d.originCep) setOrigin(fmt(d.originCep))
+      if (d.destCep) setDestination(fmt(d.destCep))
+      if (d.weight != null) setItems([{ quantity: 1, weight: d.weight, height: 0, width: 0, depth: 0 }])
+      if (d.invoiceValue != null) setCargo((prev) => ({ ...prev, invoiceValue: d.invoiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }))
+      if (d.category) setCargo((prev) => ({ ...prev, category: d.category }))
+      if (d.confidence === 'low') toast.info('Alguns campos não foram identificados — verifique e complete os dados.')
+      else toast.success('Campos preenchidos! Verifique e complete se necessário.')
+      setFillMode('manual')
+    } catch {
+      toast.error('Erro de conexão. Tente novamente.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const [fillMode, setFillMode] = useState<null | 'nf' | 'ai' | 'manual'>(null)
+  const [aiText, setAiText] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
 
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
@@ -720,7 +770,13 @@ export default function HomePage() {
                     />
                     <Button
                       className="bg-brand-500 hover:bg-brand-600 text-white font-bold"
-                      onClick={() => { if (validateContact()) setStep(2) }}
+                      onClick={() => {
+                        if (validateContact()) {
+                          saveLead(contact.name, contact.email, contact.phone)
+                          setFillMode(null)
+                          setStep(2)
+                        }
+                      }}
                     >
                       Próximo Passo <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -732,45 +788,144 @@ export default function HomePage() {
             {/* Step 2: Route + Cargo */}
             {step === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                <Card className="border-orange-300 bg-white shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Sparkles className="h-5 w-5 text-orange-500" />
-                      Preencher automaticamente com IA
-                      <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-medium">Recomendado</span>
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">Envie a foto ou PDF da sua NF e preencheremos CEPs, peso e valor automaticamente.</p>
-                  </CardHeader>
-                  <CardContent>
-                    <NfScanner
-                      onExtracted={(data) => {
-                        if (data.weight != null) {
-                          setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
-                        }
-                        if (data.invoiceValue != null) {
-                          setCargo((prev) => ({
-                            ...prev,
-                            invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-                          }))
-                        }
-                        if (data.originCep) {
-                          const d = data.originCep.replace(/\D/g, '').slice(0, 8)
-                          if (d.length === 8) setOrigin(`${d.slice(0, 5)}-${d.slice(5)}`)
-                        }
-                        if (data.destCep) {
-                          const d = data.destCep.replace(/\D/g, '').slice(0, 8)
-                          if (d.length === 8) setDestination(`${d.slice(0, 5)}-${d.slice(5)}`)
-                        }
-                      }}
-                    />
-                  </CardContent>
-                </Card>
 
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex-1 h-px bg-border" />
-                  <span>ou preencha manualmente</span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
+                {/* Tela de escolha */}
+                {fillMode === null && (
+                  <Card className="border-brand-100 bg-white shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-brand-500" />
+                        Como deseja preencher os dados do frete?
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">Escolha a forma mais prática para você</p>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <button
+                        onClick={() => setFillMode('nf')}
+                        className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-orange-200 bg-orange-50/40 hover:border-orange-400 hover:bg-orange-50 transition-all text-left group"
+                      >
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100 group-hover:bg-orange-200 transition-colors">
+                          <FileText className="h-6 w-6 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800 flex items-center gap-2">
+                            Escanear Nota Fiscal
+                            <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">Recomendado</span>
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">CEPs, peso e valor preenchidos automaticamente pela IA</p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setFillMode('ai')}
+                        className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-blue-200 bg-blue-50/40 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                      >
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                          <MessageSquare className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">Descrever com IA</p>
+                          <p className="text-xs text-gray-500 mt-1">Descreva o frete em uma frase e a IA preenche os campos</p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setFillMode('manual')}
+                        className="flex flex-col items-center gap-3 p-5 rounded-xl border-2 border-gray-200 bg-gray-50/40 hover:border-gray-400 hover:bg-gray-50 transition-all text-left group"
+                      >
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                          <PenLine className="h-6 w-6 text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">Preencher manualmente</p>
+                          <p className="text-xs text-gray-500 mt-1">Informe origem, destino e detalhes da carga nos campos</p>
+                        </div>
+                      </button>
+                    </CardContent>
+                    <div className="px-6 pb-4">
+                      <button onClick={() => { setStep(1); setFillMode(null) }} className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600">
+                        <ChevronLeft className="h-4 w-4" /> Voltar para dados de contato
+                      </button>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Modo: NF Scanner */}
+                {fillMode === 'nf' && (
+                  <>
+                    <Card className="border-orange-300 bg-white shadow-sm">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <FileText className="h-5 w-5 text-orange-500" />
+                            Escanear Nota Fiscal
+                          </CardTitle>
+                          <button onClick={() => setFillMode(null)} className="text-xs text-gray-400 hover:text-gray-600 underline">Trocar método</button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Envie a foto ou PDF da sua NF — preencheremos CEPs, peso e valor automaticamente.</p>
+                      </CardHeader>
+                      <CardContent>
+                        <NfScanner
+                          onExtracted={(data) => {
+                            if (data.weight != null) setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
+                            if (data.invoiceValue != null) setCargo((prev) => ({ ...prev, invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }))
+                            if (data.originCep) { const d = data.originCep.replace(/\D/g, '').slice(0, 8); if (d.length === 8) setOrigin(`${d.slice(0, 5)}-${d.slice(5)}`) }
+                            if (data.destCep) { const d = data.destCep.replace(/\D/g, '').slice(0, 8); if (d.length === 8) setDestination(`${d.slice(0, 5)}-${d.slice(5)}`) }
+                            setFillMode('manual')
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <div className="flex-1 h-px bg-border" />
+                      <span>confirme ou complete os dados abaixo</span>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+                  </>
+                )}
+
+                {/* Modo: IA texto livre */}
+                {fillMode === 'ai' && (
+                  <>
+                    <Card className="border-blue-300 bg-white shadow-sm">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-base">
+                            <MessageSquare className="h-5 w-5 text-blue-500" />
+                            Descrever com IA
+                          </CardTitle>
+                          <button onClick={() => setFillMode(null)} className="text-xs text-gray-400 hover:text-gray-600 underline">Trocar método</button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Descreva o frete em linguagem natural — a IA extrai os dados automaticamente.</p>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <textarea
+                          className="w-full rounded-lg border border-blue-200 bg-blue-50/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                          rows={3}
+                          placeholder='Ex: "30kg de eletrônicos de São Paulo para Belo Horizonte, nota fiscal de R$ 2.000"'
+                          value={aiText}
+                          onChange={(e) => setAiText(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiFill() } }}
+                        />
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-400">Pressione Enter para enviar</p>
+                          <Button
+                            onClick={handleAiFill}
+                            disabled={aiLoading || !aiText.trim()}
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                          >
+                            {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                            {aiLoading ? 'Interpretando...' : 'Preencher com IA'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
+
+                {/* Campos manuais — visíveis nos modos 'manual' e 'nf' (após scan) */}
+                {(fillMode === 'manual' || fillMode === 'nf') && (
+                  <>
 
                 <Card className="border-brand-100">
                   <CardHeader>
@@ -919,7 +1074,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex justify-between pt-4">
-                      <Button variant="outline" onClick={() => setStep(1)} className="border-brand-200 text-brand-700 hover:bg-brand-50">
+                      <Button variant="outline" onClick={() => { setStep(1); setFillMode(null) }} className="border-brand-200 text-brand-700 hover:bg-brand-50">
                         <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                       </Button>
                       <Button
@@ -932,6 +1087,8 @@ export default function HomePage() {
                     </div>
                   </CardContent>
                 </Card>
+                  </>
+                )}
               </div>
             )}
 
