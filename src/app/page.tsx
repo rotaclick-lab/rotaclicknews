@@ -65,8 +65,9 @@ const BG_CACHE_KEY = 'rc_bg'
 const BG_CACHE_TTL = 15 * 60 * 1000 // 15 min
 
 function useRandomBg() {
-  const [bgUrl, setBgUrl] = useState('/images/bg.webp')
+  const [bgUrl, setBgUrl] = useState('')
   const [bgReady, setBgReady] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768
@@ -111,7 +112,13 @@ function useRandomBg() {
       .catch(() => setBgReady(true))
   }, [])
 
-  return { bgUrl, bgReady }
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return { bgUrl, bgReady, scrolled }
 }
 
 interface AuthUser {
@@ -125,7 +132,7 @@ export default function HomePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isDemoMode = searchParams.get('demo') === '1'
-  const { bgUrl, bgReady } = useRandomBg()
+  const { bgUrl, bgReady, scrolled } = useRandomBg()
 
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -1285,6 +1292,19 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* Card flutuante com logo — aparece ao rolar */}
+      <div
+        className={`fixed bottom-5 left-5 z-40 transition-all duration-300 ${
+          scrolled ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg shadow-brand-200/40 border border-brand-100 px-4 py-3 flex items-center gap-3">
+          <Logo width={140} height={44} className="h-9 w-auto object-contain" />
+          <div className="h-7 w-px bg-brand-100" />
+          <span className="text-xs font-semibold text-brand-600 leading-tight whitespace-nowrap">Do clique<br />à entrega.</span>
+        </div>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-brand-100 py-6 bg-white">
