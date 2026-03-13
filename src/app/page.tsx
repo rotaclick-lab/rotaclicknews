@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut } from 'lucide-react'
+import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createCheckoutSession } from '@/app/actions/stripe-actions'
 import { toast } from 'sonner'
@@ -732,6 +732,46 @@ export default function HomePage() {
             {/* Step 2: Route + Cargo */}
             {step === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                <Card className="border-orange-200 bg-orange-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Sparkles className="h-5 w-5 text-orange-500" />
+                      Preencher automaticamente com IA
+                      <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-medium">Recomendado</span>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">Envie a foto ou PDF da sua NF e preencheremos CEPs, peso e valor automaticamente.</p>
+                  </CardHeader>
+                  <CardContent>
+                    <NfScanner
+                      onExtracted={(data) => {
+                        if (data.weight != null) {
+                          setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
+                        }
+                        if (data.invoiceValue != null) {
+                          setCargo((prev) => ({
+                            ...prev,
+                            invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+                          }))
+                        }
+                        if (data.originCep) {
+                          const d = data.originCep.replace(/\D/g, '').slice(0, 8)
+                          if (d.length === 8) setOrigin(`${d.slice(0, 5)}-${d.slice(5)}`)
+                        }
+                        if (data.destCep) {
+                          const d = data.destCep.replace(/\D/g, '').slice(0, 8)
+                          if (d.length === 8) setDestination(`${d.slice(0, 5)}-${d.slice(5)}`)
+                        }
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex-1 h-px bg-border" />
+                  <span>ou preencha manualmente</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
                 <Card className="border-brand-100">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -781,28 +821,7 @@ export default function HomePage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <NfScanner
-                      onExtracted={(data) => {
-                        if (data.weight != null) {
-                          setItems([{ quantity: data.quantity ?? 1, weight: data.weight, height: 0, width: 0, depth: 0 }])
-                        }
-                        if (data.invoiceValue != null) {
-                          setCargo((prev) => ({
-                            ...prev,
-                            invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-                          }))
-                        }
-                        if (data.originCep) {
-                          const d = data.originCep.replace(/\D/g, '').slice(0, 8)
-                          if (d.length === 8) setOrigin(`${d.slice(0, 5)}-${d.slice(5)}`)
-                        }
-                        if (data.destCep) {
-                          const d = data.destCep.replace(/\D/g, '').slice(0, 8)
-                          if (d.length === 8) setDestination(`${d.slice(0, 5)}-${d.slice(5)}`)
-                        }
-                      }}
-                    />
-                    <div className="border-t border-brand-100 pt-4" />
+                    <div />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Categoria</Label>
