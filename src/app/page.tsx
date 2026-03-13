@@ -732,7 +732,7 @@ export default function HomePage() {
             {/* Step 2: Route + Cargo */}
             {step === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                <Card className="border-orange-200 bg-orange-50/30">
+                <Card className="border-orange-300 bg-white shadow-sm">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Sparkles className="h-5 w-5 text-orange-500" />
