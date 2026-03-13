@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Logo } from '@/components/ui/logo'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, Package, MapPin, Calculator, ChevronRight, ChevronLeft, CheckCircle2, CreditCard, Truck, Calendar, UserCircle, ChevronDown, LayoutDashboard, LogOut, Sparkles, FileText, MessageSquare, PenLine, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -519,9 +520,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 w-full border-b border-brand-100 bg-white/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center">
-            <Image
-              src="/logo.png"
-              alt="RotaClick"
+            <Logo
               width={160}
               height={50}
               className="h-10 w-auto object-contain"
@@ -1291,9 +1290,7 @@ export default function HomePage() {
       <footer className="border-t border-brand-100 py-6 bg-white">
         <div className="container flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center">
-            <Image
-              src="/logo.png"
-              alt="RotaClick"
+            <Logo
               width={130}
               height={41}
               className="h-8 w-auto object-contain"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { Logo } from '@/components/ui/logo'
 import { useSearchParams } from 'next/navigation'
 
 export default function RegistroSucessoPage() {
@@ -31,7 +31,7 @@ export default function RegistroSucessoPage() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/60 p-10 text-center">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <Image src="/logo.png" alt="RotaClick" width={180} height={57} priority />
+            <Logo width={180} height={57} priority />
           </div>
 
           {/* Ícone de sucesso */}

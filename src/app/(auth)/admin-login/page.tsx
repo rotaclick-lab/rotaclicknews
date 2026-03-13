@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import { Logo } from '@/components/ui/logo'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Shield, ArrowLeft, Loader2 } from 'lucide-react'
@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
         <Card className="rounded-2xl border-brand-100 bg-white/95 shadow-xl shadow-brand-200/30 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <div className="flex justify-center mb-2">
-              <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
+              <Logo width={220} height={70} className="h-16 w-auto object-contain" priority />
             </div>
             <div className="flex justify-center">
               <div className="flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 border border-red-100">

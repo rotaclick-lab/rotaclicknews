@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { Logo } from '@/components/ui/logo'
 import { LayoutDashboard, Package, HeadphonesIcon, UserCircle, Plus, LogOut } from 'lucide-react'
 import { logout } from '@/app/actions/auth-actions'
 
@@ -23,7 +23,7 @@ export function ClienteSidebar() {
         {/* Logo */}
         <div className="px-5 py-5 border-b border-slate-100">
           <Link href="/cliente">
-            <Image src="/logo.png" alt="RotaClick" width={120} height={38} className="h-8 w-auto object-contain" />
+            <Logo width={120} height={38} className="h-8 w-auto object-contain" />
           </Link>
         </div>
 

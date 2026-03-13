@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react'
 
-import Image from 'next/image'
+import { Logo } from '@/components/ui/logo'
 
 import Link from 'next/link'
 
@@ -272,7 +272,7 @@ export default function TransportadoraPage() {
 
           <div className="flex justify-center mb-4">
 
-            <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
+            <Logo width={220} height={70} className="h-16 w-auto object-contain" priority />
 
           </div>
 

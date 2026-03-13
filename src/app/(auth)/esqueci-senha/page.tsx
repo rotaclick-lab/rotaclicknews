@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import { Logo } from '@/components/ui/logo'
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
       <Card className="w-full rounded-2xl border-brand-100 bg-white/95 shadow-xl shadow-brand-200/30 backdrop-blur-sm">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-2">
-            <Image src="/logo.png" alt="RotaClick" width={220} height={70} className="h-16 w-auto object-contain" priority />
+            <Logo width={220} height={70} className="h-16 w-auto object-contain" priority />
           </div>
           <CardTitle className="text-2xl font-bold text-brand-700">Esqueceu sua senha?</CardTitle>
           <CardDescription>
