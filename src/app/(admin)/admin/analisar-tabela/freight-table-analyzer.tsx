@@ -17,6 +17,7 @@ import Link from 'next/link'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { AnalyzingOverlay } from './analyzing-overlay'
 
 interface Carrier {
   id: string
@@ -219,6 +220,7 @@ export function FreightTableAnalyzer({ carriers }: { carriers: Carrier[] }) {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      {analyzing && <AnalyzingOverlay filename={file?.name ?? 'tabela'} />}
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin/tabela-frete">
