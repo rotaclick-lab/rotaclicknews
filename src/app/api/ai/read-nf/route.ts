@@ -9,12 +9,18 @@ Analise a imagem da nota fiscal e extraia as seguintes informações:
 1. Peso total da carga (em kg) — procure por "Peso Bruto", "Peso Liq.", "Peso Total" ou campos similares
 2. Valor total da NF (em reais) — procure por "Valor Total da Nota", "Total da NF" ou campo similar
 3. Quantidade de volumes/itens — procure por "Qtd Vol.", "Quantidade de Volumes" ou campo similar
+4. CEP do remetente (emitente/expedidor) — procure no bloco "EMITENTE" ou "REMETENTE", campo CEP (formato 00000-000 ou 00000000)
+5. CEP do destinatário — procure no bloco "DESTINATÁRIO" ou "DESTINATARIO", campo CEP (formato 00000-000 ou 00000000)
+
+Retorne os CEPs APENAS com os 8 dígitos numéricos, sem traço ou formatação. Ex: "01310100".
 
 Responda APENAS com um JSON válido neste formato exato:
 {
   "weight": 10.5,
   "invoiceValue": 1500.00,
   "quantity": 3,
+  "originCep": "01310100",
+  "destCep": "30130110",
   "confidence": "high" | "medium" | "low",
   "notes": "observação opcional sobre o que foi encontrado"
 }
@@ -72,7 +78,7 @@ export async function POST(request: Request) {
         },
       ],
       temperature: 0.1,
-      max_tokens: 400,
+      max_tokens: 500,
     })
 
     const raw = (completion.choices[0]?.message?.content ?? '').trim()
@@ -88,6 +94,8 @@ export async function POST(request: Request) {
       weight: number | null
       invoiceValue: number | null
       quantity: number | null
+      originCep: string | null
+      destCep: string | null
       confidence: string
       notes?: string
     }

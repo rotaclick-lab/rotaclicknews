@@ -792,6 +792,14 @@ export default function HomePage() {
                             invoiceValue: data.invoiceValue!.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
                           }))
                         }
+                        if (data.originCep) {
+                          const d = data.originCep.replace(/\D/g, '').slice(0, 8)
+                          if (d.length === 8) setOrigin(`${d.slice(0, 5)}-${d.slice(5)}`)
+                        }
+                        if (data.destCep) {
+                          const d = data.destCep.replace(/\D/g, '').slice(0, 8)
+                          if (d.length === 8) setDestination(`${d.slice(0, 5)}-${d.slice(5)}`)
+                        }
                       }}
                     />
                     <div className="border-t border-brand-100 pt-4" />

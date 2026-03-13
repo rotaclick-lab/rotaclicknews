@@ -29,6 +29,8 @@ interface NfData {
   weight: number | null
   invoiceValue: number | null
   quantity: number | null
+  originCep: string | null
+  destCep: string | null
   confidence: string
   notes?: string
 }
@@ -189,6 +191,22 @@ export function NfScanner({ onExtracted }: NfScannerProps) {
               </p>
             </div>
           </div>
+          {(result.originCep || result.destCep) && (
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className={cn('rounded-lg p-2', result.originCep ? 'bg-white border border-green-100' : 'bg-gray-50 border border-gray-100')}>
+                <p className="text-[10px] text-gray-500 uppercase">CEP Origem</p>
+                <p className={cn('text-sm font-bold', result.originCep ? 'text-green-700' : 'text-gray-400')}>
+                  {result.originCep ? `${result.originCep.slice(0, 5)}-${result.originCep.slice(5)}` : '—'}
+                </p>
+              </div>
+              <div className={cn('rounded-lg p-2', result.destCep ? 'bg-white border border-green-100' : 'bg-gray-50 border border-gray-100')}>
+                <p className="text-[10px] text-gray-500 uppercase">CEP Destino</p>
+                <p className={cn('text-sm font-bold', result.destCep ? 'text-green-700' : 'text-gray-400')}>
+                  {result.destCep ? `${result.destCep.slice(0, 5)}-${result.destCep.slice(5)}` : '—'}
+                </p>
+              </div>
+            </div>
+          )}
           {result.confidence === 'low' && (
             <p className="text-xs text-amber-600 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" /> Confiança baixa — verifique os valores preenchidos.
