@@ -54,6 +54,12 @@ function interpolate(str: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), str)
 }
 
+function buildLogoHtml(brand: { logoUrl: string; name: string }): string {
+  return brand.logoUrl
+    ? `<img src="${brand.logoUrl}" alt="${brand.name}" style="height:40px;max-width:180px;object-fit:contain;display:block;"/>`
+    : `<span style="color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-1px;font-family:'Segoe UI',Arial,sans-serif;">${brand.name}</span>`
+}
+
 async function send(opts: {
   to: string
   subject: string
@@ -230,9 +236,9 @@ export async function emailEmbarcadorFretePago(params: {
   const { to, name, carrierName, originZip, destZip, price, deadlineDays } = params
   const prazo = deadlineDays ? `${deadlineDays} dia(s) útei(s)` : 'A combinar'
   const fmtPrice = price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  const vars = { name, carrierName, originZip, destZip, prazo, price: fmtPrice }
   const tpl = await getTemplate('frete-pago')
   const brand = await getBrandSettings()
+  const vars = { name, carrierName, originZip, destZip, prazo, price: fmtPrice, logoHtml: buildLogoHtml(brand) }
   const subject = interpolate(tpl?.subject ?? `✅ Frete confirmado — {{carrierName}}`, vars)
   const html = tpl ? interpolate(tpl.html, vars) : base(`
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${BRAND.dark};">Frete confirmado! ✅</h1>
@@ -253,9 +259,9 @@ export async function emailEmbarcadorFretePago(params: {
 
 export async function emailBoasVindasEmbarcador(params: { to: string; name: string }) {
   const { to, name } = params
-  const vars = { name }
   const tpl = await getTemplate('boas-vindas')
   const brand = await getBrandSettings()
+  const vars = { name, logoHtml: buildLogoHtml(brand) }
   const subject = interpolate(tpl?.subject ?? `👋 Bem-vindo à ${brand.name}!`, vars)
   const html = tpl ? interpolate(tpl.html, vars) : base(`
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${BRAND.dark};">Bem-vindo à ${brand.name}! 👋</h1>
@@ -288,9 +294,9 @@ export async function emailBoasVindasEmbarcador(params: { to: string; name: stri
 
 export async function emailTransportadoraAprovada(params: { to: string; name: string; companyName: string }) {
   const { to, name, companyName } = params
-  const vars = { name, companyName }
   const tpl = await getTemplate('transp-aprovada')
   const brand = await getBrandSettings()
+  const vars = { name, companyName, logoHtml: buildLogoHtml(brand) }
   const subject = interpolate(tpl?.subject ?? `🎉 Cadastro aprovado na ${brand.name}!`, vars)
   const html = tpl ? interpolate(tpl.html, vars) : base(`
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${BRAND.dark};">Cadastro aprovado! 🎉</h1>
@@ -310,9 +316,9 @@ export async function emailTransportadoraAprovada(params: { to: string; name: st
 
 export async function emailTransportadoraRejeitada(params: { to: string; name: string; companyName: string; reason: string }) {
   const { to, name, companyName, reason } = params
-  const vars = { name, companyName, reason }
   const tpl = await getTemplate('transp-rejeitada')
   const brand = await getBrandSettings()
+  const vars = { name, companyName, reason, logoHtml: buildLogoHtml(brand) }
   const subject = interpolate(tpl?.subject ?? `Atualização sobre seu cadastro na ${brand.name}`, vars)
   const html = tpl ? interpolate(tpl.html, vars) : base(`
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${BRAND.dark};">Atualização sobre seu cadastro</h1>
@@ -344,9 +350,9 @@ export async function emailTransportadoraNovoFrete(params: {
   const prazo = deadlineDays ? `${deadlineDays} dia(s) útei(s)` : 'A combinar'
   const peso = taxableWeight ? `${Number(taxableWeight).toFixed(1)} kg` : '—'
   const fmtPrice = price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  const vars = { name, originZip, destZip, prazo, peso, price: fmtPrice }
   const tpl = await getTemplate('transp-novo-frete')
   const brand = await getBrandSettings()
+  const vars = { name, originZip, destZip, prazo, peso, price: fmtPrice, logoHtml: buildLogoHtml(brand) }
   const subject = interpolate(tpl?.subject ?? `🆕 Nova carga contratada — {{originZip}} → {{destZip}}`, vars)
   const html = tpl ? interpolate(tpl.html, vars) : base(`
     <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:${BRAND.dark};">Nova carga contratada! 🆕</h1>
