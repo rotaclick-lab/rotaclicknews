@@ -510,18 +510,18 @@ export async function completeOAuthProfile(formData: FormData) {
   const address = { cep, street, number, complement, neighborhood, city, state }
 
   const profilePayload = {
-    id: user.id,
-    full_name: fullName,
+    company_id: '00000000-0000-0000-0000-000000000001', // ID da empresa RotaClick
+    name: fullName,
+    document: personType === 'pf' ? cpf : cnpj,
     email,
     phone,
-    role: 'client' as const,
-    cpf: personType === 'pf' ? cpf : null,
+    address,
   }
 
   console.log('completeOAuthProfile payload:', profilePayload)
   const { error: profileError } = await admin
-    .from('users')
-    .upsert(profilePayload, { onConflict: 'id' })
+    .from('customers')
+    .insert(profilePayload)
 
   if (profileError) {
     console.error('Erro ao completar perfil OAuth:', profileError)
