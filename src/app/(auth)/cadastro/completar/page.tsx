@@ -36,6 +36,11 @@ const maskCNPJ = (v: string) =>
 const maskCEP = (v: string) =>
   v.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9)
 
+const isValidPhone = (v: string) => {
+  const digits = v.replace(/\D/g, '')
+  return digits.length === 10 || digits.length === 11
+}
+
 export default function CompletarCadastroPage() {
   const [personType, setPersonType] = useState<PersonType>('pf')
   const [isLoading, setIsLoading] = useState(false)
@@ -53,6 +58,7 @@ export default function CompletarCadastroPage() {
   const [number, setNumber] = useState('')
   const [complement, setComplement] = useState('')
 
+  const [cnpjLoading, setCnpjLoading] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   async function handleCEP(raw: string) {
@@ -73,10 +79,42 @@ export default function CompletarCadastroPage() {
     }
   }
 
+  async function handleCNPJ(raw: string) {
+    const digits = raw.replace(/\D/g, '')
+    if (digits.length === 14) {
+      setCnpjLoading(true)
+      try {
+        const res = await fetch(`/api/brasilapi/cnpj/${digits}`)
+        const json = await res.json()
+        if (json?.razao_social) {
+          setStreet(json.logradouro || '')
+          setNeighborhood(json.bairro || '')
+          setCity(json.municipio || '')
+          setStateUF(json.uf || '')
+          setNumber(json.numero || '')
+          setComplement(json.complemento || '')
+          setCep(json.cep ? maskCEP(json.cep) : '')
+          if (json.ddd_telefone_1) {
+            setPhone(`(${json.ddd_telefone_1.slice(0, 2)}) ${json.ddd_telefone_1.slice(2, 7)}-${json.ddd_telefone_1.slice(7)}`)
+          }
+        } else {
+          toast.error('CNPJ não encontrado')
+        }
+      } catch {
+        toast.error('Erro ao consultar CNPJ')
+      }
+      setCnpjLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!acceptTerms) {
       toast.error('Aceite os termos para continuar.')
+      return
+    }
+    if (!isValidPhone(phone)) {
+      toast.error('Telefone inválido. Use (XX) XXXXX-XXXX.')
       return
     }
     setIsLoading(true)
@@ -136,10 +174,27 @@ export default function CompletarCadastroPage() {
                 inputMode="numeric"
                 placeholder={personType === 'pf' ? '000.000.000-00' : '00.000.000/0000-00'}
                 value={personType === 'pf' ? cpf : cnpj}
-                onChange={(e) => personType === 'pf' ? setCpf(maskCPF(e.target.value)) : setCnpj(maskCNPJ(e.target.value))}
+                onChange={(e) => {
+                  const masked = personType === 'pf' ? maskCPF(e.target.value) : maskCNPJ(e.target.value)
+                  if (personType === 'pf') {
+                    setCpf(masked)
+                  } else {
+                    setCnpj(masked)
+                    handleCNPJ(masked)
+                  }
+                }}
                 className="h-12 rounded-lg"
-                disabled={isLoading}
+                disabled={isLoading || cnpjLoading}
               />
+              {cnpjLoading && (
+                <div className="flex items-center gap-2 mt-1">
+                  <svg className="h-3 w-3 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  <span className="text-xs text-brand-600">Buscando dados do CNPJ...</span>
+                </div>
+              )}
             </div>
 
             {/* Telefone */}
@@ -151,7 +206,7 @@ export default function CompletarCadastroPage() {
                 id="phone"
                 name="phone"
                 inputMode="numeric"
-                placeholder="(11) 99999-9999"
+                placeholder="(11) 99999-9999 (WhatsApp)"
                 value={phone}
                 onChange={(e) => setPhone(maskPhone(e.target.value))}
                 className="h-12 rounded-lg"
