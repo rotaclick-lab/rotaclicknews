@@ -43,7 +43,7 @@ export function Logo({
     })
   }, [])
 
-  const src = logoUrl || '/logo.png'
+  const src = logoUrl || '/images/rotaclick-logo.png'
 
   return (
     <Image
