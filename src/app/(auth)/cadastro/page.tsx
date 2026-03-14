@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Mail, MapPin, Phone, ShieldCheck, UserRound } from 'lucide-react'
 import { Logo } from '@/components/ui/logo'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 type PersonType = 'pf' | 'pj'
 
@@ -776,6 +777,8 @@ export default function CadastroUsuarioPage() {
             >
               {loading ? 'CRIANDO CONTA...' : 'CRIAR CONTA'}
             </Button>
+
+            <OAuthButtons />
           </form>
 
           <div className="mt-8 flex flex-col items-center gap-4">

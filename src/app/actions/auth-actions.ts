@@ -436,3 +436,97 @@ export async function resetPassword(formData: FormData) {
   revalidatePath('/', 'layout')
   redirect('/login')
 }
+
+export async function signInWithOAuth(provider: 'google' | 'facebook') {
+  const supabase = await createClient()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `${baseUrl}/auth/callback`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  if (data?.url) {
+    redirect(data.url)
+  }
+
+  return { error: 'Não foi possível iniciar autenticação.' }
+}
+
+export async function completeOAuthProfile(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'Sessão expirada. Faça login novamente.' }
+  }
+
+  const personType = ((formData.get('personType') as string) || 'pf').toLowerCase()
+  const phone = ((formData.get('phone') as string) || '').replace(/\D/g, '')
+  const cpf = ((formData.get('cpf') as string) || '').replace(/\D/g, '')
+  const cnpj = ((formData.get('cnpj') as string) || '').replace(/\D/g, '')
+  const cep = ((formData.get('cep') as string) || '').replace(/\D/g, '')
+  const street = ((formData.get('street') as string) || '').trim()
+  const number = ((formData.get('number') as string) || '').trim()
+  const complement = ((formData.get('complement') as string) || '').trim()
+  const neighborhood = ((formData.get('neighborhood') as string) || '').trim()
+  const city = ((formData.get('city') as string) || '').trim()
+  const state = (((formData.get('state') as string) || '').trim().toUpperCase()).slice(0, 2)
+  const acceptTerms = String(formData.get('acceptTerms') || '') === 'true'
+
+  if (!acceptTerms) return { error: 'Você precisa aceitar os termos para continuar.' }
+  if (!phone || phone.length < 10) return { error: 'Telefone inválido.' }
+  if (!cep || cep.length !== 8) return { error: 'CEP inválido.' }
+  if (!street) return { error: 'Informe o logradouro.' }
+  if (!number) return { error: 'Informe o número.' }
+  if (!neighborhood) return { error: 'Informe o bairro.' }
+  if (!city) return { error: 'Informe a cidade.' }
+  if (!state || !/^[A-Z]{2}$/.test(state)) return { error: 'UF inválida.' }
+
+  if (personType === 'pf') {
+    if (!cpf || cpf.length !== 11 || !isValidCPF(cpf)) return { error: 'CPF inválido.' }
+  } else {
+    if (!cnpj || cnpj.length !== 14 || !isValidCNPJ(cnpj)) return { error: 'CNPJ inválido.' }
+  }
+
+  const admin = createAdminClient()
+  const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
+  const email = user.email || ''
+
+  const address = { cep, street, number, complement, neighborhood, city, state }
+
+  const profilePayload = {
+    id: user.id,
+    name: fullName,
+    email,
+    phone,
+    role: 'cliente' as const,
+    cpf: personType === 'pf' ? cpf : null,
+    address,
+  }
+
+  const { error: profileError } = await admin
+    .from('profiles')
+    .upsert(profilePayload, { onConflict: 'id' })
+
+  if (profileError) {
+    console.error('Erro ao completar perfil OAuth:', profileError)
+    return { error: 'Erro ao salvar seus dados. Tente novamente.' }
+  }
+
+  await writeAuditLog(user.id, 'OAUTH_PROFILE_COMPLETE', 'auth', user.id, `Perfil OAuth completado: ${email}`)
+  void emailBoasVindasEmbarcador({ to: email, name: fullName })
+
+  revalidatePath('/', 'layout')
+  redirect('/cliente')
+}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 interface LoginFormProps {
   next?: string
@@ -103,6 +104,8 @@ export function LoginForm({ next }: LoginFormProps) {
       <Button type="submit" className="h-12 w-full rounded-lg bg-brand-500 text-white font-bold hover:bg-brand-600" disabled={isLoading}>
         {isLoading ? 'Entrando...' : 'Entrar'}
       </Button>
+
+      <OAuthButtons />
 
       <div className="text-center space-y-2 text-sm">
         <Link href="/esqueci-senha" className="text-brand-600 hover:text-brand-700 hover:underline block">
