@@ -23,6 +23,7 @@ const SAMPLE_VARS: Record<string, string> = {
   peso: '25.0 kg',
   companyName: 'Transportadora Exemplo Ltda',
   reason: 'Documentação incompleta — RNTRC não encontrado na base da ANTT.',
+  logoHtml: '<span style="color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-1px;font-family:\'Segoe UI\',Arial,sans-serif;">RotaClick</span>',
 }
 
 function interpolate(str: string, vars: Record<string, string>): string {
@@ -40,6 +41,20 @@ export async function POST(request: Request) {
   if (!to || !subject || !html) {
     return NextResponse.json({ error: 'Campos obrigatórios: to, subject, html' }, { status: 400 })
   }
+
+  // Busca logo e nome reais do banco para substituir {{logoHtml}}
+  try {
+    const { data: settings } = await admin
+      .from('platform_settings')
+      .select('key, value')
+      .in('key', ['brand_logo_url', 'brand_name'])
+    const map = Object.fromEntries((settings ?? []).map((r: { key: string; value: string }) => [r.key, r.value]))
+    const logoUrl = map['brand_logo_url'] ?? ''
+    const brandName = map['brand_name'] ?? 'RotaClick'
+    SAMPLE_VARS.logoHtml = logoUrl
+      ? `<img src="${logoUrl}" alt="${brandName}" style="height:40px;max-width:180px;object-fit:contain;display:block;"/>`
+      : `<span style="color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-1px;font-family:'Segoe UI',Arial,sans-serif;">${brandName}</span>`
+  } catch { /* mantém fallback */ }
 
   const resend = new Resend(apiKey)
   const { error } = await resend.emails.send({
