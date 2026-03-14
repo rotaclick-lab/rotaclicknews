@@ -511,17 +511,16 @@ export async function completeOAuthProfile(formData: FormData) {
 
   const profilePayload = {
     id: user.id,
-    name: fullName,
+    full_name: fullName,
     email,
     phone,
-    role: 'cliente' as const,
+    role: 'client' as const,
     cpf: personType === 'pf' ? cpf : null,
-    address,
   }
 
   console.log('completeOAuthProfile payload:', profilePayload)
   const { error: profileError } = await admin
-    .from('profiles')
+    .from('users')
     .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) {
