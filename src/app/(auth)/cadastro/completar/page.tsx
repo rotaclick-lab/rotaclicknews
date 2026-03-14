@@ -36,10 +36,7 @@ const maskCNPJ = (v: string) =>
 const maskCEP = (v: string) =>
   v.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').slice(0, 9)
 
-const isValidPhone = (v: string) => {
-  const digits = v.replace(/\D/g, '')
-  return digits.length === 10 || digits.length === 11
-}
+
 
 export default function CompletarCadastroPage() {
   const [personType, setPersonType] = useState<PersonType>('pf')
@@ -59,7 +56,73 @@ export default function CompletarCadastroPage() {
   const [complement, setComplement] = useState('')
 
   const [cnpjLoading, setCnpjLoading] = useState(false)
+  const [cpfError, setCpfError] = useState('')
+  const [cnpjError, setCnpjError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
   const formRef = useRef<HTMLFormElement>(null)
+
+  function validateCPF(value: string) {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length === 0) {
+      setCpfError('')
+      return
+    }
+    if (digits.length !== 11) {
+      setCpfError('CPF deve ter 11 dígitos')
+      return
+    }
+    // Validação básica do CPF
+    const weights = [10,9,8,7,6,5,4,3,2]
+    const sum = digits.slice(0, 9).split('').reduce((acc, digit, idx) => acc + (Number(digit) || 0) * weights[idx], 0)
+    const calcFirst = 11 - (sum % 11)
+    const first = calcFirst >= 10 ? 0 : calcFirst
+    
+    const weights2 = [11,10,9,8,7,6,5,4,3,2]
+    const sum2 = digits.slice(0, 10).split('').reduce((acc, digit, idx) => acc + (Number(digit) || 0) * weights2[idx], 0)
+    const calcSecond = 11 - (sum2 % 11)
+    const second = calcSecond >= 10 ? 0 : calcSecond
+    
+    const valid = Number(digits[9] || '0') === first && Number(digits[10] || '0') === second
+    setCpfError(valid ? '' : 'CPF inválido')
+  }
+
+  function validateCNPJ(value: string) {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length === 0) {
+      setCnpjError('')
+      return
+    }
+    if (digits.length !== 14) {
+      setCnpjError('CNPJ deve ter 14 dígitos')
+      return
+    }
+    // Validação básica do CNPJ
+    const weights = [5,4,3,2,9,8,7,6,5,4,3,2]
+    const sum = digits.slice(0, 12).split('').reduce((acc, digit, idx) => acc + (Number(digit) || 0) * weights[idx], 0)
+    const firstDigit = 11 - (sum % 11)
+    const first = firstDigit >= 10 ? 0 : firstDigit
+    
+    const weights2 = [6,5,4,3,2,9,8,7,6,5,4,3,2]
+    const sum2 = digits.slice(0, 13).split('').reduce((acc, digit, idx) => acc + (Number(digit) || 0) * weights2[idx], 0)
+    const secondDigit = 11 - (sum2 % 11)
+    const second = secondDigit >= 10 ? 0 : secondDigit
+    
+    const valid = Number(digits[12] || '0') === first && Number(digits[13] || '0') === second
+    setCnpjError(valid ? '' : 'CNPJ inválido')
+  }
+
+  function validatePhone(value: string) {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length === 0) {
+      setPhoneError('')
+      return
+    }
+    if (digits.length < 10 || digits.length > 11) {
+      setPhoneError('Telefone deve ter 10 ou 11 dígitos')
+      return
+    }
+    setPhoneError('')
+  }
 
   async function handleCEP(raw: string) {
     const digits = raw.replace(/\D/g, '')
@@ -113,8 +176,8 @@ export default function CompletarCadastroPage() {
       toast.error('Aceite os termos para continuar.')
       return
     }
-    if (!isValidPhone(phone)) {
-      toast.error('Telefone inválido. Use (XX) XXXXX-XXXX.')
+    if (cpfError || cnpjError || phoneError) {
+      toast.error('Corrija os erros antes de continuar.')
       return
     }
     setIsLoading(true)
@@ -178,8 +241,10 @@ export default function CompletarCadastroPage() {
                   const masked = personType === 'pf' ? maskCPF(e.target.value) : maskCNPJ(e.target.value)
                   if (personType === 'pf') {
                     setCpf(masked)
+                    validateCPF(masked)
                   } else {
                     setCnpj(masked)
+                    validateCNPJ(masked)
                     handleCNPJ(masked)
                   }
                 }}
@@ -195,6 +260,12 @@ export default function CompletarCadastroPage() {
                   <span className="text-xs text-brand-600">Buscando dados do CNPJ...</span>
                 </div>
               )}
+              {personType === 'pf' && cpfError && (
+                <p className="text-sm text-red-500 mt-1">{cpfError}</p>
+              )}
+              {personType === 'pj' && cnpjError && (
+                <p className="text-sm text-red-500 mt-1">{cnpjError}</p>
+              )}
             </div>
 
             {/* Telefone */}
@@ -208,10 +279,17 @@ export default function CompletarCadastroPage() {
                 inputMode="numeric"
                 placeholder="(11) 99999-9999 (WhatsApp)"
                 value={phone}
-                onChange={(e) => setPhone(maskPhone(e.target.value))}
+                onChange={(e) => {
+                  const masked = maskPhone(e.target.value)
+                  setPhone(masked)
+                  validatePhone(masked)
+                }}
                 className="h-12 rounded-lg"
                 disabled={isLoading}
               />
+              {phoneError && (
+                <p className="text-sm text-red-500 mt-1">{phoneError}</p>
+              )}
             </div>
 
             {/* Endereço */}
