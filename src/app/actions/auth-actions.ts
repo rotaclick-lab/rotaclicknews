@@ -467,6 +467,10 @@ export async function completeOAuthProfile(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  console.log('completeOAuthProfile user:', user)
+  console.log('user.user_metadata:', user?.user_metadata)
+  console.log('user.email:', user?.email)
+
   if (!user) {
     return { error: 'Sessão expirada. Faça login novamente.' }
   }
