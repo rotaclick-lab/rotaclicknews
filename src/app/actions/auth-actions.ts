@@ -515,13 +515,15 @@ export async function completeOAuthProfile(formData: FormData) {
     address,
   }
 
+  console.log('completeOAuthProfile payload:', profilePayload)
   const { error: profileError } = await admin
     .from('profiles')
     .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) {
     console.error('Erro ao completar perfil OAuth:', profileError)
-    return { error: 'Erro ao salvar seus dados. Tente novamente.' }
+    console.error('Detalhes:', JSON.stringify(profileError, null, 2))
+    return { error: `Erro ao salvar seus dados: ${profileError.message}` }
   }
 
   await writeAuditLog(user.id, 'OAUTH_PROFILE_COMPLETE', 'auth', user.id, `Perfil OAuth completado: ${email}`)
