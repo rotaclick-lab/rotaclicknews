@@ -6,6 +6,10 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { AuthRecoveryHandler } from '@/components/auth/auth-recovery-handler';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { unstable_cache } from 'next/cache';
+import { validateEnv } from '@/lib/env';
+
+validateEnv()
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const manrope = Manrope({ subsets: ['latin'], variable: '--font-display' });
@@ -25,19 +29,23 @@ export const metadata: Metadata = {
   },
 }
 
-async function getPlatformTheme(): Promise<Record<string, string>> {
-  try {
-    const admin = createAdminClient()
-    const { data } = await admin
-      .from('platform_settings')
-      .select('key, value')
-      .in('key', ['primary_color', 'secondary_color'])
-    if (!data) return {}
-    return Object.fromEntries(data.map((r: any) => [r.key, r.value]))
-  } catch {
-    return {}
-  }
-}
+const getPlatformTheme = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    try {
+      const admin = createAdminClient()
+      const { data } = await admin
+        .from('platform_settings')
+        .select('key, value')
+        .in('key', ['primary_color', 'secondary_color'])
+      if (!data) return {}
+      return Object.fromEntries(data.map((r: any) => [r.key, r.value]))
+    } catch {
+      return {}
+    }
+  },
+  ['platform-theme'],
+  { revalidate: 300 }
+)
 
 export default async function RootLayout({
   children,
@@ -54,6 +62,8 @@ export default async function RootLayout({
         <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" as="style" />
+        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" as="style" />
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>

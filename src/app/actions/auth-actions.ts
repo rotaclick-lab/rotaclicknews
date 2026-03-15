@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { emailBoasVindasEmbarcador } from '@/lib/email'
 import { getFriendlyError } from '@/lib/error-utils'
+import { isValidCPF, isValidCNPJ } from '@/lib/validations/documents'
 
 async function writeAuditLog(
   userId: string | null,
@@ -32,41 +33,6 @@ async function writeAuditLog(
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function isValidCPF(value: string): boolean {
-  const cpf = value.replace(/\D/g, '')
-  if (cpf.length !== 11) return false
-  if (/^(\d)\1{10}$/.test(cpf)) return false
-
-  let sum = 0
-  for (let i = 0; i < 9; i++) sum += Number(cpf[i]) * (10 - i)
-  let remainder = (sum * 10) % 11
-  if (remainder === 10) remainder = 0
-  if (remainder !== Number(cpf[9])) return false
-
-  sum = 0
-  for (let i = 0; i < 10; i++) sum += Number(cpf[i]) * (11 - i)
-  remainder = (sum * 10) % 11
-  if (remainder === 10) remainder = 0
-
-  return remainder === Number(cpf[10] ?? '0')
-}
-
-function isValidCNPJ(value: string): boolean {
-  const cnpj = value.replace(/\D/g, '')
-  if (cnpj.length !== 14) return false
-  if (/^(\d)\1{13}$/.test(cnpj)) return false
-
-  const calcDigit = (base: string, factors: number[]) => {
-    const total = base.split('').reduce((acc, digit, index) => acc + Number(digit) * factors[index], 0)
-    const remainder = total % 11
-    return remainder < 2 ? 0 : 11 - remainder
-  }
-
-  const digit1 = calcDigit(cnpj.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
-  const digit2 = calcDigit(cnpj.slice(0, 12) + String(digit1), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
-
-  return cnpj.endsWith(`${digit1}${digit2}`)
-}
 
 async function resolveLoginEmail(identifier: string): Promise<string | null> {
   const normalized = identifier.trim()
@@ -467,10 +433,6 @@ export async function completeOAuthProfile(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  console.log('completeOAuthProfile user:', user)
-  console.log('user.user_metadata:', user?.user_metadata)
-  console.log('user.email:', user?.email)
-
   if (!user) {
     return { error: 'Sessão expirada. Faça login novamente.' }
   }
@@ -479,23 +441,10 @@ export async function completeOAuthProfile(formData: FormData) {
   const phone = ((formData.get('phone') as string) || '').replace(/\D/g, '')
   const cpf = ((formData.get('cpf') as string) || '').replace(/\D/g, '')
   const cnpj = ((formData.get('cnpj') as string) || '').replace(/\D/g, '')
-  const cep = ((formData.get('cep') as string) || '').replace(/\D/g, '')
-  const street = ((formData.get('street') as string) || '').trim()
-  const number = ((formData.get('number') as string) || '').trim()
-  const complement = ((formData.get('complement') as string) || '').trim()
-  const neighborhood = ((formData.get('neighborhood') as string) || '').trim()
-  const city = ((formData.get('city') as string) || '').trim()
-  const state = (((formData.get('state') as string) || '').trim().toUpperCase()).slice(0, 2)
   const acceptTerms = String(formData.get('acceptTerms') || '') === 'true'
 
   if (!acceptTerms) return { error: 'Você precisa aceitar os termos para continuar.' }
   if (!phone || phone.length < 10) return { error: 'Telefone inválido.' }
-  if (!cep || cep.length !== 8) return { error: 'CEP inválido.' }
-  if (!street) return { error: 'Informe o logradouro.' }
-  if (!number) return { error: 'Informe o número.' }
-  if (!neighborhood) return { error: 'Informe o bairro.' }
-  if (!city) return { error: 'Informe a cidade.' }
-  if (!state || !/^[A-Z]{2}$/.test(state)) return { error: 'UF inválida.' }
 
   if (personType === 'pf') {
     if (!cpf || cpf.length !== 11 || !isValidCPF(cpf)) return { error: 'CPF inválido.' }
@@ -507,26 +456,22 @@ export async function completeOAuthProfile(formData: FormData) {
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
   const email = user.email || ''
 
-  const address = { cep, street, number, complement, neighborhood, city, state }
-
   const profilePayload = {
-    company_id: '00000000-0000-0000-0000-000000000001', // ID da empresa RotaClick
+    id: user.id,
     name: fullName,
-    document: personType === 'pf' ? cpf : cnpj,
     email,
     phone,
-    address,
+    role: 'cliente',
+    cpf: personType === 'pf' ? cpf : null,
   }
 
-  console.log('completeOAuthProfile payload:', profilePayload)
   const { error: profileError } = await admin
-    .from('customers')
-    .insert(profilePayload)
+    .from('profiles')
+    .upsert(profilePayload, { onConflict: 'id' })
 
   if (profileError) {
     console.error('Erro ao completar perfil OAuth:', profileError)
-    console.error('Detalhes:', JSON.stringify(profileError, null, 2))
-    return { error: `Erro ao salvar seus dados: ${profileError.message}` }
+    return { error: 'Erro ao salvar seus dados. Tente novamente.' }
   }
 
   await writeAuditLog(user.id, 'OAUTH_PROFILE_COMPLETE', 'auth', user.id, `Perfil OAuth completado: ${email}`)
