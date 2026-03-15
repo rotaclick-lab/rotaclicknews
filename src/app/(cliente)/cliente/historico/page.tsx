@@ -69,7 +69,7 @@ export default async function HistoricoPage() {
       <HistoricoClient freights={freights} />
 
       <div className="text-center">
-        <Link href="/cotacao?from=cliente" className="inline-flex items-center gap-2 text-sm text-brand-600 font-medium hover:underline">
+        <Link href="/cliente/cotacao" className="inline-flex items-center gap-2 text-sm text-brand-600 font-medium hover:underline">
           <Package className="h-4 w-4" /> Contratar novo frete
         </Link>
       </div>

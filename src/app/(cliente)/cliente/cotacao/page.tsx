@@ -3,10 +3,10 @@
 import { Suspense } from 'react'
 import { CotacaoWizard } from '@/components/cotacao/cotacao-wizard'
 
-export default function CotacaoPage() {
+export default function ClienteCotacaoPage() {
   return (
     <Suspense>
-      <CotacaoWizard basePath="/cotacao" backPath="/dashboard" />
+      <CotacaoWizard basePath="/cliente/cotacao" backPath="/cliente" />
     </Suspense>
   )
 }

@@ -194,7 +194,7 @@ export function HistoricoClient({ freights }: { freights: Freight[] }) {
                 {freights.length === 0 ? 'Nenhum frete encontrado.' : 'Nenhum frete corresponde aos filtros.'}
               </p>
               {freights.length === 0 && (
-                <Link href="/cotacao?from=cliente" className="text-sm text-brand-600 hover:underline font-medium">
+                <Link href="/cliente/cotacao" className="text-sm text-brand-600 hover:underline font-medium">
                   Fazer primeira cotação →
                 </Link>
               )}

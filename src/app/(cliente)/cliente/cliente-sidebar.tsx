@@ -30,7 +30,7 @@ export function ClienteSidebar() {
         {/* Nova cotação CTA */}
         <div className="px-4 py-3">
           <Link
-            href="/cotacao?from=cliente"
+            href="/cliente/cotacao"
             className="flex items-center justify-center gap-2 w-full rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold py-2.5 transition-colors"
           >
             <Plus className="h-4 w-4" /> Nova Cotação
@@ -90,7 +90,7 @@ export function ClienteSidebar() {
           )
         })}
         <Link
-          href="/cotacao?from=cliente"
+          href="/cliente/cotacao"
           className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-brand-500"
         >
           <Plus className="h-5 w-5" />
