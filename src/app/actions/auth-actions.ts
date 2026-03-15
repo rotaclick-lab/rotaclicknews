@@ -441,10 +441,23 @@ export async function completeOAuthProfile(formData: FormData) {
   const phone = ((formData.get('phone') as string) || '').replace(/\D/g, '')
   const cpf = ((formData.get('cpf') as string) || '').replace(/\D/g, '')
   const cnpj = ((formData.get('cnpj') as string) || '').replace(/\D/g, '')
+  const cep = ((formData.get('cep') as string) || '').replace(/\D/g, '')
+  const street = ((formData.get('street') as string) || '').trim()
+  const number = ((formData.get('number') as string) || '').trim()
+  const complement = ((formData.get('complement') as string) || '').trim()
+  const neighborhood = ((formData.get('neighborhood') as string) || '').trim()
+  const city = ((formData.get('city') as string) || '').trim()
+  const state = (((formData.get('state') as string) || '').trim().toUpperCase()).slice(0, 2)
   const acceptTerms = String(formData.get('acceptTerms') || '') === 'true'
 
   if (!acceptTerms) return { error: 'Você precisa aceitar os termos para continuar.' }
   if (!phone || phone.length < 10) return { error: 'Telefone inválido.' }
+  if (!cep || cep.length !== 8) return { error: 'CEP inválido.' }
+  if (!street) return { error: 'Informe o logradouro.' }
+  if (!number) return { error: 'Informe o número.' }
+  if (!neighborhood) return { error: 'Informe o bairro.' }
+  if (!city) return { error: 'Informe a cidade.' }
+  if (!state || !/^[A-Z]{2}$/.test(state)) return { error: 'UF inválida.' }
 
   if (personType === 'pf') {
     if (!cpf || cpf.length !== 11 || !isValidCPF(cpf)) return { error: 'CPF inválido.' }
@@ -455,7 +468,9 @@ export async function completeOAuthProfile(formData: FormData) {
   const admin = createAdminClient()
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || ''
   const email = user.email || ''
+  const address = { cep, street, number, complement, neighborhood, city, state }
 
+  // Salvar na tabela profiles (dados principais)
   const profilePayload = {
     id: user.id,
     name: fullName,
@@ -472,6 +487,22 @@ export async function completeOAuthProfile(formData: FormData) {
   if (profileError) {
     console.error('Erro ao completar perfil OAuth:', profileError)
     return { error: 'Erro ao salvar seus dados. Tente novamente.' }
+  }
+
+  // Salvar endereço e dados extras no user_metadata (lido pelo perfil do cliente)
+  const { error: metaError } = await supabase.auth.updateUser({
+    data: {
+      full_name: fullName,
+      phone,
+      person_type: personType,
+      cpf: personType === 'pf' ? cpf : '',
+      cnpj: personType === 'pj' ? cnpj : '',
+      address,
+    },
+  })
+
+  if (metaError) {
+    console.error('Erro ao salvar metadados OAuth:', metaError)
   }
 
   await writeAuditLog(user.id, 'OAUTH_PROFILE_COMPLETE', 'auth', user.id, `Perfil OAuth completado: ${email}`)
